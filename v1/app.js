@@ -5,6 +5,7 @@ const REGISTER_URL=`${SUPABASE_URL}/functions/v1/register-evo-seal`;
 const token='0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f';
 let account='';
 let walletProvider=null;
+let walletInfo=null;
 const discoveredProviders=[];
 
 window.addEventListener('eip6963:announceProvider',event=>{
@@ -14,7 +15,7 @@ window.addEventListener('eip6963:announceProvider',event=>{
 });
 window.dispatchEvent(new Event('eip6963:requestProvider'));
 
-function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3200)}
 function hex(buf){return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
 async function shaBytes(bytes){if(!crypto?.subtle)throw new Error('Web Crypto no disponible');return hex(await crypto.subtle.digest('SHA-256',bytes))}
 const shaText=t=>shaBytes(enc.encode(t));async function shaFile(f){return shaBytes(new Uint8Array(await f.arrayBuffer()))}
@@ -26,26 +27,37 @@ function rows(s,extra=''){return `<span class="status ok">✓ REGISTERED</span>$
 
 async function findMetaMaskProvider(){
   window.dispatchEvent(new Event('eip6963:requestProvider'));
-  await sleep(250);
-  const by6963=discoveredProviders.find(d=>
-    d.info?.rdns==='io.metamask'||/metamask/i.test(d.info?.name||'')
-  );
-  if(by6963?.provider)return by6963.provider;
+  await sleep(500);
+  const detected=discoveredProviders.map(d=>({
+    name:String(d.info?.name||''),
+    rdns:String(d.info?.rdns||''),
+    provider:d.provider,
+    info:d.info
+  }));
+  console.info('EIP-6963 wallets detected',detected.map(d=>({name:d.name,rdns:d.rdns})));
 
-  const injected=window.ethereum;
-  if(injected?.providers?.length){
-    const exact=injected.providers.find(p=>p?.isMetaMask&&!p?.isUniswapWallet&&!p?.isCoinbaseWallet);
-    if(exact)return exact;
-    const mm=injected.providers.find(p=>p?.isMetaMask);
-    if(mm)return mm;
-  }
-  if(injected?.isMetaMask&&!injected?.isUniswapWallet)return injected;
-  return null;
+  const meta=detected.find(d=>
+    /(^|\s)metamask(\s|$)/i.test(d.name) || d.rdns.toLowerCase()==='io.metamask'
+  );
+  if(meta){walletInfo=meta.info;return meta.provider;}
+
+  // Strict safety fallback: only accept a provider explicitly exposed inside a providers array
+  // if it identifies as MetaMask AND is not known as another wallet. Never accept plain window.ethereum.
+  const providers=Array.isArray(window.ethereum?.providers)?window.ethereum.providers:[];
+  const strict=providers.find(p=>
+    p?.isMetaMask===true &&
+    p?.isUniswapWallet!==true && p?.isUniswap!==true &&
+    p?.isCoinbaseWallet!==true && p?.isBraveWallet!==true && p?.isRabby!==true
+  );
+  if(strict){walletInfo={name:'MetaMask',rdns:'legacy-injected'};return strict;}
+
+  const names=detected.map(d=>d.name).filter(Boolean);
+  const suffix=names.length?` Detectadas: ${names.join(', ')}.`:'';
+  throw new Error(`MetaMask no fue detectado de forma segura.${suffix} Desbloqueá MetaMask o desactivá temporalmente la extensión de Uniswap y recargá.`);
 }
 
 async function connectWallet(){
   walletProvider=await findMetaMaskProvider();
-  if(!walletProvider)throw new Error('MetaMask no fue detectado. Abrí/desbloqueá MetaMask y recargá esta página.');
   const accounts=await walletProvider.request({method:'eth_requestAccounts'});
   const a=accounts?.[0];
   if(!a)throw new Error('MetaMask no devolvió ninguna cuenta.');
@@ -81,4 +93,4 @@ async function verify(){const id=$('verifyId').value.trim().toUpperCase(),out=$(
 $('verifyBtn').onclick=verify;
 $('clearBtn').onclick=()=>{$('sealForm').reset();$('createResult').className='empty';$('createResult').textContent='Conectá MetaMask y creá un sello.'};
 const querySeal=new URLSearchParams(location.search).get('seal');if(querySeal){$('verifyId').value=querySeal;setTimeout(()=>{location.hash='#verify';verify()},100)}
-console.info('EVO Seal V1',{token,mode:'PUBLIC REGISTRY / METAMASK SIGNATURE / NO TOKEN MOVEMENT'});
+console.info('EVO Seal V1',{token,mode:'PUBLIC REGISTRY / STRICT METAMASK SIGNATURE / NO TOKEN MOVEMENT'});
