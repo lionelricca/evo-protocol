@@ -115,3 +115,48 @@ async function respondEvoChallenge(replayTest=false){
 
 injectChallengeUi();
 console.info('EVO AI Guardian V0.2 + Challenge V0',{mode:'EXPLAINABLE RISK / PULSE CHAIN / ONE-TIME SOFTWARE CHALLENGE / NO TOKEN MOVEMENT'});
+
+// UX hardening for short-lived challenges: visible countdown + friendly expiry state.
+let evoChallengeCountdownTimer=null;
+function startEvoChallengeCountdown(){
+  if(evoChallengeCountdownTimer)clearInterval(evoChallengeCountdownTimer);
+  const out=$('challengeResult'),btn=$('respondChallengeBtn');
+  if(!activeEvoChallenge||!out||!btn)return;
+  const expires=Date.parse(activeEvoChallenge.expiresAt);
+  let countdown=$('challengeCountdown');
+  if(!countdown&&out.textContent.includes('CHALLENGE PENDING')){
+    out.insertAdjacentHTML('beforeend','<div class="kv"><span>Tiempo restante</span><b id="challengeCountdown">—</b></div>');
+    countdown=$('challengeCountdown');
+  }
+  const tick=()=>{
+    const ms=expires-Date.now();
+    if(ms<=0){
+      if(countdown)countdown.textContent='EXPIRADO';
+      btn.disabled=true;
+      clearInterval(evoChallengeCountdownTimer);evoChallengeCountdownTimer=null;
+      return;
+    }
+    if(countdown)countdown.textContent=`${Math.ceil(ms/1000)} s`;
+  };
+  tick();evoChallengeCountdownTimer=setInterval(tick,250);
+}
+const evoIssueButton=$('issueChallengeBtn');
+if(evoIssueButton){
+  const originalIssue=evoIssueButton.onclick;
+  evoIssueButton.onclick=async e=>{await originalIssue(e);if(activeEvoChallenge)startEvoChallengeCountdown()};
+}
+const evoRespondButton=$('respondChallengeBtn');
+if(evoRespondButton){
+  const originalRespond=evoRespondButton.onclick;
+  evoRespondButton.onclick=async e=>{
+    await originalRespond(e);
+    const out=$('challengeResult');
+    if(out?.textContent?.includes('challenge_expired')){
+      if(evoChallengeCountdownTimer)clearInterval(evoChallengeCountdownTimer);evoChallengeCountdownTimer=null;
+      evoRespondButton.disabled=true;
+      out.innerHTML='<span class="status bad">✕ CHALLENGE EXPIRED</span><p>El desafío venció antes de recibir la respuesta. Esto es correcto: una prueba vieja no puede aceptarse como presencia viva.</p><p>Creá un desafío nuevo y respondelo antes de que el contador llegue a cero.</p>';
+    }else if(out?.textContent?.includes('FRESH RESPONSE ACCEPTED')){
+      if(evoChallengeCountdownTimer)clearInterval(evoChallengeCountdownTimer);evoChallengeCountdownTimer=null;
+    }
+  };
+}
