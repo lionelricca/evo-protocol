@@ -1,144 +1,197 @@
-# EVO Reality State V0
+# EVO Reality Evidence + Proof of Continuity V0
 
 Status: deterministic specification / 0 EVO / 0 POL
 
 ## Purpose
 
-`RealityState V0` is the canonical machine-readable snapshot behind the EVO Reality Graph.
+EVO separates **objective evidence state** from **signed continuity** and from **AI analysis**.
 
-Its goals are:
+This separation is intentional:
 
-- give every Seal a deterministic current trust-state fingerprint;
-- make independent implementations produce the same hash for the same state;
-- allow successive snapshots to be chained;
-- prepare optional future blockchain anchoring without requiring blockchain writes for every event.
+- **Evidence Root** fingerprints the current verifiable registry state.
+- **Continuity Root** links one accepted evidence checkpoint to the previous accepted checkpoint and is signed by the current owner.
+- **EVO AI Guardian** analyzes the graph but does not participate in cryptographic truth construction.
 
-## Canonical fields
+This prevents an AI model update, risk-policy change or UI change from silently changing the cryptographic identity of an asset.
 
-A V0 snapshot contains these fields only:
+## Layer 1 — Reality Evidence State
+
+The canonical V0 evidence state contains only explicit registry facts:
 
 ```json
 {
-  "version": "EVO-REALITY-STATE-V0",
+  "version": "EVO-REALITY-EVIDENCE-V0",
   "sealId": "EVO-...",
+  "sealDigest": "<64 lowercase hex chars>",
+  "sealStatus": "ACTIVE | REVOKED | SUPERSEDED",
+  "issuerWallet": "0x...",
   "issuerTrust": "SELF_DECLARED | WALLET_PROVEN | DOMAIN_VERIFIED | ORGANIZATION_VERIFIED | SUSPENDED",
-  "currentOwner": "0x... | NONE",
-  "passportHead": "<digest | NONE>",
-  "pulseHead": "<digest | NONE>",
-  "challengeState": "NONE | PENDING | FRESH_ACCEPTED | EXPIRED | REPLAY_REJECTED",
-  "physicalProofState": "NONE | NFC_VERIFIED | NFC_TAMPER_OK | NFC_TAMPER_OPEN | NFC_REVOKED",
-  "riskState": "LOW | MEDIUM | HIGH | UNKNOWN",
-  "previousRealityRoot": "<64 lowercase hex chars | GENESIS>",
-  "updatedAt": "<UTC ISO-8601 timestamp>"
+  "issuerProfileHash": "<64 lowercase hex chars | NONE>",
+  "currentOwner": "0x...",
+  "passportHead": "<64 lowercase hex chars | NONE>",
+  "pulseHead": "<64 lowercase hex chars | NONE>",
+  "challengeHead": "<accepted Challenge ID | NONE>",
+  "physicalProofHead": "<future secure physical proof ID | NONE>"
 }
 ```
 
-No private key, NFC secret, raw identity document, IP address, precise location or browser fingerprint belongs in this public canonical state.
+### Important exclusions
 
-## Normalization
+The Evidence State does **not** contain:
 
-Before hashing:
+- Guardian risk score;
+- Guardian verdict;
+- confidence percentages;
+- temporary pending Challenges;
+- IP address;
+- precise location;
+- browser fingerprint;
+- raw identity documents;
+- NFC secret keys;
+- private keys.
 
-1. every required field MUST exist;
-2. keys MUST be sorted lexicographically;
-3. JSON MUST use UTF-8;
-4. JSON MUST contain no insignificant whitespace;
-5. enum-like values MUST use the exact uppercase values defined above;
-6. hexadecimal wallet addresses SHOULD be normalized consistently by the implementation before state creation;
-7. timestamps MUST be UTC ISO-8601 strings;
-8. absent optional evidence is represented by the explicit sentinel defined for that field, not by omitted keys.
+Derived analysis is allowed to change without invalidating historical cryptographic evidence.
 
-Arrays are not part of RealityState V0. Event histories remain in their own registries; the state contains only their current authenticated heads.
-
-## Reality Root
+## Evidence Root
 
 ```text
-canonical = canonical_json(RealityStateV0)
-realityRoot = SHA-256(UTF8(canonical))
+canonicalEvidence = canonical_json(RealityEvidenceStateV0)
+evidenceRoot = SHA-256(UTF8(canonicalEvidence))
 ```
 
 The public representation is lowercase hexadecimal without `0x`.
 
-## Snapshot chain
+The Evidence Root changes only when a cryptographically relevant evidence head or trust state changes.
 
-The first state uses:
+## Layer 2 — Proof of Continuity
 
-```text
-previousRealityRoot = GENESIS
+An Evidence Root becomes a continuity checkpoint only when the current owner signs it against the previously accepted continuity checkpoint.
+
+Canonical checkpoint payload:
+
+```json
+{
+  "version": "EVO-CONTINUITY-V0",
+  "sealId": "EVO-...",
+  "previousContinuityRoot": "<64 lowercase hex chars | GENESIS>",
+  "evidenceRoot": "<64 lowercase hex chars>",
+  "signerWallet": "0x...",
+  "signedAt": "<UTC ISO-8601 timestamp>"
+}
 ```
 
-Every later state includes the accepted root of the immediately previous snapshot before calculating its own root.
+```text
+canonicalCheckpoint = canonical_json(ContinuityPayloadV0)
+continuityRoot = SHA-256(UTF8(canonicalCheckpoint))
+```
 
-Conceptually:
+The wallet signs a human-readable message containing the same fields.
+
+## Chain
 
 ```text
 GENESIS
    ↓
-Reality Root #1
+Continuity Root #1
    ↓
-Reality Root #2
+Continuity Root #2
    ↓
-Reality Root #3
+Continuity Root #3
    ↓
 ...
 ```
 
-This means changing an old accepted state changes its root and breaks every later link unless the entire chain is recomputed. A trusted registry or future on-chain anchor can therefore detect rewritten history.
+Every accepted checkpoint references exactly one previous accepted checkpoint.
 
-## What a Reality Root proves
+The database SHOULD enforce that one active checkpoint cannot have two different active children. This prevents silent forks.
 
-A valid root proves that a specific normalized state maps to a specific SHA-256 digest.
+## Why two roots are better than one
 
-It does **not** prove by itself that:
+A single root that mixes state, history, AI and chain metadata has undesirable properties:
 
-- a physical object is authentic;
-- issuer evidence is truthful;
-- an NFC tag is genuine;
-- a signed event describes something that really happened.
+- AI-policy changes alter the hash;
+- repeated checkpoints can create meaningless new states;
+- it becomes unclear whether a hash identifies evidence or chain position.
 
-Those claims depend on the evidence sources and verification policies feeding the state.
-
-## Update policy
-
-A new snapshot SHOULD be created when a trust-relevant state changes, for example:
-
-- Seal activation/revocation;
-- issuer trust transition;
-- accepted Passport event;
-- accepted ownership transfer;
-- Pulse head change;
-- Challenge state transition that policy chooses to retain;
-- accepted/rejected physical proof state relevant to the public trust model;
-- Guardian risk-state transition if risk is intentionally included in the root.
-
-V0 includes `riskState`, but future versions may separate derived AI analysis from cryptographic evidence state. Versioning prevents silent semantic changes.
-
-## Concurrency rule
-
-A state update SHOULD use compare-and-swap semantics:
+EVO therefore uses:
 
 ```text
-expected previousRealityRoot == current accepted realityRoot
+Evidence Root = WHAT IS TRUE IN THE REGISTRY NOW
+Continuity Root = WHO ACCEPTED THAT STATE AFTER WHICH PRIOR STATE
+Guardian = WHAT THE EVIDENCE MAY MEAN
 ```
 
-If not, the write is rejected and recomputed from the newest state.
+## Current-owner rule
 
-This prevents two concurrent lifecycle events from silently creating divergent accepted heads.
+A continuity checkpoint MUST be signed by the current owner derived from the accepted Passport ownership history.
 
-## Future anchoring
+For a never-transferred Seal, the issuer wallet is the initial owner.
 
-EVO does not need to write every Passport or Pulse event directly to a blockchain.
+A stale signer MUST be rejected.
 
-A future low-cost model may periodically anchor one accepted Reality Root:
+## Stale-state rule
 
-```text
-Seal ID → latest Reality Root
-```
+When a client prepares a checkpoint, the server returns:
 
-The detailed graph can remain off-chain while its accepted state is externally timestamped. This is only considered after deterministic tests and security review.
+- current Evidence Root;
+- latest accepted Continuity Root;
+- current owner;
+- signature message.
 
-## Security rule
+At commit time, the server recomputes all three.
 
-The root calculation MUST be deterministic and boring. No AI model participates in canonicalization or hashing.
+If evidence or ownership changed between preparation and signature submission, the checkpoint is rejected as stale and must be prepared again.
 
-AI Guardian may analyze the evidence graph, but cryptographic state construction must remain explicit, reproducible and testable.
+## Replay rule
+
+A previously accepted continuity signature cannot create another checkpoint because:
+
+- the previous root is already consumed as a chain parent;
+- the Evidence Root is already checkpointed for that Seal;
+- the signed timestamp has a short acceptance window.
+
+## What continuity proves
+
+A valid continuity chain proves that:
+
+- each accepted checkpoint referred to a specific deterministic evidence state;
+- each checkpoint extended the previously accepted checkpoint;
+- the wallet considered current owner at that time signed the checkpoint payload;
+- rewriting an old accepted checkpoint breaks all later continuity links unless the entire accepted chain is replaced.
+
+It does **not** prove by itself that a physical product is genuine.
+
+That higher assurance requires secure physical binding such as cryptographic NFC and appropriate issuer policy.
+
+## Future physical proof
+
+When secure NFC is introduced, `physicalProofHead` will point to the latest accepted server-verified physical proof record.
+
+The NFC secret never enters the Evidence State. Only a public proof identifier or digest does.
+
+## Future blockchain anchoring
+
+EVO does not need to write every Passport, Pulse or Challenge directly on-chain.
+
+A future low-cost anchoring strategy can periodically publish the latest `continuityRoot` for selected Seals or batches.
+
+This preserves an externally timestamped commitment while keeping detailed operational data off-chain.
+
+## Canonicalization
+
+For both payloads:
+
+1. all required keys MUST exist;
+2. keys MUST be sorted lexicographically;
+3. JSON MUST use UTF-8;
+4. JSON MUST contain no insignificant whitespace;
+5. enum values MUST use the exact defined strings;
+6. wallet addresses MUST be normalized to lowercase before payload construction;
+7. absent evidence MUST use the explicit `NONE` sentinel;
+8. unknown enum values MUST be rejected rather than silently normalized.
+
+## Security principle
+
+Cryptographic state construction must remain deterministic, explicit and independently reproducible.
+
+**AI can interpret the evidence. AI cannot define the evidence.**
