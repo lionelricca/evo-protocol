@@ -19,4 +19,5 @@ analyzeGuardian=async function(sealId){
   }catch(e){out.innerHTML=`<span class="status bad">✕ GUARDIAN ERROR</span><p>${esc(e.message||String(e))}</p>`}
 };
 if($('guardianBtn'))$('guardianBtn').onclick=()=>analyzeGuardian();
+(()=>{const s=document.createElement('script');s.src='/evo-protocol/v1/organization-simple.js?v=20260816-2310';s.async=true;document.body.appendChild(s)})();
 console.info('EVO AI Guardian V0.4 UI',{mode:'ISSUER TRUST + EXISTING GUARDIAN EVIDENCE'});
