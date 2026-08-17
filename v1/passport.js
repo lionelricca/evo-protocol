@@ -8,6 +8,7 @@ const passportLabels={
   INSPECTED:'Inspección declarada',
   NOTE:'Nota del propietario'
 };
+const passportDetailRequired=new Set(['SOLD','REPAIRED','WARRANTY','INSPECTED','NOTE']);
 
 async function fetchPassportEvents(sealId){
   const q=new URL(`${SUPABASE_URL}/rest/v1/evo_passport_events`);
@@ -33,7 +34,8 @@ function passportTimelineMarkup(seal,events){
   const created=`<div class="passportEvent"><h4>Registro creado</h4><p>El emisor creó y firmó el EVO Seal.</p><div class="eventMeta">${esc(seal.created_at||'')} · ${esc(shortWallet(seal.issuer_wallet||''))}</div></div>`;
   const items=events.map(e=>{
     const transfer=e.event_type==='TRANSFERRED'&&e.new_owner_wallet?`<p>Nuevo propietario: <span class="passportOwner mono">${esc(e.new_owner_wallet)}</span></p>`:'';
-    return `<div class="passportEvent"><h4>${esc(passportLabels[e.event_type]||e.event_type)}</h4>${e.note?`<p>${esc(e.note)}</p>`:''}${transfer}<div class="eventMeta">${esc(e.created_at||'')} · firmado por ${esc(shortWallet(e.actor_wallet||''))} · ${esc(e.event_id||'')}</div></div>`;
+    const note=e.note?`<p>${esc(e.note)}</p>`:'<p class="eventMeta">Sin detalle registrado en esta declaración.</p>';
+    return `<div class="passportEvent"><h4>${esc(passportLabels[e.event_type]||e.event_type)}</h4>${note}${transfer}<div class="eventMeta">${esc(e.created_at||'')} · firmado por ${esc(shortWallet(e.actor_wallet||''))} · ${esc(e.event_id||'')}</div></div>`;
   }).join('');
   return `<div class="passportSummary"><div class="passportStat"><span>Propietario actual</span><b class="passportOwner mono">${esc(owner)}</b></div><div class="passportStat"><span>Eventos públicos</span><b>${events.length+1}</b></div></div><div class="passportNotice">V1 registra declaraciones firmadas por el propietario actual. Una reparación o inspección todavía no implica validación independiente por un taller o entidad acreditada.</div><div class="passportTimeline">${created}${items||''}</div>`;
 }
@@ -83,6 +85,7 @@ $('passportEventForm').onsubmit=async e=>{
     const newOwner=eventType==='TRANSFERRED'?$('passportNewOwner').value.trim().toLowerCase():'';
     if(eventType==='TRANSFERRED'&&!/^0x[0-9a-fA-F]{40}$/.test(newOwner))throw new Error('Ingresá una wallet EVM válida para el nuevo propietario.');
     const note=$('passportNote').value.trim();
+    if(passportDetailRequired.has(eventType)&&note.length<3)throw new Error('Este tipo de evento requiere un detalle de al menos 3 caracteres.');
     const createdAt=new Date().toISOString();
     const nonce=rand();
     const actorWallet=account.toLowerCase();
@@ -104,4 +107,4 @@ const passportQuerySeal=new URLSearchParams(location.search).get('seal');
 if(passportQuerySeal){$('passportSealId').value=passportQuerySeal.toUpperCase();setTimeout(loadPassport,450)}
 $('verifyBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('verifyId').value.trim().toUpperCase();if(id){$('passportSealId').value=id;loadPassport()}},350));
 
-console.info('EVO Passport V1',{mode:'SIGNED OWNER EVENTS / PUBLIC HISTORY / NO TOKEN MOVEMENT'});
+console.info('EVO Passport V1',{mode:'SIGNED OWNER EVENTS / REQUIRED EVENT DETAIL / PUBLIC HISTORY / NO TOKEN MOVEMENT'});
