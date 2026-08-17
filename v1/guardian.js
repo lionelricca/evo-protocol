@@ -11,6 +11,7 @@ function guardianSignalMarkup(s){
 function guardianMarkup(g){
   const risk=Math.max(0,Math.min(100,Number(g.riskScore||0)));
   const confidence=Math.max(0,Math.min(100,Number(g.evidenceConfidence||0)));
+  const pulseChain=g.stats?.pulseChainValid===false?'BROKEN':Number(g.stats?.pulsesTotal||0)>0?'VALID':'—';
   return `<div class="guardianTop">
     <div class="guardianIdentity"><span class="kicker">${esc(g.engine||'EVO AI Guardian')}</span><h3>${esc(g.verdict||'ANALYSIS')}</h3><p class="mono">${esc(g.sealId||'')}</p></div>
     ${guardianBadge(g.riskLevel||'LOW')}
@@ -22,8 +23,10 @@ function guardianMarkup(g){
   <div class="guardianStats">
     <div><span>Passport events</span><b>${Number(g.stats?.passportEvents||0)}</b></div>
     <div><span>Transfers</span><b>${Number(g.stats?.transferEvents||0)}</b></div>
-    <div><span>Pending offers</span><b>${Number(g.stats?.pendingTransferOffers||0)}</b></div>
     <div><span>Asset duplicates</span><b>${Number(g.stats?.duplicateAssetCount||0)}</b></div>
+    <div><span>EVO Pulses</span><b>${Number(g.stats?.pulsesTotal||0)}</b></div>
+    <div><span>Pulses 24h</span><b>${Number(g.stats?.pulses24h||0)}</b></div>
+    <div><span>Pulse chain</span><b>${esc(pulseChain)}</b></div>
   </div>
   <div class="guardianSignals"><h3>Signals</h3>${(g.signals||[]).map(guardianSignalMarkup).join('')}</div>
   <div class="guardianLimits"><b>Qué significa este resultado</b>${(g.limitations||[]).map(x=>`<p>• ${esc(x)}</p>`).join('')}</div>
@@ -45,10 +48,10 @@ async function analyzeGuardian(sealId){
 }
 
 $('guardianBtn').onclick=()=>analyzeGuardian();
-$('verifyBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('verifyId').value.trim().toUpperCase();if(id)analyzeGuardian(id)},550));
-$('passportLoadBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('passportSealId').value.trim().toUpperCase();if(id)analyzeGuardian(id)},550));
+$('verifyBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('verifyId').value.trim().toUpperCase();if(id)analyzeGuardian(id)},850));
+$('passportLoadBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('passportSealId').value.trim().toUpperCase();if(id)analyzeGuardian(id)},850));
 
 const guardianQuerySeal=new URLSearchParams(location.search).get('seal');
-if(guardianQuerySeal){$('guardianSealId').value=guardianQuerySeal.toUpperCase();setTimeout(()=>analyzeGuardian(guardianQuerySeal),900)}
+if(guardianQuerySeal){$('guardianSealId').value=guardianQuerySeal.toUpperCase();setTimeout(()=>analyzeGuardian(guardianQuerySeal),1400)}
 
-console.info('EVO AI Guardian V0',{mode:'EXPLAINABLE RISK ENGINE / READ ONLY / NO TOKEN MOVEMENT'});
+console.info('EVO AI Guardian V0.2',{mode:'EXPLAINABLE RISK ENGINE / PULSE CHAIN / READ ONLY / NO TOKEN MOVEMENT'});
