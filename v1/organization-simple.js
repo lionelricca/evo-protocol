@@ -28,13 +28,13 @@
     const panel=form.closest('.domainPanel');
     const h=panel?.querySelector('h3');if(h)h.textContent='Identidad de organización';
     const intro=panel?.querySelector('h3 + p');
-    if(intro)intro.textContent='EVO completa únicamente los datos vinculados a tu wallet. La verificación empresarial es opcional y nunca se inventan datos.';
+    if(intro)intro.textContent='EVO muestra sólo los datos ya vinculados a tu wallet. La verificación empresarial es opcional.';
 
     const details=form.querySelector('details');
     if(details){
       details.open=false;
       const summary=details.querySelector('summary');
-      if(summary)summary.textContent='Agregar verificación de organización (opcional)';
+      if(summary)summary.textContent='Datos adicionales de empresa (opcional)';
     }
 
     const countryLabel=country.closest('label');
@@ -64,10 +64,13 @@
       if(n.id!=='organizationAutofillState' && !n.closest('details'))n.style.display='none';
     });
 
+    // No polling, no automatic wallet access and no automatic signing.
+    // Refresh wallet-derived data only after the user explicitly clicks Connect wallet.
     walletSummary();
-    setInterval(walletSummary,1500);
     const walletBtn=document.getElementById('walletBtn');
-    if(walletBtn)walletBtn.addEventListener('click',()=>{setTimeout(walletSummary,400);setTimeout(walletSummary,1200)});
+    if(walletBtn)walletBtn.addEventListener('click',()=>{
+      setTimeout(walletSummary,700);
+    });
     return true;
   }
 
