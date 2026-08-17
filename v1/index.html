@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EVO Seal · The Digital Seal</title>
-<meta name="description" content="Create signed EVO digital seals and verify them publicly. V1 registry prototype: wallet signature, public registry, no custody and no token transfer.">
+<meta name="description" content="Create signed EVO digital seals and verify them publicly. V1 registry prototype: wallet signature, public registry, QR verification, no custody and no token transfer.">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
     <h2>The Digital Seal</h2>
     <p>Sellá lo que importa. El archivo se procesa localmente, tu wallet firma el registro y cualquier persona puede verificar el sello públicamente.</p>
     <div class="actions"><a class="btn primary" href="#seal">Crear un sello</a><a class="btn" href="#verify">Verificar</a></div>
-    <div class="chips"><span>SHA-256 local</span><span>Firma de wallet</span><span>Registro público</span><span>0 EVO en V1</span></div>
+    <div class="chips"><span>SHA-256 local</span><span>Firma de wallet</span><span>Registro público</span><span>QR verificable</span><span>0 EVO en V1</span></div>
   </section>
   <section class="heroSeal panel" aria-label="Animated EVO Seal"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="sealCore"><span class="drop">◆</span><strong>EVO</strong><small>VERIFIED</small></div></section>
 </header>
@@ -30,12 +30,13 @@
 <label class="full">Descripción<textarea id="description" maxlength="2000" placeholder="Información no sensible del activo"></textarea></label>
 <label class="full file">Archivo opcional<input id="file" type="file"><span>SHA-256 local. El archivo no sale de tu navegador.</span></label>
 <div class="full actions"><button class="btn primary" type="submit">Firmar y registrar sello</button><button id="clearBtn" class="btn" type="button">Limpiar</button></div>
-</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá una wallet y creá un sello.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Registro:</b> público y consultable.</p><p><b>Costo token:</b> 0 EVO durante V1.</p></div></div></div></section>
-<section id="verify" class="wrap block"><h2>Verificar públicamente</h2><p class="sub">La verificación de EVO permanece gratuita. Podés buscar un Seal ID desde cualquier navegador y comparar opcionalmente el archivo original.</p>
+</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá una wallet y creá un sello.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Registro:</b> público y consultable.</p><p><b>QR:</b> abre la verificación pública.</p><p><b>Costo token:</b> 0 EVO durante V1.</p></div></div></div></section>
+<section id="verify" class="wrap block"><h2>Verificar públicamente</h2><p class="sub">La verificación de EVO permanece gratuita. Podés buscar un Seal ID desde cualquier navegador, escanear su QR y comparar opcionalmente el archivo original.</p>
 <div class="grid"><div class="panel form"><label>Seal ID<input id="verifyId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><label class="file">Archivo a comparar<input id="verifyFile" type="file"><span>Opcional. El hash se calcula localmente y se compara con el registro público.</span></label><button id="verifyBtn" class="btn primary">Verificar</button></div><div class="panel"><h3>Estado</h3><div id="verifyResult" class="empty">Ingresá un Seal ID.</div></div></div></section>
-<section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0 ✓:</b> hashing local, detección original/modificado, sin transferencias.</p><p><b>V1:</b> registro público + firma de wallet + verificación pública.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
+<section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0 ✓:</b> hashing local, detección original/modificado, sin transferencias.</p><p><b>V1:</b> registro público + firma de wallet + verificación pública + QR.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
 </main>
 <footer><div class="wrap"><b>EVO Protocol</b> · The Digital Seal · Polygon · EVO contract <code>0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f</code></div></footer>
 <div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
 <script src="app.js"></script>
 </body></html>
