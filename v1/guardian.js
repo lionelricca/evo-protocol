@@ -1,4 +1,5 @@
 const GUARDIAN_URL=`${SUPABASE_URL}/functions/v1/evo-ai-guardian`;
+const CHALLENGE_URL=`${SUPABASE_URL}/functions/v1/evo-challenge`;
 
 function guardianBadge(level){
   const cls=level==='LOW'?'ok':level==='MEDIUM'?'warn':'bad';
@@ -54,4 +55,63 @@ $('passportLoadBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('pa
 const guardianQuerySeal=new URLSearchParams(location.search).get('seal');
 if(guardianQuerySeal){$('guardianSealId').value=guardianQuerySeal.toUpperCase();setTimeout(()=>analyzeGuardian(guardianQuerySeal),1400)}
 
-console.info('EVO AI Guardian V0.2',{mode:'EXPLAINABLE RISK ENGINE / PULSE CHAIN / READ ONLY / NO TOKEN MOVEMENT'});
+// EVO Challenge V0 — software freshness + one-time anti-replay demonstration.
+// It intentionally does NOT claim physical presence because SOFTWARE_V0 has no secret hardware key.
+let activeEvoChallenge=null;
+
+function injectChallengeUi(){
+  const guardian=$('guardian');if(!guardian||$('challenge'))return;
+  guardian.insertAdjacentHTML('beforebegin',`<section id="challenge" class="wrap block"><h2>EVO Challenge</h2><p class="sub">Challenge V0 crea un desafío aleatorio de corta duración y acepta su respuesta una sola vez. Prueba frescura y anti-replay de esta sesión; todavía no prueba presencia física.</p><div class="grid"><div class="panel form"><span class="kicker">LIVE PROOF · SOFTWARE V0</span><label>Seal ID<input id="challengeSealId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><div class="actions"><button id="issueChallengeBtn" class="btn primary" type="button">1 · Crear desafío vivo</button><button id="respondChallengeBtn" class="btn gold" type="button" disabled>2 · Responder desafío</button></div><div class="passportNotice">El desafío expira en 90 segundos. La respuesta V0 la calcula el navegador con datos públicos. En la versión física, esta respuesta será un MAC/firma generado dentro de un NFC seguro.</div></div><div class="panel"><h3>Proof result</h3><div id="challengeResult" class="empty">Creá un desafío para comenzar.</div></div></div></section>`);
+  const navGuardian=document.querySelector('.links a[href="#guardian"]');
+  if(navGuardian&&!document.querySelector('.links a[href="#challenge"]'))navGuardian.insertAdjacentHTML('beforebegin','<a href="#challenge">Challenge</a>');
+  const q=new URLSearchParams(location.search).get('seal');if(q)$('challengeSealId').value=q.toUpperCase();
+  $('issueChallengeBtn').onclick=issueEvoChallenge;
+  $('respondChallengeBtn').onclick=()=>respondEvoChallenge(false);
+}
+
+async function challengeCall(action,payload){
+  const r=await fetch(CHALLENGE_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,payload})});
+  let data={};try{data=await r.json()}catch{}
+  if(!r.ok){const err=new Error(data.error||`Challenge error (${r.status})`);err.code=data.error;err.status=r.status;throw err}
+  return data;
+}
+
+async function issueEvoChallenge(){
+  const out=$('challengeResult');
+  const sealId=$('challengeSealId').value.trim().toUpperCase();
+  if(!sealId){toast('Ingresá un Seal ID');return}
+  out.className='result';out.textContent='Generando desafío aleatorio en el servidor…';
+  try{
+    const seal=await fetchSeal(sealId);if(!seal)throw new Error('Ese sello no existe o no está activo.');
+    const data=await challengeCall('issue',{sealId});
+    activeEvoChallenge={...data.challenge,sealDigest:seal.digest};
+    $('respondChallengeBtn').disabled=false;
+    out.innerHTML=`<span class="status warn">● CHALLENGE PENDING</span><div class="kv"><span>Challenge ID</span><b class="mono">${esc(data.challenge.challengeId)}</b></div><div class="kv"><span>Modo</span><b>${esc(data.challenge.mode)}</b></div><div class="kv"><span>Expira</span><span>${esc(data.challenge.expiresAt)}</span></div><p>El servidor generó un nonce nuevo. Todavía no existe una prueba aceptada.</p>`;
+    toast('Desafío creado. Tenés 90 segundos para responder.');
+  }catch(e){out.innerHTML=`<span class="status bad">✕ CHALLENGE ERROR</span><p>${esc(e.message||String(e))}</p>`}
+}
+
+async function respondEvoChallenge(replayTest=false){
+  const out=$('challengeResult');
+  if(!activeEvoChallenge){toast('Primero creá un desafío');return}
+  const c=activeEvoChallenge;
+  try{
+    const responseHash=await shaText(`${c.challengeId}|${c.sealId}|${c.challengeNonce}|${c.sealDigest}|SOFTWARE_V0`);
+    const data=await challengeCall('respond',{challengeId:c.challengeId,responseHash});
+    $('respondChallengeBtn').disabled=true;
+    out.innerHTML=`<span class="status ok">✓ FRESH RESPONSE ACCEPTED</span><div class="kv"><span>Challenge ID</span><b class="mono">${esc(c.challengeId)}</b></div><div class="kv"><span>Estado</span><b>${esc(data.proof.status)}</b></div><div class="kv"><span>Anti-replay</span><b class="status ok">ENFORCED</b></div><div class="kv"><span>Presencia física</span><b>NO · SOFTWARE V0</b></div><p>Esta respuesta fue aceptada una sola vez. Ahora podemos intentar reutilizarla para comprobar que el servidor la rechaza.</p><div class="actions"><button id="testReplayBtn" class="btn" type="button">3 · Probar replay</button></div><div id="replayResult"></div>`;
+    $('testReplayBtn').onclick=()=>respondEvoChallenge(true);
+    toast('Respuesta fresca aceptada');
+  }catch(e){
+    if(replayTest&&e.code==='challenge_already_consumed'){
+      const replay=$('replayResult');if(replay)replay.innerHTML='<p><span class="status ok">✓ REPLAY REJECTED</span></p><p>La misma respuesta no puede reutilizarse. La prueba one-time está funcionando.</p>';
+      const btn=$('testReplayBtn');if(btn)btn.disabled=true;
+      toast('Replay rechazado correctamente');return;
+    }
+    if(replayTest){const replay=$('replayResult');if(replay)replay.innerHTML=`<p><span class="status bad">✕ ${esc(e.message||String(e))}</span></p>`;return}
+    out.innerHTML=`<span class="status bad">✕ RESPONSE REJECTED</span><p>${esc(e.message||String(e))}</p>`;
+  }
+}
+
+injectChallengeUi();
+console.info('EVO AI Guardian V0.2 + Challenge V0',{mode:'EXPLAINABLE RISK / PULSE CHAIN / ONE-TIME SOFTWARE CHALLENGE / NO TOKEN MOVEMENT'});
