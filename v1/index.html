@@ -4,21 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EVO Seal · The Digital Seal</title>
-<meta name="description" content="Create signed EVO digital seals, verify them publicly and build a signed lifecycle passport. V1 prototype: wallet signatures, public registry, QR verification, two-party ownership transfers, no custody and no token transfer.">
+<meta name="description" content="Create signed EVO digital seals, verify them publicly, build a signed lifecycle passport and analyze risk with EVO AI Guardian. V1 prototype: wallet signatures, public registry, QR verification, two-party ownership transfers, no custody and no token transfer.">
 <style>html,body{margin:0;background:#05050d;color:#f8f5ff;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body.asset-fallback:before{content:'EVO · cargando interfaz segura…';display:block;padding:10px 16px;background:#0f0d20;color:#f4ca75;font-size:12px}</style>
-<link rel="stylesheet" href="/evo-protocol/v1/styles.css?v=20260816-2037" onerror="document.body&&document.body.classList.add('asset-fallback')">
-<link rel="stylesheet" href="/evo-protocol/v1/passport.css?v=20260816-2037">
+<link rel="stylesheet" href="/evo-protocol/v1/styles.css?v=20260816-2047" onerror="document.body&&document.body.classList.add('asset-fallback')">
+<link rel="stylesheet" href="/evo-protocol/v1/passport.css?v=20260816-2047">
+<link rel="stylesheet" href="/evo-protocol/v1/guardian.css?v=20260816-2047">
 </head>
 <body>
-<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#seal">Sellar</a><a href="#verify">Verificar</a><a href="#passport">Passport</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
+<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#seal">Sellar</a><a href="#verify">Verificar</a><a href="#guardian">AI Guardian</a><a href="#passport">Passport</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
 <header id="top" class="hero wrap">
   <section class="heroCopy panel">
-    <span class="kicker">EVO Protocol · V1 Registry + Passport Prototype</span>
+    <span class="kicker">EVO Protocol · V1 Registry + Passport + AI Guardian</span>
     <h1>EVO <span>SEAL</span></h1>
     <h2>The Digital Seal</h2>
-    <p>Sellá lo que importa. El archivo se procesa localmente, tu wallet firma el registro y cualquier persona puede verificar el sello y consultar su historial público.</p>
-    <div class="actions"><a class="btn primary" href="#seal">Crear un sello</a><a class="btn" href="#verify">Verificar</a><a class="btn gold" href="#passport">Ver Passport</a></div>
-    <div class="chips"><span>SHA-256 local</span><span>Firma de wallet</span><span>Registro público</span><span>QR verificable</span><span>Passport firmado</span><span>Transferencia 2 firmas</span><span>0 EVO en V1</span></div>
+    <p>Sellá lo que importa. El archivo se procesa localmente, tu wallet firma el registro y cualquier persona puede verificar el sello, consultar su historia y analizar señales de riesgo.</p>
+    <div class="actions"><a class="btn primary" href="#seal">Crear un sello</a><a class="btn" href="#verify">Verificar</a><a class="btn gold" href="#guardian">AI Guardian</a><a class="btn" href="#passport">Ver Passport</a></div>
+    <div class="chips"><span>SHA-256 local</span><span>Firma de wallet</span><span>Registro público</span><span>QR verificable</span><span>AI Guardian</span><span>Passport firmado</span><span>Transferencia 2 firmas</span><span>0 EVO en V1</span></div>
   </section>
   <section class="heroSeal panel" aria-label="Animated EVO Seal"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="sealCore"><span class="drop">◆</span><strong>EVO</strong><small>VERIFIED</small></div></section>
 </header>
@@ -32,9 +33,18 @@
 <label class="full">Descripción<textarea id="description" maxlength="2000" placeholder="Información no sensible del activo"></textarea></label>
 <label class="full file">Archivo opcional<input id="file" type="file"><span>SHA-256 local. El archivo no sale de tu navegador.</span></label>
 <div class="full actions"><button class="btn primary" type="submit">Firmar y registrar sello</button><button id="clearBtn" class="btn" type="button">Limpiar</button></div>
-</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá una wallet y creá un sello.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Registro:</b> público y consultable.</p><p><b>QR:</b> abre la verificación pública.</p><p><b>Passport:</b> historial firmado por el propietario.</p><p><b>Costo token:</b> 0 EVO durante V1.</p></div></div></div></section>
+</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá una wallet y creá un sello.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Registro:</b> público y consultable.</p><p><b>QR:</b> abre la verificación pública.</p><p><b>Guardian:</b> analiza anomalías explicables.</p><p><b>Passport:</b> historial firmado por el propietario.</p><p><b>Costo token:</b> 0 EVO durante V1.</p></div></div></div></section>
+
 <section id="verify" class="wrap block"><h2>Verificar públicamente</h2><p class="sub">La verificación de EVO permanece gratuita. Podés buscar un Seal ID desde cualquier navegador, escanear su QR y comparar opcionalmente el archivo original.</p>
 <div class="grid"><div class="panel form"><label>Seal ID<input id="verifyId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><label class="file">Archivo a comparar<input id="verifyFile" type="file"><span>Opcional. El hash se calcula localmente y se compara con el registro público.</span></label><button id="verifyBtn" class="btn primary">Verificar</button></div><div class="panel"><h3>Estado</h3><div id="verifyResult" class="empty">Ingresá un Seal ID.</div></div></div></section>
+
+<section id="guardian" class="wrap block"><h2>EVO AI Guardian</h2><p class="sub">Guardian V0 analiza el registro, el Passport y patrones de uso para detectar señales anómalas. Es un motor de riesgo explicable: no reemplaza una prueba física ni afirma autenticidad por sí solo.</p>
+<div class="guardianIntro">
+  <div class="panel form guardianPanel"><span class="kicker">PROOF OF REALITY · V0</span><h3>Analizar identidad digital</h3><label>Seal ID<input id="guardianSealId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><button id="guardianBtn" class="btn primary" type="button">Analizar con AI Guardian</button><div class="passportNotice">Guardian busca, entre otras cosas, hashes duplicados, seriales duplicados, transferencias anómalas, eventos incompletos y señales de rotación excesiva. Futuras versiones incorporarán NFC seguro, visión artificial y detección de clones.</div></div>
+  <div class="panel guardianBrain"><strong>EVO AI</strong><small>GUARDIAN · EXPLAINABLE RISK ENGINE</small></div>
+</div>
+<div class="panel guardianPanel" style="margin-top:16px"><h3>Resultado Guardian</h3><div id="guardianResult" class="empty">Ingresá un Seal ID o verificá un sello para iniciar el análisis.</div></div>
+</section>
 
 <section id="passport" class="wrap block"><h2>EVO Passport</h2><p class="sub">El pasaporte conserva el historial público del sello. En V1 el emisor es el propietario inicial. Los eventos requieren la firma del propietario actual y una transferencia de propiedad requiere además la aceptación firmada de la nueva wallet.</p>
 <div class="grid">
@@ -60,12 +70,13 @@
 </div>
 </section>
 
-<section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0 ✓:</b> hashing local, detección original/modificado, sin transferencias.</p><p><b>V1 Seal ✓:</b> registro público + firma de wallet + verificación pública + QR.</p><p><b>V1 Passport:</b> historial firmado + propiedad + transferencias de doble firma, todavía sin EVO.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
+<section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0 ✓:</b> hashing local, detección original/modificado, sin transferencias.</p><p><b>V1 Seal ✓:</b> registro público + firma de wallet + verificación pública + QR.</p><p><b>AI Guardian V0:</b> análisis explicable y de sólo lectura; todavía sin inferencias físicas.</p><p><b>V1 Passport:</b> historial firmado + propiedad + transferencias de doble firma, todavía sin EVO.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
 </main>
 <footer><div class="wrap"><b>EVO Protocol</b> · The Digital Seal · Polygon · EVO contract <code>0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f</code></div></footer>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
-<script src="/evo-protocol/v1/app.js?v=20260816-2037" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
-<script src="/evo-protocol/v1/passport.js?v=20260816-2037"></script>
-<script src="/evo-protocol/v1/transfer.js?v=20260816-2037"></script>
+<script src="/evo-protocol/v1/app.js?v=20260816-2047" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
+<script src="/evo-protocol/v1/passport.js?v=20260816-2047"></script>
+<script src="/evo-protocol/v1/transfer.js?v=20260816-2047"></script>
+<script src="/evo-protocol/v1/guardian.js?v=20260816-2047"></script>
 </body></html>
