@@ -1,59 +1,49 @@
 (()=>{
-  const ISO_COUNTRIES=`AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW`.split(' ');
-  const TZ_COUNTRY={
-    'America/Santiago':'CL','America/Punta_Arenas':'CL','Pacific/Easter':'CL',
-    'America/Argentina/Buenos_Aires':'AR','America/Argentina/Cordoba':'AR','America/Argentina/Mendoza':'AR','America/Argentina/Salta':'AR','America/Argentina/Jujuy':'AR','America/Argentina/Tucuman':'AR','America/Argentina/Ushuaia':'AR','America/Argentina/Catamarca':'AR','America/Argentina/La_Rioja':'AR','America/Argentina/Rio_Gallegos':'AR','America/Argentina/San_Juan':'AR','America/Argentina/San_Luis':'AR',
-    'America/Sao_Paulo':'BR','America/Mexico_City':'MX','America/Bogota':'CO','America/Lima':'PE','America/Montevideo':'UY','America/Asuncion':'PY','America/Guayaquil':'EC',
-    'Europe/Madrid':'ES','Europe/Rome':'IT','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/London':'GB','Europe/Lisbon':'PT','Europe/Amsterdam':'NL','Europe/Brussels':'BE','Europe/Zurich':'CH','Europe/Vienna':'AT','Europe/Warsaw':'PL','Europe/Prague':'CZ','Europe/Athens':'GR',
-    'America/Toronto':'CA','America/Vancouver':'CA','Australia/Sydney':'AU','Australia/Melbourne':'AU','Pacific/Auckland':'NZ','Asia/Kolkata':'IN','Asia/Tokyo':'JP','Asia/Seoul':'KR','Asia/Shanghai':'CN','Asia/Singapore':'SG','Asia/Dubai':'AE'
-  };
-  const wait=(fn)=>{let n=0;const t=setInterval(()=>{if(fn()||++n>80)clearInterval(t)},250)};
+  const TZ_COUNTRY={'America/Santiago':'CL','America/Punta_Arenas':'CL','Pacific/Easter':'CL','America/Argentina/Buenos_Aires':'AR','America/Sao_Paulo':'BR','America/Mexico_City':'MX','America/Bogota':'CO','America/Lima':'PE','America/Montevideo':'UY','Europe/Madrid':'ES','Europe/Rome':'IT','Europe/Paris':'FR','Europe/Berlin':'DE','Europe/London':'GB','America/Toronto':'CA','America/Vancouver':'CA','Australia/Sydney':'AU','Pacific/Auckland':'NZ','Asia/Kolkata':'IN','Asia/Tokyo':'JP','Asia/Seoul':'KR','Asia/Shanghai':'CN','Asia/Singapore':'SG','Asia/Dubai':'AE'};
+  const wait=fn=>{let n=0;const t=setInterval(()=>{if(fn()||++n>80)clearInterval(t)},250)};
+  const clean=v=>String(v||'').normalize('NFKC').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
   function countryName(code){try{return new Intl.DisplayNames([navigator.language||'es'],{type:'region'}).of(code)||code}catch{return code}}
-  function browserRegion(){try{return new Intl.Locale(navigator.language||'').region||''}catch{return ''}}
-  function timezoneRegion(){try{return TZ_COUNTRY[Intl.DateTimeFormat().resolvedOptions().timeZone]||''}catch{return ''}}
-  function rememberedRegion(){try{return (typeof account!=='undefined'&&account)?localStorage.getItem(`evo-country:${account.toLowerCase()}`)||'':''}catch{return ''}}
-  function bestRegion(){return (rememberedRegion()||browserRegion()||timezoneRegion()||'').toUpperCase()}
-  function setCountry(code,source='detectado'){
-    const hidden=document.getElementById('organizationCountry'),select=document.getElementById('organizationCountryFull'),state=document.getElementById('organizationCountryState');
-    code=String(code||'').toUpperCase();if(!hidden||!ISO_COUNTRIES.includes(code))return false;
-    hidden.value=code;if(select)select.value=code;
-    hidden.dispatchEvent(new Event('input',{bubbles:true}));hidden.dispatchEvent(new Event('change',{bubbles:true}));
-    if(state)state.innerHTML=`<span class="status ok">PAÍS ${source.toUpperCase()}</span><b>${countryName(code)}</b><button id="organizationChangeCountry" class="btn" type="button" style="margin-left:10px;padding:6px 10px">Cambiar</button>`;
-    if(select)select.style.display='none';
-    const change=document.getElementById('organizationChangeCountry');if(change)change.onclick=()=>{if(select){select.style.display='block';select.focus()}if(state)state.innerHTML='<span class="status warn">ELEGÍ EL PAÍS</span>'};
-    try{if(typeof account!=='undefined'&&account)localStorage.setItem(`evo-country:${account.toLowerCase()}`,code)}catch{}
-    return true;
+  function contextCountry(){
+    try{if(typeof account!=='undefined'&&account){const saved=localStorage.getItem(`evo-country:${account.toLowerCase()}`);if(saved)return saved}}catch{}
+    try{const region=new Intl.Locale(navigator.language||'').region;if(region)return region}catch{}
+    try{return TZ_COUNTRY[Intl.DateTimeFormat().resolvedOptions().timeZone]||''}catch{return ''}
   }
-  function syncWalletState(){
+  function validRut(raw){const v=clean(raw);if(!/^\d{7,8}[0-9K]$/.test(v))return false;const body=v.slice(0,-1),dv=v.slice(-1);let s=0,m=2;for(let i=body.length-1;i>=0;i--){s+=Number(body[i])*m;m=m===7?2:m+1}const r=11-(s%11),e=r===11?'0':r===10?'K':String(r);return dv===e}
+  function validCuit(raw){const v=clean(raw);if(!/^\d{11}$/.test(v))return false;const w=[5,4,3,2,7,6,5,4,3,2];let s=0;for(let i=0;i<10;i++)s+=Number(v[i])*w[i];let d=11-(s%11);if(d===11)d=0;else if(d===10)d=9;return d===Number(v[10])}
+  function cnpjDigit(base){let size=base.length,pos=size-7,sum=0;for(let i=0;i<size;i++){sum+=Number(base[i])*pos--;if(pos<2)pos=9}const r=sum%11;return r<2?'0':String(11-r)}
+  function validCnpj(raw){const v=clean(raw);if(!/^\d{14}$/.test(v)||/^(\d)\1{13}$/.test(v))return false;return cnpjDigit(v.slice(0,12))===v[12]&&cnpjDigit(v.slice(0,13))===v[13]}
+  function detectId(raw){if(validRut(raw))return{country:'CL',type:'RUT',label:'Chile · RUT'};if(validCuit(raw))return{country:'AR',type:'CUIT',label:'Argentina · CUIT'};if(validCnpj(raw))return{country:'BR',type:'CNPJ',label:'Brasil · CNPJ'};return null}
+  function setInternalCountry(code,type=''){
+    const c=document.getElementById('organizationCountry'),r=document.getElementById('organizationRegistryType');if(!c||!code)return;
+    c.value=code;c.dispatchEvent(new Event('input',{bubbles:true}));c.dispatchEvent(new Event('change',{bubbles:true}));if(r&&type)r.value=type;
+    try{if(typeof account!=='undefined'&&account)localStorage.setItem(`evo-country:${account.toLowerCase()}`,code)}catch{}
+  }
+  async function walletSummary(){
     const out=document.getElementById('organizationAutofillState');if(!out||typeof account==='undefined'||!account)return;
     const short=`${account.slice(0,6)}…${account.slice(-4)}`;
-    out.innerHTML=`<span class="status ok">WALLET CONNECTED</span><p>Wallet <span class="mono">${short}</span> cargada. EVO reutiliza automáticamente los datos seguros que ya conoce.</p>`;
-    if(typeof fetchIssuerProfile==='function')fetchIssuerProfile(account).then(p=>{
-      if(!p||!document.getElementById('organizationAutofillState'))return;
-      out.innerHTML=`<span class="status ok">WALLET PROFILE LOADED</span><p>Wallet <span class="mono">${short}</span>${p.display_name?` · Perfil firmado: <b>${esc(p.display_name)}</b>`:''}. La wallet identifica al solicitante; una empresa se confirma con evidencia independiente.</p>`;
-    }).catch(()=>{});
-    const remembered=rememberedRegion();if(remembered)setCountry(remembered,'recordado');
+    out.innerHTML=`<span class="status ok">✓ WALLET CARGADA</span><span class="mono">${short}</span>`;
+    try{if(typeof fetchIssuerProfile==='function'){const p=await fetchIssuerProfile(account);if(p?.display_name)out.innerHTML=`<span class="status ok">✓ WALLET + PERFIL</span><b>${esc(p.display_name)}</b><span class="mono">${short}</span>`}}catch{}
+  }
+  function askCountryOnlyIfNeeded(){
+    const box=document.getElementById('organizationCountryFallback');if(box)box.hidden=false;
   }
   function simplify(){
-    const form=document.getElementById('organizationForm'),hiddenCountry=document.getElementById('organizationCountry'),officialId=document.getElementById('organizationRegistryReference');
-    if(!form||!hiddenCountry||!officialId||document.getElementById('organizationCountryFull'))return false;
-    const label=hiddenCountry.closest('label');hiddenCountry.type='hidden';
-    const state=document.createElement('div');state.id='organizationCountryState';state.className='passportNotice';state.style.marginBottom='8px';label.insertBefore(state,hiddenCountry);
-    const select=document.createElement('select');select.id='organizationCountryFull';select.setAttribute('aria-label','País');
-    const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Seleccionar país';select.appendChild(placeholder);
-    ISO_COUNTRIES.map(code=>({code,name:countryName(code)})).sort((a,b)=>a.name.localeCompare(b.name,navigator.language||'es')).forEach(({code,name})=>{const o=document.createElement('option');o.value=code;o.textContent=name;select.appendChild(o)});
-    label.insertBefore(select,hiddenCountry);
-    select.addEventListener('change',()=>{if(!select.value)return;setCountry(select.value,'confirmado')});
-    const initial=(hiddenCountry.value||bestRegion()||'').toUpperCase();
-    if(!setCountry(initial,'detectado')){state.innerHTML='<span class="status warn">PAÍS NO DETECTADO</span><span>Elegilo una sola vez.</span>';select.style.display='block'}
-    officialId.placeholder='Ej. RUT, CUIT, CNPJ, RFC, VAT…';
-    const intro=form.closest('.domainPanel')?.querySelector('h3');if(intro)intro.textContent='Verificar organización';
-    const p=form.closest('.domainPanel')?.querySelector('h3 + p');if(p)p.textContent='EVO carga la wallet, el perfil y el país automáticamente cuando puede. Normalmente sólo tenés que escribir el identificador oficial.';
-    const details=form.querySelector('details');if(details)details.querySelector('summary').textContent='Datos adicionales (sólo si hacen falta)';
+    const form=document.getElementById('organizationForm'),country=document.getElementById('organizationCountry'),official=document.getElementById('organizationRegistryReference');if(!form||!country||!official||document.getElementById('organizationSimpleReady'))return false;
+    const marker=document.createElement('span');marker.id='organizationSimpleReady';marker.hidden=true;form.appendChild(marker);
+    const countryLabel=country.closest('label');if(countryLabel)countryLabel.style.display='none';
+    const details=form.querySelector('details');if(details)details.style.display='none';
+    const notices=[...form.querySelectorAll('.passportNotice')];notices.forEach((n,i)=>{if(n.id!=='organizationAutofillState'&&i>0)n.style.display='none'});
+    const panel=form.closest('.domainPanel');const h=panel?.querySelector('h3');if(h)h.textContent='Verificar organización';const intro=panel?.querySelector('h3 + p');if(intro)intro.textContent='EVO completa automáticamente los datos vinculados a tu wallet. Escribí sólo el identificador oficial.';
+    official.closest('label').classList.add('full');official.placeholder='Identificador oficial';
+    const state=document.createElement('div');state.id='organizationIdState';state.className='full';state.style.minHeight='28px';official.closest('label').insertAdjacentElement('afterend',state);
+    const fallback=document.createElement('div');fallback.id='organizationCountryFallback';fallback.className='full';fallback.hidden=true;fallback.innerHTML='<label>País<select id="organizationCountrySelect"><option value="">Seleccionar país</option><option value="CL">Chile</option><option value="AR">Argentina</option><option value="BR">Brasil</option><option value="MX">México</option><option value="CO">Colombia</option><option value="PE">Perú</option><option value="UY">Uruguay</option><option value="ES">España</option><option value="US">Estados Unidos</option><option value="GB">Reino Unido</option><option value="CA">Canadá</option><option value="DE">Alemania</option><option value="FR">Francia</option><option value="IT">Italia</option><option value="AU">Australia</option><option value="NZ">Nueva Zelanda</option><option value="IN">India</option><option value="JP">Japón</option><option value="SG">Singapur</option><option value="AE">Emiratos Árabes Unidos</option></select></label>';
+    state.insertAdjacentElement('afterend',fallback);
+    const select=fallback.querySelector('select');select.onchange=()=>{if(select.value){setInternalCountry(select.value,typeof suggestedRegistryType==='function'?suggestedRegistryType(select.value):'Registro oficial');state.innerHTML=`<span class="status ok">✓ ${countryName(select.value)}</span>`;fallback.hidden=true}};
+    official.addEventListener('input',()=>{const d=detectId(official.value);if(d){setInternalCountry(d.country,d.type);state.innerHTML=`<span class="status ok">✓ ${d.label} reconocido</span>`;fallback.hidden=true}else{state.textContent=''}});
     const btn=form.querySelector('button[type="submit"]');if(btn)btn.textContent='Verificar organización';
-    syncWalletState();setInterval(syncWalletState,1500);
-    const walletBtn=document.getElementById('walletBtn');if(walletBtn)walletBtn.addEventListener('click',()=>{setTimeout(syncWalletState,400);setTimeout(syncWalletState,1200)});
-    return true;
+    form.addEventListener('submit',e=>{if(!country.value){const d=detectId(official.value);if(d)setInternalCountry(d.country,d.type);else{const c=contextCountry();if(c)setInternalCountry(c,typeof suggestedRegistryType==='function'?suggestedRegistryType(c):'Registro oficial');else{e.preventDefault();e.stopImmediatePropagation();askCountryOnlyIfNeeded();state.innerHTML='<span class="status warn">Elegí el país para continuar</span>'}}}},true);
+    const initial=contextCountry();if(initial)setInternalCountry(initial,typeof suggestedRegistryType==='function'?suggestedRegistryType(initial):'Registro oficial');
+    walletSummary();setInterval(walletSummary,1500);return true;
   }
   wait(simplify);
 })();
