@@ -100,5 +100,14 @@ async function loadOrganizationForSeal(sealId){
 }
 
 injectOrganizationUi();
+let organizationLastWalletSeen='';
+setInterval(()=>{
+  try{
+    if(account&&account!==organizationLastWalletSeen){
+      organizationLastWalletSeen=account;
+      autofillOrganizationFromWallet();
+    }
+  }catch(e){console.warn('Organization wallet sync unavailable',e)}
+},1200);
 const organizationQuerySeal=new URLSearchParams(location.search).get('seal');if(organizationQuerySeal)setTimeout(()=>loadOrganizationForSeal(organizationQuerySeal.toUpperCase()),900);
-console.info('EVO Organization Evidence V0.3',{scope:'GLOBAL',visibleRequiredFields:['country','officialIdentifier'],walletRole:'SUBMITTER IDENTITY ONLY',legalName:'OPTIONAL / RESOLVED DURING REVIEW',domainRequired:false,documentUpload:false,registryFormatting:'TOLERANT',submission:'SIGNED + PENDING REVIEW',verifiedStatus:'INDEPENDENT REVIEW ONLY',tokenMovement:false});
+console.info('EVO Organization Evidence V0.4',{scope:'GLOBAL',visibleRequiredFields:['country','officialIdentifier'],walletRole:'SUBMITTER IDENTITY ONLY',walletUiSync:true,legalName:'OPTIONAL / RESOLVED DURING REVIEW',domainRequired:false,documentUpload:false,registryFormatting:'TOLERANT',submission:'SIGNED + PENDING REVIEW',verifiedStatus:'INDEPENDENT REVIEW ONLY',tokenMovement:false});
