@@ -11,7 +11,7 @@ function issuerStatusMarkup(status){
 }
 function injectIssuerUi(){
   const seal=$('seal');if(!seal||$('issuerTrust'))return;
-  const style=document.createElement('style');style.id='issuerTrustStyle';style.textContent=`.issuerTrustGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.issuerLevel{padding:13px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05}.issuerLevel b{display:block;margin-bottom:5px}.issuerLevel p{margin:0;color:#aaa4bd}.issuerExplain{margin-top:14px;padding:14px;border:1px solid #f4ca7530;border-radius:14px;background:#f4ca7508;color:#d9d0bd}@media(max-width:850px){.issuerTrustGrid{grid-template-columns:1fr}}`;document.head.appendChild(style);
+  const style=document.createElement('style');style.id='issuerTrustStyle';style.textContent=`.issuerTrustGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.issuerLevel{padding:13px;border:1px solid #ffffff12;border-radius:14px;background:#ffffff05}.issuerLevel b{display:block;margin-bottom:5px}.issuerLevel p{margin:0;color:#aaa4bd}.issuerExplain{margin-top:14px;padding:14px;border:1px solid #f4ca7530;border-radius:14px;background:#f4ca7508;color:#d9d0bd}.issuerTrustInline{margin:14px 0;padding:14px;border:1px solid #f4ca7530;border-radius:14px;background:#f4ca7508}.issuerTrustInline .issuerTrustTitle{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.issuerTrustInline p{margin:6px 0;color:#aaa4bd}@media(max-width:850px){.issuerTrustGrid{grid-template-columns:1fr}.issuerTrustInline .issuerTrustTitle{align-items:flex-start;flex-direction:column}}`;document.head.appendChild(style);
   seal.insertAdjacentHTML('beforebegin',`<section id="issuerTrust" class="wrap block"><h2>EVO Issuer Trust</h2><p class="sub">El nombre escrito en “Emisor” no demuestra identidad por sí solo. Issuer Trust separa una declaración libre de una identidad respaldada por pruebas verificables.</p><div class="issuerTrustGrid"><form id="issuerForm" class="panel form"><span class="kicker">ISSUER IDENTITY · V0</span><h3>Crear perfil firmado</h3><label>Nombre público<input id="issuerProfileName" maxlength="160" placeholder="Ej. Lionel Ricca / Empresa"></label><label>Slug EVO<input id="issuerProfileSlug" maxlength="63" placeholder="ej. lionel-ricca"></label><label class="full">Sitio web<input id="issuerProfileWebsite" maxlength="300" placeholder="https://... (opcional)"></label><div class="full passportNotice"><b>WALLET_PROVEN</b> significa que la wallet controla este perfil. No prueba todavía que la wallet represente legalmente una marca, empresa o dominio.</div><div class="full actions"><button id="issuerSignBtn" class="btn primary" type="submit">Firmar perfil de emisor</button></div><div id="issuerFormResult" class="full empty">Conectá MetaMask para crear o actualizar tu perfil.</div></form><div class="panel"><span class="kicker">PUBLIC TRUST STATE</span><h3>Emisor del Seal actual</h3><div id="issuerPublicResult" class="empty">Abrí un EVO Seal o consultá un perfil firmado.</div><div class="issuerExplain"><b>Niveles previstos</b><p>SELF-DECLARED → WALLET PROVEN → DOMAIN VERIFIED → ORGANIZATION VERIFIED. Cada nivel agrega una prueba diferente; no se saltan las etapas por marketing.</p></div></div></div></section>`);
   const first=document.querySelector('.links a[href="#seal"]');if(first&&!document.querySelector('.links a[href="#issuerTrust"]'))first.insertAdjacentHTML('beforebegin','<a href="#issuerTrust">Issuer</a>');
   $('issuerProfileName').addEventListener('input',()=>{if(!$('issuerProfileSlug').dataset.manual)$('issuerProfileSlug').value=issuerSlug($('issuerProfileName').value)});
@@ -49,10 +49,27 @@ async function signIssuerProfile(e){
     if(!r.ok)throw new Error(data.error||`Issuer error (${r.status})`);
     out.className='result';out.innerHTML=`${issuerStatusMarkup(data.profile.status)}<h3>${esc(data.profile.display_name)}</h3><p>Perfil firmado y publicado.</p><p><b>Importante:</b> WALLET_PROVEN prueba control de esta wallet/perfil, no representación legal de una marca.</p>`;
     $('issuerPublicResult').className='result';$('issuerPublicResult').innerHTML=renderIssuerProfile(data.profile);
+    const sid=new URLSearchParams(location.search).get('seal');if(sid)setTimeout(()=>showIssuerTrustInVerification(sid.toUpperCase()),100);
     toast('Perfil EVO Issuer firmado');
   }catch(err){out.className='result';out.innerHTML=`<span class="status bad">✕ ISSUER NO REGISTRADO</span><p>${esc(err.message||String(err))}</p>`}
 }
 
+async function showIssuerTrustInVerification(sealId){
+  const out=$('verifyResult');if(!out||!sealId)return;
+  try{
+    const s=await fetchSeal(String(sealId).trim().toUpperCase());if(!s)return;
+    const p=await fetchIssuerProfile(s.issuer_wallet);
+    out.querySelector('.issuerTrustInline')?.remove();
+    const status=p?.status||'SELF_DECLARED';
+    const name=p?.display_name||s.issuer_label||s.issuer_wallet;
+    const meaning=status==='WALLET_PROVEN'?'La wallet firmante controla este perfil EVO. Esto todavía no demuestra representación legal de una marca o empresa.':status==='DOMAIN_VERIFIED'?'La identidad además demostró control del dominio registrado.':status==='ORGANIZATION_VERIFIED'?'La organización completó el proceso de verificación definido por EVO.':status==='SUSPENDED'?'El perfil del emisor está suspendido y no debe tratarse como confiable.':'El nombre del emisor es una declaración del creador del Seal y todavía no posee un perfil firmado.';
+    const block=document.createElement('div');block.className='issuerTrustInline';
+    block.innerHTML=`<div class="issuerTrustTitle"><b>Issuer Trust · ${esc(name)}</b>${issuerStatusMarkup(status)}</div><p>${esc(meaning)}</p>${p?.slug?`<span class="mono">evo:${esc(p.slug)}</span>`:''}`;
+    const qr=out.querySelector('.qrCard');if(qr)out.insertBefore(block,qr);else out.appendChild(block);
+  }catch(e){console.warn('Issuer Trust inline unavailable',e)}
+}
+
 injectIssuerUi();
-const issuerQuerySeal=new URLSearchParams(location.search).get('seal');if(issuerQuerySeal)setTimeout(()=>loadIssuerForSeal(issuerQuerySeal.toUpperCase()),700);
-console.info('EVO Issuer Trust V0',{levels:['SELF_DECLARED','WALLET_PROVEN','DOMAIN_VERIFIED','ORGANIZATION_VERIFIED'],mode:'SIGNED PROFILE / NO LEGAL BRAND CLAIM / NO TOKEN MOVEMENT'});
+const issuerQuerySeal=new URLSearchParams(location.search).get('seal');if(issuerQuerySeal){setTimeout(()=>loadIssuerForSeal(issuerQuerySeal.toUpperCase()),700);setTimeout(()=>showIssuerTrustInVerification(issuerQuerySeal.toUpperCase()),1200)}
+const issuerVerifyBtn=$('verifyBtn');if(issuerVerifyBtn)issuerVerifyBtn.addEventListener('click',()=>setTimeout(()=>{const id=$('verifyId')?.value.trim().toUpperCase();if(id)showIssuerTrustInVerification(id)},700));
+console.info('EVO Issuer Trust V0',{levels:['SELF_DECLARED','WALLET_PROVEN','DOMAIN_VERIFIED','ORGANIZATION_VERIFIED'],mode:'SIGNED PROFILE / PUBLIC VERIFY BADGE / NO LEGAL BRAND CLAIM / NO TOKEN MOVEMENT'});
