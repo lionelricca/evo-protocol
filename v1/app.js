@@ -29,20 +29,21 @@ function rows(s,extra=''){const id=s.seal_id||s.sealId;return `<span class="stat
 
 function downloadHref(href,name){const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
 function makePrintableSeal(qrCanvas,id,url){
-  const c=document.createElement('canvas');c.width=720;c.height=940;const x=c.getContext('2d');
+  const c=document.createElement('canvas');c.width=720;c.height=960;const x=c.getContext('2d');
   x.fillStyle='#ffffff';x.fillRect(0,0,c.width,c.height);
-  x.strokeStyle='#0b0818';x.lineWidth=12;x.strokeRect(22,22,676,896);
+  x.strokeStyle='#0b0818';x.lineWidth=12;x.strokeRect(22,22,676,916);
   x.fillStyle='#0b0818';x.fillRect(40,40,640,170);
   const grad=x.createLinearGradient(88,62,210,180);grad.addColorStop(0,'#f4ca75');grad.addColorStop(.35,'#ff46c8');grad.addColorStop(.7,'#9959ff');grad.addColorStop(1,'#24c5ff');x.fillStyle=grad;
   x.beginPath();x.moveTo(130,62);x.lineTo(190,122);x.lineTo(130,182);x.lineTo(70,122);x.closePath();x.fill();
   x.fillStyle='#ffffff';x.font='900 54px Arial, sans-serif';x.fillText('EVO VERIFIED',220,118);
   x.fillStyle='#f4ca75';x.font='700 22px Arial, sans-serif';x.fillText('THE DIGITAL SEAL',222,158);
-  x.fillStyle='#111111';x.font='700 23px Arial, sans-serif';x.textAlign='center';x.fillText('SCAN TO VERIFY AUTHENTICITY RECORD',360,252);
+  x.fillStyle='#111111';x.font='700 23px Arial, sans-serif';x.textAlign='center';x.fillText('SCAN TO VERIFY DIGITAL RECORD',360,252);
   x.fillStyle='#ffffff';x.fillRect(125,285,470,470);x.drawImage(qrCanvas,150,310,420,420);
   x.fillStyle='#111111';x.font='800 23px Arial, sans-serif';x.fillText(id,360,800);
-  x.font='18px Arial, sans-serif';x.fillStyle='#444';x.fillText('Public verification · No wallet required',360,840);
-  x.font='16px Arial, sans-serif';x.fillStyle='#666';x.fillText('EVO Protocol · Seal what matters. Prove what’s real.',360,875);
-  x.font='13px monospace';const short=url.length>78?url.slice(0,75)+'…':url;x.fillText(short,360,900);
+  x.font='18px Arial, sans-serif';x.fillStyle='#444';x.fillText('REGISTERED · SIGNED · HASH-VERIFIABLE',360,838);
+  x.font='16px Arial, sans-serif';x.fillStyle='#666';x.fillText('Public record verification · No wallet required',360,870);
+  x.font='14px Arial, sans-serif';x.fillStyle='#777';x.fillText('Physical authenticity requires a trusted issuer or secure tag.',360,897);
+  x.font='13px monospace';const short=url.length>78?url.slice(0,75)+'…':url;x.fillText(short,360,922);
   x.textAlign='start';return c;
 }
 
