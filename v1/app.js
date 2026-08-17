@@ -23,7 +23,35 @@ function canonical(o){return JSON.stringify(Object.keys(o).sort().reduce((a,k)=>
 function esc(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function rand(){const b=new Uint8Array(16);crypto.getRandomValues(b);return hex(b)}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
-function rows(s,extra=''){return `<span class="status ok">✓ REGISTERED</span>${extra}<div class="kv"><span>Seal ID</span><b class="mono">${esc(s.seal_id||s.sealId)}</b></div><div class="kv"><span>Nombre</span><b>${esc(s.title)}</b></div><div class="kv"><span>Emisor</span><span>${esc(s.issuer_label||s.issuerLabel||s.issuer_wallet||s.issuerWallet)}</span></div><div class="kv"><span>Wallet firmante</span><span class="mono">${esc(s.issuer_wallet||s.issuerWallet||'')}</span></div><div class="kv"><span>Fecha</span><span>${esc(s.created_at||s.createdAt||'')}</span></div><div class="kv"><span>Asset hash</span><span class="mono">${esc(s.asset_hash||s.assetHash||'N/A')}</span></div><div class="kv"><span>Estado</span><span class="status ok">PUBLIC V1 · SIGNED</span></div>`}
+function verificationUrl(id){const u=new URL(location.href);u.search='';u.hash='';u.searchParams.set('seal',id);u.hash='verify';return u.toString()}
+function qrMarkup(id){return `<div class="qrCard"><div class="qrSlot" data-seal="${esc(id)}" aria-label="QR de verificación EVO"></div><div class="qrMeta"><b>EVO Verify QR</b><p>Escaneá este código para abrir la verificación pública del sello.</p><span class="mono qrUrl">${esc(verificationUrl(id))}</span><div class="actions"><button class="btn qrCopy" type="button">Copiar enlace</button><button class="btn gold qrDownload" type="button">Descargar QR</button></div></div></div>`}
+function rows(s,extra=''){const id=s.seal_id||s.sealId;return `<span class="status ok">✓ REGISTERED</span>${extra}<div class="kv"><span>Seal ID</span><b class="mono">${esc(id)}</b></div><div class="kv"><span>Nombre</span><b>${esc(s.title)}</b></div><div class="kv"><span>Emisor</span><span>${esc(s.issuer_label||s.issuerLabel||s.issuer_wallet||s.issuerWallet)}</span></div><div class="kv"><span>Wallet firmante</span><span class="mono">${esc(s.issuer_wallet||s.issuerWallet||'')}</span></div><div class="kv"><span>Fecha</span><span>${esc(s.created_at||s.createdAt||'')}</span></div><div class="kv"><span>Asset hash</span><span class="mono">${esc(s.asset_hash||s.assetHash||'N/A')}</span></div><div class="kv"><span>Estado</span><span class="status ok">PUBLIC V1 · SIGNED</span></div>${qrMarkup(id)}`}
+
+function renderQrCards(root){
+  root.querySelectorAll('.qrCard').forEach(card=>{
+    const slot=card.querySelector('.qrSlot');
+    const id=slot?.dataset.seal;
+    if(!slot||!id)return;
+    const url=verificationUrl(id);
+    slot.innerHTML='';
+    if(typeof QRCode==='undefined'){
+      slot.innerHTML='<span class="status bad">QR NO DISPONIBLE</span>';
+      return;
+    }
+    new QRCode(slot,{text:url,width:190,height:190,colorDark:'#090713',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    const copy=card.querySelector('.qrCopy');
+    const download=card.querySelector('.qrDownload');
+    if(copy)copy.onclick=()=>navigator.clipboard.writeText(url).then(()=>toast('Enlace público copiado'));
+    if(download)download.onclick=()=>{
+      const canvas=slot.querySelector('canvas');
+      const img=slot.querySelector('img');
+      const href=canvas?.toDataURL('image/png')||img?.src;
+      if(!href)return toast('El QR todavía no está listo');
+      const a=document.createElement('a');a.href=href;a.download=`${id}-QR.png`;document.body.appendChild(a);a.click();a.remove();
+      toast('QR descargado');
+    };
+  });
+}
 
 async function findMetaMaskProvider(){
   window.dispatchEvent(new Event('eip6963:requestProvider'));
@@ -41,8 +69,6 @@ async function findMetaMaskProvider(){
   );
   if(meta){walletInfo=meta.info;return meta.provider;}
 
-  // Strict safety fallback: only accept a provider explicitly exposed inside a providers array
-  // if it identifies as MetaMask AND is not known as another wallet. Never accept plain window.ethereum.
   const providers=Array.isArray(window.ethereum?.providers)?window.ethereum.providers:[];
   const strict=providers.find(p=>
     p?.isMetaMask===true &&
@@ -85,12 +111,13 @@ $('sealForm').onsubmit=async e=>{e.preventDefault();const out=$('createResult');
   await registerSeal(seal);
   out.className='result';
   out.innerHTML=rows({...seal,seal_id:sealId,issuer_wallet:issuerWallet,issuer_label:metadata.issuerLabel,created_at:createdAt,asset_hash:metadata.assetHash})+`<div class="actions"><button id="copyId" class="btn">Copiar Seal ID</button><a class="btn gold" href="?seal=${encodeURIComponent(sealId)}#verify">Abrir verificación pública</a></div>`;
+  renderQrCards(out);
   $('copyId').onclick=()=>navigator.clipboard.writeText(sealId).then(()=>toast('Seal ID copiado'));
   $('verifyId').value=sealId;toast('EVO Seal registrado públicamente');
 }catch(err){out.className='result';out.innerHTML=`<span class="status bad">✕ NO REGISTRADO</span><p>${esc(err.message||String(err))}</p>`;toast(err.message||'No se pudo registrar')}};
 
-async function verify(){const id=$('verifyId').value.trim().toUpperCase(),out=$('verifyResult');if(!id){toast('Ingresá un Seal ID');return}out.className='result';out.textContent='Consultando registro público…';try{const s=await fetchSeal(id);if(!s){out.innerHTML='<span class="status bad">✕ UNKNOWN</span><p>No existe un sello activo con ese ID en el registro público.</p>';return}let extra='';const f=$('verifyFile').files[0];if(f&&s.asset_hash){const same=(await shaFile(f))===s.asset_hash;extra=same?'<p><span class="status ok">✓ FILE HASH MATCH</span></p>':'<p><span class="status bad">✕ FILE MODIFIED / DIFFERENT</span></p>'}out.innerHTML=rows(s,extra)}catch(e){out.innerHTML=`<span class="status bad">✕ ERROR</span><p>${esc(e.message||String(e))}</p>`}}
+async function verify(){const id=$('verifyId').value.trim().toUpperCase(),out=$('verifyResult');if(!id){toast('Ingresá un Seal ID');return}out.className='result';out.textContent='Consultando registro público…';try{const s=await fetchSeal(id);if(!s){out.innerHTML='<span class="status bad">✕ UNKNOWN</span><p>No existe un sello activo con ese ID en el registro público.</p>';return}let extra='';const f=$('verifyFile').files[0];if(f&&s.asset_hash){const same=(await shaFile(f))===s.asset_hash;extra=same?'<p><span class="status ok">✓ FILE HASH MATCH</span></p>':'<p><span class="status bad">✕ FILE MODIFIED / DIFFERENT</span></p>'}out.innerHTML=rows(s,extra);renderQrCards(out)}catch(e){out.innerHTML=`<span class="status bad">✕ ERROR</span><p>${esc(e.message||String(e))}</p>`}}
 $('verifyBtn').onclick=verify;
 $('clearBtn').onclick=()=>{$('sealForm').reset();$('createResult').className='empty';$('createResult').textContent='Conectá MetaMask y creá un sello.'};
 const querySeal=new URLSearchParams(location.search).get('seal');if(querySeal){$('verifyId').value=querySeal;setTimeout(()=>{location.hash='#verify';verify()},100)}
-console.info('EVO Seal V1',{token,mode:'PUBLIC REGISTRY / STRICT METAMASK SIGNATURE / NO TOKEN MOVEMENT'});
+console.info('EVO Seal V1',{token,mode:'PUBLIC REGISTRY / STRICT METAMASK SIGNATURE / QR VERIFY / NO TOKEN MOVEMENT'});
