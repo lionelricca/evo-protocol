@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EVO Seal · The Digital Seal</title>
 <meta name="description" content="Create signed EVO digital seals and verify them publicly. V1 registry prototype: wallet signature, public registry, QR verification, no custody and no token transfer.">
-<link rel="stylesheet" href="styles.css">
+<style>html,body{margin:0;background:#05050d;color:#f8f5ff;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body.asset-fallback:before{content:'EVO · cargando interfaz segura…';display:block;padding:10px 16px;background:#0f0d20;color:#f4ca75;font-size:12px}</style>
+<link rel="stylesheet" href="/evo-protocol/v1/styles.css?v=20260816-2015" onerror="document.body&&document.body.classList.add('asset-fallback')">
 </head>
 <body>
 <nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#seal">Sellar</a><a href="#verify">Verificar</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
@@ -38,5 +39,5 @@
 <footer><div class="wrap"><b>EVO Protocol</b> · The Digital Seal · Polygon · EVO contract <code>0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f</code></div></footer>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
-<script src="app.js"></script>
+<script src="/evo-protocol/v1/app.js?v=20260816-2015" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
 </body></html>
