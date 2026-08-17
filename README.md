@@ -2,23 +2,28 @@
 
 **The Digital Seal — Seal what matters. Prove what’s real.**
 
-EVO Protocol is an experimental open project for creating verifiable digital seals, public verification records and future product passports powered by the EVO token on Polygon.
+EVO Protocol is an experimental trust protocol for creating signed digital seals, public verification records, evolving product passports and explainable risk analysis powered by the EVO ecosystem on Polygon.
 
-## Current stage: V0 Safety Prototype
+## Current stage: V1 Safety Prototype
 
-V0 is intentionally non-custodial and off-chain. It does **not** transfer EVO, does **not** deploy a new smart contract and does **not** claim that a physical object is authentic merely because a record exists.
+The current prototype is intentionally non-custodial and conservative. It does **not** move EVO or POL, does **not** store private keys and does **not** claim that a physical object is authentic merely because a digital record exists.
 
-The first objective is to prove the core workflow safely:
+The working stack has evolved beyond a static seal:
 
-`CREATE → HASH → SEAL → VERIFY → HISTORY`
+`SEAL → ISSUER TRUST → PASSPORT → TRANSFER → PULSE → CHALLENGE → AI GUARDIAN`
+
+The next layer is the **EVO Reality Graph**: one continuously evolving trust state for every Seal, designed so that copying a QR or public URL is not enough to reproduce the complete evidence history.
 
 ## Core principles
 
-- **Creating trust may consume EVO; verification should remain free.**
+- **Creating trust may consume EVO; public verification should remain free.**
 - **Never store private keys.** Wallets remain under user control.
+- **Evidence levels, not unsupported authenticity claims.**
 - **A blockchain record proves registration/integrity, not physical authenticity by itself.**
-- **Security before mainnet.** New contracts must be tested on testnet and reviewed before handling real value.
-- **Standards before lock-in.** Future work should be compatible where useful with GS1 Digital Link, C2PA and W3C Verifiable Credentials.
+- **QR is discovery, not high-assurance proof.** Secure NFC is the planned physical binding layer.
+- **Security before mainnet.** New value-moving contracts require tests and independent review.
+- **Privacy by default.** Public observation features should minimize personal data.
+- **Standards before lock-in.** Future work should remain compatible where useful with GS1 Digital Link, C2PA and W3C Verifiable Credentials.
 
 ## EVO token
 
@@ -27,25 +32,91 @@ The first objective is to prove the core workflow safely:
 - Contract: `0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f`
 - Decimals: 18
 
+## Current capabilities
+
+### EVO Seal
+
+- local SHA-256 hashing;
+- wallet-signed identity;
+- public registry and verification;
+- QR verification links;
+- duplicate hash + serial protection.
+
+### Issuer Trust
+
+- wallet-proven issuer profiles;
+- optional domain evidence;
+- optional organization evidence;
+- explicit trust states rather than binary identity claims.
+
+### EVO Passport
+
+- signed lifecycle events;
+- current-owner model;
+- two-signature ownership transfers.
+
+### EVO Pulse
+
+- chained public observations;
+- integrity checking;
+- intentionally no IP/location/fingerprint collection in V0.
+
+### EVO Challenge
+
+- short-lived server challenge;
+- one-time response;
+- expiration and anti-replay audit;
+- persistent live countdown in the UI.
+
+### EVO AI Guardian
+
+- explainable risk analysis;
+- Seal + Issuer Trust + Passport + Pulse + Challenge evidence;
+- anomaly and continuity signals;
+- no unsupported physical-authenticity inference.
+
+### Secure NFC architecture
+
+- physical-proof design based on cryptographic NFC tags;
+- NTAG 424 DNA / TagTamper targeted for the first pilot;
+- server-side secret verification;
+- future `NFC_VERIFIED` evidence and Pulse sources.
+
+## EVO Reality Graph
+
+A Seal is becoming more than an ID. Its Reality Graph combines identity, issuer evidence, ownership, lifecycle history, observations, freshness proofs and future secure physical proofs into an evolving trust state.
+
+The target property is **temporal uniqueness**: a copied label may reproduce public data, but it should not be able to reproduce the complete sequence of legitimate signed and cryptographic state transitions.
+
+See `docs/REALITY_GRAPH.md`.
+
 ## Repository map
 
-- `index.html` — browser-only EVO Seal V0 demo
+- `index.html` — original browser EVO Seal prototype
+- `v1/` — current V1 web application
 - `docs/ARCHITECTURE.md` — architecture and roadmap
+- `docs/REALITY_GRAPH.md` — evolving proof graph and EVO Reality Levels
+- `docs/ISSUER_TRUST.md` — issuer evidence model
+- `docs/NFC_ARCHITECTURE.md` — secure physical-proof architecture
+- `docs/ORGANIZATION_EVIDENCE.md` — organization evidence model
 - `docs/SECURITY.md` — security rules and release gates
-- `security/THREAT_MODEL.md` — threats we must design against
-- `contracts/` — reserved for reviewed smart contracts; no production contract is deployed from this repo yet
-- `packages/seal-sdk/` — future public SDK
-- `tests/` — test strategy and vectors
+- `security/THREAT_MODEL.md` — threat model
+- `contracts/` — smart-contract experiments; no new production contract should be deployed without review
+- `tests/` — automated security and integrity tests
 
-## Planned path
+## Roadmap
 
-1. V0 — local hashing + local seal verification.
-2. V1 — public registry + wallet signatures + public verification links + QR.
-3. Testnet — minimal `EVOSealRegistry` on Polygon testnet.
-4. Review/audit — automated tests, manual review and security assessment.
-5. Limited mainnet — capped operation with emergency controls only after review.
-6. Passport — ownership, warranty, repair and certification events.
+1. **V1 digital trust stack** — Seal, Issuer Trust, Passport, Transfer, Pulse, Challenge and Guardian.
+2. **Reality State V0** — canonical trust-state schema + EVO Reality Levels.
+3. **Reality Root** — deterministic hash of the current normalized trust state + test vectors.
+4. **Secure NFC pilot** — NTAG 424 DNA enrollment, dynamic proof verification and replay/counter testing.
+5. **Guardian physical-awareness** — analyze NFC-backed evidence without making unsupported binary authenticity claims.
+6. **Testnet anchoring** — minimal registry/Reality Root anchoring only where it adds measurable value.
+7. **Independent security review** before any production flow moves EVO or other assets.
+8. **Limited mainnet utility** with explicit limits and emergency controls.
 
 ## Important
 
-EVO Protocol is experimental software. A seal is only as trustworthy as its issuer, evidence and physical binding mechanism. QR-only seals can be copied; higher-assurance physical products will require stronger binding such as secure NFC/cryptographic tags and verified issuers.
+EVO Protocol is experimental software. A seal is only as trustworthy as its issuer, evidence, lifecycle continuity and physical binding mechanism.
+
+**The QR is not the product. The evolving proof graph behind it is.**
