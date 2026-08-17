@@ -7,18 +7,32 @@ const REGISTRY_HINTS={
   KR:'Business Registration Number',CN:'Unified Social Credit Code',SG:'UEN',AE:'Trade License'
 };
 function normalizeRegistryReference(v=''){
-  // IDs oficiales se comparan sin formato visual: puntos, guiones, espacios y separadores no cambian la identidad.
-  // Conservamos letras y números para soportar registros alfanuméricos de distintos países.
   return String(v).normalize('NFKC').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
 }
 function suggestedRegistryType(country=''){
   return REGISTRY_HINTS[String(country||'').trim().toUpperCase()]||'Registro oficial / Business registry';
 }
+function browserCountryHint(){
+  try{const r=new Intl.Locale(navigator.language||'').region||'';return /^[A-Z]{2}$/i.test(r)?r.toUpperCase():''}catch{return ''}
+}
 function applyRegistrySuggestion(force=false){
   const country=$('organizationCountry'),type=$('organizationRegistryType');if(!country||!type)return;
   const hint=suggestedRegistryType(country.value);
   if(force||!type.dataset.manual||!type.value.trim())type.value=hint;
-  const ref=$('organizationRegistryReference');if(ref)ref.placeholder=`ID oficial (${hint}) · podés escribirlo con o sin puntos/guiones`;
+  const ref=$('organizationRegistryReference');if(ref)ref.placeholder=`ID oficial (${hint}) · con o sin puntos/guiones`;
+}
+async function autofillOrganizationFromWallet(){
+  const country=$('organizationCountry');
+  if(country&&!country.value.trim()){const hint=browserCountryHint();if(hint)country.value=hint}
+  applyRegistrySuggestion(false);
+  if(!account)return;
+  try{
+    const p=typeof fetchIssuerProfile==='function'?await fetchIssuerProfile(account):null;
+    const name=$('organizationLegalName');
+    if(name&&!name.value.trim()&&p?.display_name)name.value=p.display_name;
+    const source=$('organizationAutofillState');
+    if(source)source.innerHTML=`<span class="status ok">WALLET PROFILE LOADED</span><p>Wallet <span class="mono">${esc(account)}</span>${p?.display_name?` · Perfil: <b>${esc(p.display_name)}</b>`:''}. Estos datos se completaron automáticamente y siguen siendo editables.</p>`;
+  }catch(e){console.warn('Organization autofill unavailable',e)}
 }
 async function fetchOrganizationVerification(wallet){
   const w=String(wallet||'').toLowerCase();
@@ -39,30 +53,32 @@ function renderOrganizationPublic(v){
 function injectOrganizationUi(){
   const issuer=$('issuerTrust');if(!issuer||$('organizationEvidence'))return;
   const domain=issuer.querySelector('.domainPanel');
-  const html=`<div id="organizationEvidence" class="panel domainPanel"><span class="kicker">ORGANIZATION EVIDENCE · GLOBAL · OPCIONAL</span><h3>Presentar evidencia de organización</h3><p>Para empresas, talleres, fabricantes u otras entidades de cualquier país. No requiere dominio. EVO guarda la declaración firmada y hashes; el documento opcional se procesa localmente y no se sube.</p><div class="domainProofGrid"><form id="organizationForm" class="form"><label>Nombre legal<input id="organizationLegalName" maxlength="180" placeholder="Ej. Empresa / Taller / Fabricante"></label><label>País (ISO 2 letras)<input id="organizationCountry" maxlength="2" value="CL" placeholder="CL / AR / US / ES..."></label><label>Tipo de registro<input id="organizationRegistryType" maxlength="80" placeholder="EVO lo sugiere según el país"></label><label>Identificador oficial<input id="organizationRegistryReference" maxlength="180" autocomplete="off" placeholder="Podés escribirlo con o sin puntos/guiones"></label><div class="full passportNotice">EVO normaliza automáticamente mayúsculas, espacios, puntos, guiones y otros separadores. El formato visual no cambia la identidad del registro. El identificador real no se publica: se transforma en hash localmente.</div><label class="full">Referencia pública oficial (opcional)<input id="organizationPublicReference" maxlength="500" placeholder="https://..."></label><label class="full file">Documento de evidencia opcional<input id="organizationEvidenceFile" type="file"><span>Sólo se calcula SHA-256 en tu navegador. El archivo no se sube a EVO.</span></label><div class="full passportNotice"><b>PENDING REVIEW</b> no significa verificado. Una firma sólo demuestra quién presentó la evidencia. El estado <b>ORGANIZATION VERIFIED</b> requiere una revisión independiente posterior.</div><div class="full actions"><button class="btn primary" type="submit">Firmar evidencia organizacional</button></div><div id="organizationSubmitResult" class="full empty">No presentaste evidencia en esta sesión.</div></form><div id="organizationPublicResult" class="domainRecord"><span class="status warn">SIN ORGANIZACIÓN VERIFICADA</span><p>La verificación organizacional es opcional, global y no depende de tener sitio web.</p></div></div></div>`;
+  const html=`<div id="organizationEvidence" class="panel domainPanel"><span class="kicker">ORGANIZATION EVIDENCE · GLOBAL · SIMPLE</span><h3>Verificar una organización</h3><p>La wallet aporta identidad y perfil. Para la mayoría de los casos sólo necesitás indicar país e identificador oficial. EVO completa el resto cuando puede.</p><div class="domainProofGrid"><form id="organizationForm" class="form"><label>País<input id="organizationCountry" maxlength="2" placeholder="CL / AR / US / ES..."></label><label>Identificador oficial<input id="organizationRegistryReference" maxlength="180" autocomplete="off" placeholder="RUT / CUIT / CNPJ / RFC / VAT..."></label><div id="organizationAutofillState" class="full passportNotice">Conectá la wallet y EVO traerá automáticamente el perfil firmado y sugerirá el tipo de registro.</div><details class="full"><summary>Opciones avanzadas / datos detectados</summary><div class="form" style="margin-top:12px"><label>Nombre / organización<input id="organizationLegalName" maxlength="180" placeholder="Se completa desde el perfil de la wallet"></label><label>Tipo de registro<input id="organizationRegistryType" maxlength="80" placeholder="EVO lo sugiere según el país"></label><label class="full">Referencia pública oficial (opcional)<input id="organizationPublicReference" maxlength="500" placeholder="https://..."></label><label class="full file">Documento de evidencia opcional<input id="organizationEvidenceFile" type="file"><span>Sólo se calcula SHA-256 en tu navegador. El archivo no se sube a EVO.</span></label></div></details><div class="full passportNotice">EVO ignora puntos, guiones, espacios y mayúsculas del identificador. El identificador real no se publica: se transforma en hash localmente. <b>PENDING REVIEW</b> no significa verificado.</div><div class="full actions"><button class="btn primary" type="submit">Verificar con mi wallet</button></div><div id="organizationSubmitResult" class="full empty">Todavía no enviaste evidencia.</div></form><div id="organizationPublicResult" class="domainRecord"><span class="status warn">SIN ORGANIZACIÓN VERIFICADA</span><p>La verificación organizacional es opcional, global y no depende de tener sitio web.</p></div></div></div>`;
   if(domain)domain.insertAdjacentHTML('beforebegin',html);else issuer.insertAdjacentHTML('beforeend',html);
   $('organizationForm').onsubmit=submitOrganizationEvidence;
   $('organizationCountry').addEventListener('input',()=>{if($('organizationCountry').value.trim().length===2)applyRegistrySuggestion(false)});
   $('organizationCountry').addEventListener('change',()=>applyRegistrySuggestion(false));
   $('organizationRegistryType').addEventListener('input',()=>{$('organizationRegistryType').dataset.manual='1'});
-  applyRegistrySuggestion(true);
+  const hint=browserCountryHint();if(hint)$('organizationCountry').value=hint;applyRegistrySuggestion(true);
+  if(account)setTimeout(autofillOrganizationFromWallet,100);
 }
 async function submitOrganizationEvidence(e){
   e.preventDefault();const out=$('organizationSubmitResult');
   try{
     if(!account||!walletProvider)await connectWallet();
+    await autofillOrganizationFromWallet();
     const issuerWallet=account.toLowerCase();
-    const legalName=$('organizationLegalName').value.trim();
+    let legalName=$('organizationLegalName').value.trim();
     const countryCode=$('organizationCountry').value.trim().toUpperCase();
     let registryType=$('organizationRegistryType').value.trim();
     if(!registryType)registryType=suggestedRegistryType(countryCode);
     const registryRaw=normalizeRegistryReference($('organizationRegistryReference').value);
     const publicReferenceUrl=$('organizationPublicReference').value.trim();
     const evidenceFile=$('organizationEvidenceFile').files[0];
-    if(legalName.length<2)throw new Error('Ingresá el nombre legal de la organización.');
-    if(!/^[A-Z]{2}$/.test(countryCode))throw new Error('El país debe tener 2 letras, por ejemplo CL, AR, US o ES.');
-    if(registryType.length<2)throw new Error('Indicá el tipo de registro.');
+    if(!/^[A-Z]{2}$/.test(countryCode))throw new Error('Ingresá el país con 2 letras, por ejemplo CL, AR, US o ES.');
     if(registryRaw.length<2)throw new Error('Ingresá el identificador oficial de la organización.');
+    if(!legalName){const p=typeof fetchIssuerProfile==='function'?await fetchIssuerProfile(issuerWallet):null;legalName=p?.display_name||''}
+    if(legalName.length<2)throw new Error('EVO no pudo obtener un nombre desde el perfil de la wallet. Completalo en Opciones avanzadas.');
     if(publicReferenceUrl){const u=new URL(publicReferenceUrl);if(u.protocol!=='https:')throw new Error('La referencia pública debe usar https.');}
     const nonce=rand(),createdAt=new Date().toISOString();
     const registryReferenceHash=await shaText(`EVO-REGISTRY-REF-V0|${nonce}|${countryCode}|${registryType.toUpperCase()}|${registryRaw}`);
@@ -87,4 +103,4 @@ async function loadOrganizationForSeal(sealId){
 
 injectOrganizationUi();
 const organizationQuerySeal=new URLSearchParams(location.search).get('seal');if(organizationQuerySeal)setTimeout(()=>loadOrganizationForSeal(organizationQuerySeal.toUpperCase()),900);
-console.info('EVO Organization Evidence V0.1',{scope:'GLOBAL',domainRequired:false,documentUpload:false,registryFormatting:'TOLERANT / ALPHANUMERIC NORMALIZATION',submission:'SIGNED + PENDING REVIEW',verifiedStatus:'INDEPENDENT REVIEW ONLY',tokenMovement:false});
+console.info('EVO Organization Evidence V0.2',{scope:'GLOBAL',visibleRequiredFields:['country','officialIdentifier'],walletAutofill:true,domainRequired:false,documentUpload:false,registryFormatting:'TOLERANT',submission:'SIGNED + PENDING REVIEW',verifiedStatus:'INDEPENDENT REVIEW ONLY',tokenMovement:false});
