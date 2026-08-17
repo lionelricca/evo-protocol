@@ -14,7 +14,7 @@ async function fetchPassportEvents(sealId){
   const q=new URL(`${SUPABASE_URL}/rest/v1/evo_passport_events`);
   q.searchParams.set('seal_id',`eq.${sealId}`);
   q.searchParams.set('status','eq.ACTIVE');
-  q.searchParams.set('select','event_id,seal_id,event_type,actor_wallet,new_owner_wallet,note,event_digest,created_at,registered_at,status');
+  q.searchParams.set('select','event_id,seal_id,event_type,actor_wallet,new_owner_wallet,note,event_digest,created_at,registered_at,status,counterparty_wallet,counter_signature');
   q.searchParams.set('order','registered_at.asc');
   const r=await fetch(q,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
   if(!r.ok)throw new Error(`No se pudo consultar el pasaporte (${r.status})`);
@@ -33,11 +33,11 @@ function passportTimelineMarkup(seal,events){
   const owner=currentOwnerFrom(seal,events);
   const created=`<div class="passportEvent"><h4>Registro creado</h4><p>El emisor creó y firmó el EVO Seal.</p><div class="eventMeta">${esc(seal.created_at||'')} · ${esc(shortWallet(seal.issuer_wallet||''))}</div></div>`;
   const items=events.map(e=>{
-    const transfer=e.event_type==='TRANSFERRED'&&e.new_owner_wallet?`<p>Nuevo propietario: <span class="passportOwner mono">${esc(e.new_owner_wallet)}</span></p>`:'';
+    const transfer=e.event_type==='TRANSFERRED'&&e.new_owner_wallet?`<p>Nuevo propietario: <span class="passportOwner mono">${esc(e.new_owner_wallet)}</span></p>${e.counterparty_wallet?`<p class="eventMeta">Transferencia con doble firma: propietario anterior + ${esc(shortWallet(e.counterparty_wallet))}</p>`:''}`:'';
     const note=e.note?`<p>${esc(e.note)}</p>`:'<p class="eventMeta">Sin detalle registrado en esta declaración.</p>';
     return `<div class="passportEvent"><h4>${esc(passportLabels[e.event_type]||e.event_type)}</h4>${note}${transfer}<div class="eventMeta">${esc(e.created_at||'')} · firmado por ${esc(shortWallet(e.actor_wallet||''))} · ${esc(e.event_id||'')}</div></div>`;
   }).join('');
-  return `<div class="passportSummary"><div class="passportStat"><span>Propietario actual</span><b class="passportOwner mono">${esc(owner)}</b></div><div class="passportStat"><span>Eventos públicos</span><b>${events.length+1}</b></div></div><div class="passportNotice">V1 registra declaraciones firmadas por el propietario actual. Una reparación o inspección todavía no implica validación independiente por un taller o entidad acreditada.</div><div class="passportTimeline">${created}${items||''}</div>`;
+  return `<div class="passportSummary"><div class="passportStat"><span>Propietario actual</span><b class="passportOwner mono">${esc(owner)}</b></div><div class="passportStat"><span>Eventos públicos</span><b>${events.length+1}</b></div></div><div class="passportNotice">V1 registra declaraciones firmadas por el propietario actual. Las transferencias requieren dos firmas. Una reparación o inspección todavía no implica validación independiente por un taller o entidad acreditada.</div><div class="passportTimeline">${created}${items||''}</div>`;
 }
 
 async function loadPassport(){
@@ -61,12 +61,6 @@ async function registerPassportEvent(event){
   return data;
 }
 
-$('passportType').onchange=()=>{
-  const show=$('passportType').value==='TRANSFERRED';
-  $('passportTransferWrap').classList.toggle('hidden',!show);
-  $('passportNewOwner').required=show;
-};
-
 $('passportLoadBtn').onclick=loadPassport;
 
 $('passportEventForm').onsubmit=async e=>{
@@ -82,8 +76,8 @@ $('passportEventForm').onsubmit=async e=>{
     if(account.toLowerCase()!==currentOwner)throw new Error(`Sólo el propietario actual puede agregar eventos. Propietario: ${shortWallet(currentOwner)}`);
 
     const eventType=$('passportType').value;
-    const newOwner=eventType==='TRANSFERRED'?$('passportNewOwner').value.trim().toLowerCase():'';
-    if(eventType==='TRANSFERRED'&&!/^0x[0-9a-fA-F]{40}$/.test(newOwner))throw new Error('Ingresá una wallet EVM válida para el nuevo propietario.');
+    if(eventType==='TRANSFERRED')throw new Error('Las transferencias usan el flujo seguro de dos firmas.');
+    const newOwner='';
     const note=$('passportNote').value.trim();
     if(passportDetailRequired.has(eventType)&&note.length<3)throw new Error('Este tipo de evento requiere un detalle de al menos 3 caracteres.');
     const createdAt=new Date().toISOString();
@@ -91,13 +85,13 @@ $('passportEventForm').onsubmit=async e=>{
     const actorWallet=account.toLowerCase();
     const eventDigest=await shaText([sealId,eventType,actorWallet,newOwner,note,createdAt,nonce].join('|'));
     const eventId=`EVP-${eventDigest.slice(0,8).toUpperCase()}-${eventDigest.slice(8,16).toUpperCase()}-${eventDigest.slice(16,24).toUpperCase()}`;
-    const signatureMessage=`EVO PASSPORT V1\nEvent ID: ${eventId}\nSeal ID: ${sealId}\nType: ${eventType}\nActor: ${actorWallet}\nNew owner: ${newOwner||'N/A'}\nDigest: ${eventDigest}\nCreated: ${createdAt}`;
+    const signatureMessage=`EVO PASSPORT V1\nEvent ID: ${eventId}\nSeal ID: ${sealId}\nType: ${eventType}\nActor: ${actorWallet}\nNew owner: N/A\nDigest: ${eventDigest}\nCreated: ${createdAt}`;
     toast('Confirmá la firma del evento en MetaMask. No mueve fondos.');
     const signature=await walletProvider.request({method:'personal_sign',params:[signatureMessage,account]});
-    const payload={eventId,sealId,version:'EVO-PASSPORT-V1',eventType,actorWallet,newOwnerWallet:newOwner,note,eventDigest,nonce,signature,signatureMessage,createdAt};
+    const payload={eventId,sealId,version:'EVO-PASSPORT-V1',eventType,actorWallet,newOwnerWallet:'',note,eventDigest,nonce,signature,signatureMessage,createdAt};
     await registerPassportEvent(payload);
     out.className='result';out.innerHTML=`<span class="status ok">✓ EVENT REGISTERED</span><div class="kv"><span>Event ID</span><b class="mono">${esc(eventId)}</b></div><div class="kv"><span>Tipo</span><b>${esc(passportLabels[eventType]||eventType)}</b></div>`;
-    $('passportNote').value='';if(eventType==='TRANSFERRED')$('passportNewOwner').value='';
+    $('passportNote').value='';
     await loadPassport();
     toast('Evento agregado al EVO Passport');
   }catch(err){out.className='result';out.innerHTML=`<span class="status bad">✕ NO REGISTRADO</span><p>${esc(err.message||String(err))}</p>`}
@@ -107,4 +101,4 @@ const passportQuerySeal=new URLSearchParams(location.search).get('seal');
 if(passportQuerySeal){$('passportSealId').value=passportQuerySeal.toUpperCase();setTimeout(loadPassport,450)}
 $('verifyBtn').addEventListener('click',()=>setTimeout(()=>{const id=$('verifyId').value.trim().toUpperCase();if(id){$('passportSealId').value=id;loadPassport()}},350));
 
-console.info('EVO Passport V1',{mode:'SIGNED OWNER EVENTS / REQUIRED EVENT DETAIL / PUBLIC HISTORY / NO TOKEN MOVEMENT'});
+console.info('EVO Passport V1',{mode:'SIGNED OWNER EVENTS / TWO-PARTY OWNERSHIP TRANSFERS / PUBLIC HISTORY / NO TOKEN MOVEMENT'});
