@@ -39,9 +39,9 @@
     hero.append(copy,text('div','proofCardMark','EVO'));
 
     const states=document.createElement('div');states.className='proofStateGrid';
-    addState(states,'PROOF',mode==='create'?'CREATED':'REGISTERED');
-    addState(states,'PASSPORT','ACTIVE');
-    addState(states,'OWNER','SIGNED');
+    addState(states,'PROOF','REGISTERED');
+    addState(states,'SIGNATURE','WALLET SIGNED');
+    addState(states,'INTEGRITY','SHA-256');
     addState(states,'VERIFY','PUBLIC');
 
     const foot=document.createElement('div');foot.className='proofCardFootnote';
