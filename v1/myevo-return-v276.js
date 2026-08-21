@@ -36,6 +36,16 @@
     location.assign(destination());
   };
 
+  const brand=document.querySelector('nav .brand');
+  if(brand){
+    brand.href=destination();
+    brand.setAttribute('aria-label',t('Ir a Mi EVO','Go to My EVO'));
+    brand.addEventListener('click',event=>{
+      event.preventDefault();
+      goMyEvo();
+    });
+  }
+
   const button=document.createElement('button');
   button.id='evoMyEvoReturn';
   button.className='evoBackTop visible';
@@ -50,6 +60,7 @@
     button.setAttribute('aria-label',t('Volver a Mi EVO','Back to My EVO'));
     const label=button.querySelector('b');
     if(label)label.textContent=t('Mi EVO','My EVO');
+    if(brand)brand.setAttribute('aria-label',t('Ir a Mi EVO','Go to My EVO'));
   };
 
   // Old cached loaders may inject the legacy navigation after window.load.
