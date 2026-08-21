@@ -96,3 +96,14 @@
   };
   if(document.readyState==='complete')loadPublicAsset();else window.addEventListener('load',loadPublicAsset,{once:true});
 })();
+
+(()=>{
+  const loadDashboard=()=>{
+    if(!document.querySelector('link[data-evo-dashboard-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./dashboard.css?v=20260821-v25-my-evo';style.dataset.evoDashboardStyle='true';document.head.appendChild(style);
+    }
+    if(document.querySelector('script[data-evo-dashboard]'))return;
+    const script=document.createElement('script');script.src='./dashboard.js?v=20260821-v25-my-evo';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
+  };
+  if(document.readyState==='complete')loadDashboard();else window.addEventListener('load',loadDashboard,{once:true});
+})();
