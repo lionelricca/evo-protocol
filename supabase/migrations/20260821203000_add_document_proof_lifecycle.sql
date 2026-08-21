@@ -28,6 +28,11 @@ create index if not exists evo_document_events_related_seal_idx
   on public.evo_document_events(related_seal_id)
   where related_seal_id <> '';
 
+create unique index if not exists evo_document_events_one_terminal_idx
+  on public.evo_document_events(seal_id)
+  where status = 'ACTIVE'
+    and event_type in ('DOCUMENT_REVOKED','DOCUMENT_SUPERSEDED');
+
 alter table public.evo_document_events enable row level security;
 
 revoke all on table public.evo_document_events from anon, authenticated;
