@@ -28,11 +28,9 @@ The next layer is the **EVO Reality Graph**: one continuously evolving trust sta
 ## Commercial model
 
 - Launch reference price: **US$9.90 per passport**.
-- Planned on-chain payment methods: **EVO or USDC on Polygon**.
-- Arbitrary wallet tokens will not be accepted.
 - Public verification remains free and does not require a wallet.
 - Checkout is not active during the V1.5 pilot; users must not send funds outside an explicit in-product confirmation.
-- Holding EVO does not grant issuer, administrator or passport-minting authority.
+- Cryptocurrency payment and token utility are intentionally deferred until the product and first commercial flow are independently validated.
 
 ## EVO token
 
