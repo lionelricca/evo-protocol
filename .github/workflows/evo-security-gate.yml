@@ -22,9 +22,11 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 resolved 2026-08-21
         with:
           node-version: '24'
+      - name: Syntax check browser shield
+        run: node --check v1/security-bootstrap-v331.js
       - name: Syntax check hardened Guardian UI
         run: node --check v1/guardian-v04.js
-      - name: Run V3.3 security regression checks
+      - name: Run V3.3.1 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Security gate scope
-        run: echo "Trust authority, XSS escaping, secret exposure, dependency pinning and Edge request-size guards"
+        run: echo "Trust authority, CSP/browser shield, XSS escaping, secret exposure, dependency pinning and Edge request-size guards"
