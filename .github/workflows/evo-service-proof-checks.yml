@@ -21,8 +21,12 @@ jobs:
         with:
           node-version: '20'
       - name: Check Service Proof browser syntax
-        run: node --check v1/service-proof-v31.js
+        run: |
+          node --check v1/service-proof-v31.js
+          node --check v1/service-proof-v311-history.js
       - name: Run Service Proof regression checks
-        run: node tests/service-proof-v31.test.js
+        run: |
+          node tests/service-proof-v31.test.js
+          node tests/service-proof-history-v311.test.js
       - name: V3.1 scope
-        run: echo "Owner-signed service evidence with optional designated-provider countersignature"
+        run: echo "Owner-signed service evidence, provider countersignature and unified Passport history"
