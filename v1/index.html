@@ -7,7 +7,7 @@
 <meta name="description" content="EVO Passport crea una identidad digital verificable para activos, con QR único, historial firmado, trazabilidad y consulta pública gratuita.">
 <meta name="theme-color" content="#03050a">
 <style>html,body{margin:0;background:#05050d;color:#f8f5ff;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body.asset-fallback:before{content:'EVO · cargando interfaz segura…';display:block;padding:10px 16px;background:#0f0d20;color:#f4ca75;font-size:12px}</style>
-<link rel="stylesheet" href="./styles.css?v=20260821-v17-client" onerror="document.body&&document.body.classList.add('asset-fallback')">
+<link rel="stylesheet" href="./styles.css?v=20260821-v19-recovery" onerror="document.body&&document.body.classList.add('asset-fallback')">
 <link rel="stylesheet" href="./passport.css?v=20260821-v16-premium">
 <link rel="stylesheet" href="./guardian.css?v=20260821-v16-premium">
 </head>
@@ -31,7 +31,7 @@
   <div class="panel"><span class="kicker">INDIVIDUAL</span><h3>1 EVO Passport</h3><p><strong style="font-size:2.4rem">US$9,90</strong></p><div class="checks"><p>Un crédito para crear un pasaporte adicional.</p><p>Pago único, sin suscripción.</p></div><button id="buyIndividualBtn" class="btn primary" type="button">Comprar con MetaMask</button></div>
   <div class="panel"><span class="kicker">AHORRO</span><h3>Pack de 10</h3><p><strong style="font-size:2.4rem">US$49</strong></p><div class="checks"><p>Diez créditos para EVO Passport.</p><p>US$4,90 por pasaporte.</p></div><button id="buyPackBtn" class="btn gold" type="button">Comprar pack con MetaMask</button></div>
 </div>
-<div class="panel paymentPanel" style="margin-top:16px"><span class="kicker">PAGO CON METAMASK</span><div class="form"><label>Red de pago<select id="paymentNetwork"><option value="137">Polygon · recomendado por bajo costo</option><option value="8453">Base</option><option value="42161">Arbitrum</option><option value="10">Optimism</option><option value="43114">Avalanche C-Chain</option><option value="1">Ethereum</option></select></label></div><div class="checks"><p><b>Pago:</b> USDC mediante MetaMask.</p><p><b>Destino verificado:</b> <code>0xDC67…Ab16</code></p><p><b>Protección:</b> EVO valida el monto, la red y el destinatario antes de acreditar.</p><p><b>Recordatorio:</b> EVO nunca solicitará tu frase semilla.</p></div><div id="checkoutStatus" class="passportNotice">Elegí un plan. MetaMask mostrará todos los datos antes de confirmar.</div></div>
+<div class="panel paymentPanel" style="margin-top:16px"><span class="kicker">PAGO CON METAMASK</span><div class="form"><label>Red de pago<select id="paymentNetwork"><option value="137">Polygon · recomendado por bajo costo</option><option value="8453">Base</option><option value="42161">Arbitrum</option><option value="10">Optimism</option><option value="43114">Avalanche C-Chain</option><option value="1">Ethereum</option></select></label></div><div class="checks"><p><b>Pago:</b> USDC mediante MetaMask.</p><p><b>Destino verificado:</b> <code>0xDC67…Ab16</code></p><p><b>Protección:</b> EVO valida el monto, la red y el destinatario antes de acreditar.</p><p><b>Recordatorio:</b> EVO nunca solicitará tu frase semilla.</p></div><div id="checkoutStatus" class="passportNotice">Elegí un plan. MetaMask mostrará todos los datos antes de confirmar.</div><details class="paymentRecovery"><summary>¿Ya pagaste y no recibiste tus créditos?</summary><p class="sub">Recuperá la acreditación con el hash de la transacción. Debés conectar la misma wallet que realizó el pago.</p><div class="form"><label class="full">Hash de transacción<input id="recoveryTxHash" class="mono" autocomplete="off" spellcheck="false" placeholder="0x..."></label><label>Plan<select id="recoveryPlan"><option value="INDIVIDUAL">1 EVO Passport · US$9,90</option><option value="PACK_10">Pack de 10 · US$49</option></select></label><label>Red original<select id="recoveryNetwork"><option value="137">Polygon</option><option value="8453">Base</option><option value="42161">Arbitrum</option><option value="10">Optimism</option><option value="43114">Avalanche C-Chain</option><option value="1">Ethereum</option></select></label><div class="full actions"><button id="recoverPaymentBtn" class="btn" type="button">Recuperar pago</button></div></div><div id="recoveryStatus" class="empty">Usá esta opción solamente si el pago fue enviado pero los créditos todavía no aparecen.</div></details></div>
 </section>
 
 <section id="seal" class="wrap block"><h2>Crear un pasaporte digital</h2><p class="sub">Completá los datos del activo para obtener su EVO Passport ID y QR verificable. Si adjuntás un archivo, permanece en tu dispositivo: EVO conserva únicamente su huella digital SHA-256.</p>
@@ -93,9 +93,9 @@
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
 <script src="./app.js?v=20260821-v14" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
-<script src="./i18n.js?v=20260821-v17-client"></script>
+<script src="./i18n.js?v=20260821-v19-recovery"></script>
 <script src="./wallet-autoconnect.js?v=20260821-v14"></script>
-<script src="./checkout.js?v=20260821-v18-open"></script>
+<script src="./checkout.js?v=20260821-v19-recovery"></script>
 <script src="./issuer.js?v=20260821-v14"></script>
 <script src="./organization.js?v=20260821-v14"></script>
 <script src="./organization-simple.js?v=20260821-v14"></script>

@@ -14,6 +14,8 @@ const EVO_PAYMENT_PLANS = {
   INDIVIDUAL: { label:'1 EVO Passport', amountLabel:'US$9,90', amountMinor:9900000n },
   PACK_10: { label:'Pack de 10 EVO Passports', amountLabel:'US$49', amountMinor:49000000n }
 };
+const EVO_PENDING_PAYMENT_KEY = 'evo_pending_payment_v1';
+const EVO_TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 
 function checkoutText(es, en) {
   return document.documentElement.lang === 'en' ? en : es;
@@ -23,6 +25,29 @@ function checkoutStatus(message, kind) {
   if (!box) return;
   box.className = kind === 'ok' ? 'passportNotice ok' : 'passportNotice';
   box.textContent = window.evoT ? window.evoT(message) : message;
+}
+function savePendingPayment(payment) {
+  try { localStorage.setItem(EVO_PENDING_PAYMENT_KEY, JSON.stringify(payment)); } catch {}
+}
+function readPendingPayment() {
+  try {
+    const payment = JSON.parse(localStorage.getItem(EVO_PENDING_PAYMENT_KEY) || 'null');
+    if (!payment || !EVO_TX_HASH_RE.test(String(payment.txHash || ''))) return null;
+    if (!EVO_PAYMENT_PLANS[payment.planCode] || !EVO_PAYMENT_NETWORKS[String(payment.chainId)]) return null;
+    return payment;
+  } catch { return null; }
+}
+function clearPendingPayment(txHash) {
+  try {
+    const payment = readPendingPayment();
+    if (!payment || String(payment.txHash).toLowerCase() === String(txHash).toLowerCase()) localStorage.removeItem(EVO_PENDING_PAYMENT_KEY);
+  } catch {}
+}
+function recoveryStatus(message, kind) {
+  const box = document.getElementById('recoveryStatus');
+  if (!box) return;
+  box.className = kind === 'ok' ? 'result ok' : 'result';
+  box.textContent = message;
 }
 function encodeUsdcTransfer(recipient, amountMinor) {
   const selector = 'a9059cbb';
@@ -102,9 +127,43 @@ async function buyEvoPlan(planCode) {
       data:encodeUsdcTransfer(recipient, plan.amountMinor)
     }]
   });
+  const normalizedTxHash = String(txHash).toLowerCase();
+  const payerWallet = String(account).toLowerCase();
+  savePendingPayment({ txHash:normalizedTxHash, planCode, chainId, payerWallet, createdAt:new Date().toISOString() });
   checkoutStatus(checkoutText('Pago enviado. EVO está verificando la cadena antes de acreditar.', 'Payment sent. EVO is verifying the chain before crediting.'));
-  const result = await verifyCheckout(String(txHash).toLowerCase(), planCode, account, chainId);
+  const result = await verifyCheckout(normalizedTxHash, planCode, payerWallet, chainId);
+  clearPendingPayment(normalizedTxHash);
   checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + result.remainingCredits + checkoutText(' crédito(s) disponibles para crear pasaportes.', ' credit(s) available to create passports.'), 'ok');
+}
+async function recoverEvoPayment() {
+  const txInput = document.getElementById('recoveryTxHash');
+  const planInput = document.getElementById('recoveryPlan');
+  const networkInput = document.getElementById('recoveryNetwork');
+  const txHash = String(txInput && txInput.value || '').trim().toLowerCase();
+  const planCode = String(planInput && planInput.value || '').toUpperCase();
+  const chainId = String(networkInput && networkInput.value || '');
+  if (!EVO_TX_HASH_RE.test(txHash)) throw new Error(checkoutText('Ingresá un hash de transacción válido.', 'Enter a valid transaction hash.'));
+  if (!EVO_PAYMENT_PLANS[planCode] || !EVO_PAYMENT_NETWORKS[chainId]) throw new Error(checkoutText('Seleccioná el plan y la red originales del pago.', 'Select the original payment plan and network.'));
+  if (!account || !walletProvider) await connectWallet();
+  const payerWallet = String(account).toLowerCase();
+  savePendingPayment({ txHash, planCode, chainId, payerWallet, createdAt:new Date().toISOString() });
+  recoveryStatus(checkoutText('Verificando el pago en la red seleccionada…', 'Verifying the payment on the selected network…'));
+  const result = await verifyCheckout(txHash, planCode, payerWallet, chainId);
+  clearPendingPayment(txHash);
+  const message = checkoutText('Pago recuperado. Tenés ', 'Payment recovered. You have ') + result.remainingCredits + checkoutText(' crédito(s) disponibles.', ' credit(s) available.');
+  recoveryStatus(message, 'ok');
+  checkoutStatus(message, 'ok');
+}
+function restorePendingPaymentForm() {
+  const payment = readPendingPayment();
+  if (!payment) return;
+  const txInput = document.getElementById('recoveryTxHash');
+  const planInput = document.getElementById('recoveryPlan');
+  const networkInput = document.getElementById('recoveryNetwork');
+  if (txInput) txInput.value = payment.txHash;
+  if (planInput) planInput.value = payment.planCode;
+  if (networkInput) networkInput.value = String(payment.chainId);
+  recoveryStatus(checkoutText('Encontramos un pago pendiente guardado en este navegador. Conectá la wallet que realizó el pago y recuperalo.', 'We found a pending payment saved in this browser. Connect the wallet that made the payment and recover it.'));
 }
 function initEvoCheckout() {
   const buttons = [
@@ -124,5 +183,15 @@ function initEvoCheckout() {
       }
     });
   });
+  const recoverButton = document.getElementById('recoverPaymentBtn');
+  if (recoverButton) {
+    recoverButton.addEventListener('click', async () => {
+      recoverButton.disabled = true;
+      try { await recoverEvoPayment(); }
+      catch (error) { recoveryStatus(error && error.message ? error.message : checkoutText('No se pudo recuperar el pago.', 'The payment could not be recovered.')); }
+      finally { recoverButton.disabled = false; }
+    });
+  }
+  restorePendingPaymentForm();
 }
 initEvoCheckout();
