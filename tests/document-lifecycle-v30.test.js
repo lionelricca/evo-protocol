@@ -7,6 +7,7 @@ const client=fs.readFileSync('v1/document-lifecycle-v30.js','utf8');
 const management=fs.readFileSync('v1/document-management-v30.js','utf8');
 const managementCss=fs.readFileSync('v1/document-management-v30.css','utf8');
 const loader=fs.readFileSync('v1/organization-simple.js','utf8');
+const index=fs.readFileSync('v1/index.html','utf8');
 const migration=fs.readFileSync('supabase/migrations/20260821203000_add_document_proof_lifecycle.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/evo-document-lifecycle/index.ts','utf8');
 
@@ -33,5 +34,6 @@ assert(managementCss.includes('#passport.evoDocumentManageMode>.grid'),'document
 assert(loader.includes('document-proof-v30.js?v=20260821-v30-document-proof'),'Document Proof UI must be versioned in loader');
 assert(loader.includes('document-lifecycle-v30.js?v=20260821-v30-document-lifecycle'),'Document lifecycle must be versioned in loader');
 assert(loader.includes('document-management-v30.js?v=20260821-v30-document-management'),'Document management must be versioned in loader');
+assert(index.includes('organization-simple.js?v=20260821-v30-document-proof-loader'),'root HTML must bust the loader cache for V3.0');
 
 console.log('EVO V3.0 Document Proof lifecycle checks passed');
