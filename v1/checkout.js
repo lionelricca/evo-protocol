@@ -82,9 +82,6 @@ async function buyEvoPlan(planCode) {
   const network = EVO_PAYMENT_NETWORKS[chainId];
   if (!plan || !network) throw new Error(checkoutText('Plan o red no disponible.', 'Plan or network unavailable.'));
   if (!account || !walletProvider) await connectWallet();
-  if (account.toLowerCase() !== EVO_MERCHANT_WALLET.toLowerCase()) {
-    throw new Error(checkoutText('Checkout en validación final. Se habilitará para todas las wallets después de la prueba controlada.', 'Checkout is in final validation. It will open to every wallet after the controlled test.'));
-  }
   await ensurePaymentNetwork(network);
   const recipient = EVO_MERCHANT_WALLET;
   const approved = window.confirm(
