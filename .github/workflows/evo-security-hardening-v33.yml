@@ -1,0 +1,33 @@
+name: EVO Security Hardening V3.3
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  security-hardening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run V3.3 security regression checks
+        run: node tests/security-hardening-v33.test.js
+      - name: Check no service-role secret is committed
+        shell: bash
+        run: |
+          if grep -RInE 'SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*["'"'][^"'"']+' --exclude-dir=.git .; then
+            echo 'Potential service-role secret committed.'
+            exit 1
+          fi
+      - name: Security scope
+        run: echo "Zero-trust public signals, origin allowlists, payload caps, abuse controls and security drift prevention"
