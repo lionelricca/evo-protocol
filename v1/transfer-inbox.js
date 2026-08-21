@@ -8,6 +8,7 @@
   let signedSession=null;
   let loading=false;
 
+  const escHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const shortWallet=value=>{const wallet=String(value||'');return wallet.length>18?`${wallet.slice(0,8)}…${wallet.slice(-6)}`:(wallet||'—')};
   const shortSeal=value=>{const seal=String(value||'');return seal.length>24?`${seal.slice(0,12)}…${seal.slice(-8)}`:seal};
   const dateText=value=>{try{return new Intl.DateTimeFormat(document.documentElement.lang==='en'?'en-US':'es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value||'—')}};
@@ -58,7 +59,7 @@
   function renderError(message){
     const panel=ensurePanel();if(!panel)return;
     panel.className='panel evoTransferInbox error';
-    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">!</div><div><span class="evoInboxEyebrow">TRANSFER INBOX</span><h3>${t('No se pudo abrir la bandeja','Could not open inbox')}</h3><p>${String(message||t('Intentá nuevamente.','Try again.'))}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRetry" type="button">${t('Reintentar','Retry')}</button></div>`;
+    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">!</div><div><span class="evoInboxEyebrow">TRANSFER INBOX</span><h3>${t('No se pudo abrir la bandeja','Could not open inbox')}</h3><p>${escHtml(message||t('Intentá nuevamente.','Try again.'))}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRetry" type="button">${t('Reintentar','Retry')}</button></div>`;
     panel.querySelector('.evoInboxRetry')?.addEventListener('click',()=>unlockAndLoad(true));
   }
 
@@ -67,7 +68,7 @@
     const article=document.createElement('article');article.className='evoInboxOffer';
     const title=asset?.title||t('Activo EVO','EVO asset');
     const type=asset?.asset_type||t('Activo','Asset');
-    article.innerHTML=`<div class="evoInboxOfferTop"><div><span>${type}</span><h4>${title}</h4></div><b>${t('ESPERA TU FIRMA','AWAITING YOUR SIGNATURE')}</b></div><div class="evoInboxOfferMeta"><span>${t('De','From')} · ${shortWallet(offer.from_wallet)}</span><span>${t('Expira','Expires')} · ${dateText(offer.expires_at)}</span></div><code title="${offer.seal_id}">${shortSeal(offer.seal_id)}</code><div class="evoInboxOfferActions"><button class="btn primary" type="button">${t('Revisar y aceptar','Review & accept')}</button></div>`;
+    article.innerHTML=`<div class="evoInboxOfferTop"><div><span>${escHtml(type)}</span><h4>${escHtml(title)}</h4></div><b>${t('ESPERA TU FIRMA','AWAITING YOUR SIGNATURE')}</b></div><div class="evoInboxOfferMeta"><span>${t('De','From')} · ${escHtml(shortWallet(offer.from_wallet))}</span><span>${t('Expira','Expires')} · ${escHtml(dateText(offer.expires_at))}</span></div><code title="${escHtml(offer.seal_id)}">${escHtml(shortSeal(offer.seal_id))}</code><div class="evoInboxOfferActions"><button class="btn primary" type="button">${t('Revisar y aceptar','Review & accept')}</button></div>`;
     article.querySelector('button').onclick=()=>{location.href=reviewUrl(offer)};
     return article;
   }
@@ -131,12 +132,14 @@
     if(currentWallet&&currentWallet!==wallet)signedSession=null;
     currentWallet=wallet;
     const panel=ensurePanel();if(!panel)return;
+    if(panel.dataset.evoInboxWallet===wallet)return;
+    panel.dataset.evoInboxWallet=wallet;
     if(validSession(wallet))unlockAndLoad(false);else renderLocked();
   }
 
   const observer=new MutationObserver(()=>requestAnimationFrame(sync));
   observer.observe(document.documentElement,{childList:true,subtree:true});
-  window.addEventListener('evo:wallet-connected',event=>{const wallet=String(event.detail?.account||'').toLowerCase();if(wallet!==currentWallet)signedSession=null;currentWallet=wallet;setTimeout(sync,80)});
+  window.addEventListener('evo:wallet-connected',event=>{const wallet=String(event.detail?.account||'').toLowerCase();if(wallet!==currentWallet)signedSession=null;currentWallet=wallet;const panel=document.querySelector('.evoTransferInbox');if(panel)delete panel.dataset.evoInboxWallet;setTimeout(sync,80)});
   window.addEventListener('evo:wallet-disconnected',()=>{currentWallet='';signedSession=null;document.querySelector('.evoTransferInbox')?.remove()});
   window.evoRefreshTransferInbox=()=>unlockAndLoad(false);
   setTimeout(sync,100);
