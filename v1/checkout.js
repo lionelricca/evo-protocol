@@ -29,6 +29,78 @@ function checkoutStatus(message, kind) {
   box.className = kind === 'ok' ? 'passportNotice ok' : 'passportNotice';
   box.textContent = window.evoT ? window.evoT(message) : message;
 }
+function saveCreditBalance(wallet, credits) {
+  const normalizedWallet = String(wallet || '').toLowerCase();
+  const normalizedCredits = Number(credits);
+  if (!/^0x[0-9a-f]{40}$/.test(normalizedWallet) || !Number.isFinite(normalizedCredits)) return;
+  try { localStorage.setItem(EVO_CREDIT_BALANCE_KEY + ':' + normalizedWallet, JSON.stringify({ credits:normalizedCredits, updatedAt:new Date().toISOString() })); } catch {}
+  renderCreditBalance(normalizedWallet, normalizedCredits, true);
+}
+function readCreditBalance(wallet) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(EVO_CREDIT_BALANCE_KEY + ':' + String(wallet || '').toLowerCase()) || 'null');
+    return saved && Number.isFinite(Number(saved.credits)) ? Number(saved.credits) : null;
+  } catch { return null; }
+}
+function renderCreditBalance(wallet, credits, verified) {
+  const value = document.getElementById('creditBalanceValue');
+  const detail = document.getElementById('creditBalanceDetail');
+  if (!value || !detail) return;
+  const normalizedWallet = String(wallet || '').toLowerCase();
+  const balance = credits === undefined ? readCreditBalance(normalizedWallet) : Number(credits);
+  if (!normalizedWallet) {
+    value.textContent = '—';
+    detail.textContent = checkoutText('Conectá MetaMask para ver y usar tus créditos.', 'Connect MetaMask to view and use your credits.');
+    return;
+  }
+  value.textContent = balance === null || !Number.isFinite(balance) ? '0' : String(balance);
+  detail.textContent = verified
+    ? checkoutText('Saldo verificado en la red. Se usa automáticamente al crear tu próximo Passport.', 'Balance verified on-chain. It is used automatically when you create your next Passport.')
+    : checkoutText('Último saldo verificado para ', 'Last verified balance for ') + normalizedWallet.slice(0,6) + '…' + normalizedWallet.slice(-4) + '.';
+}
+async function fetchEvoEntitlement(wallet) {
+  const normalizedWallet = String(wallet || '').toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/.test(normalizedWallet)) throw new Error(checkoutText('Wallet inválida.', 'Invalid wallet.'));
+  const response = await fetch(EVO_CHECKOUT_URL, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ action:'status', wallet:normalizedWallet })
+  });
+  let data = {};
+  try { data = await response.json(); } catch {}
+  if (!response.ok) throw new Error(data.error || checkoutText('No se pudo consultar el beneficio.', 'Could not check the entitlement.'));
+  return data;
+}
+function renderEvoEntitlement(data) {
+  const status = document.getElementById('demoPlanStatus');
+  const value = document.getElementById('demoPlanValue');
+  const action = document.getElementById('demoPlanAction');
+  if (status && value && action) {
+    if (data.demoAvailable) {
+      value.textContent = checkoutText('Gratis disponible', 'Free available');
+      status.className = 'passportNotice ok';
+      status.textContent = checkoutText('Esta wallet todavía tiene su único Passport gratuito.', 'This wallet still has its one free Passport.');
+      action.textContent = checkoutText('Crear mi Passport gratis', 'Create my free Passport');
+      action.href = '#seal';
+    } else {
+      value.textContent = checkoutText('Gratis ya usado', 'Free already used');
+      status.className = 'passportNotice';
+      status.textContent = data.remainingCredits > 0
+        ? checkoutText(`Tenés ${data.remainingCredits} crédito(s) comprado(s) disponible(s).`, `You have ${data.remainingCredits} purchased credit(s) available.`)
+        : checkoutText('Para crear otro Passport necesitás comprar un crédito.', 'To create another Passport you need to buy a credit.');
+      action.textContent = data.remainingCredits > 0 ? checkoutText('Usar mi crédito', 'Use my credit') : checkoutText('Comprar crédito', 'Buy credit');
+      action.href = data.remainingCredits > 0 ? '#seal' : '#pricing';
+    }
+  }
+  saveCreditBalance(data.wallet, data.remainingCredits);
+  window.evoEntitlement = data;
+  window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
+  return data;
+}
+async function refreshEvoEntitlement(wallet) {
+  const data = await fetchEvoEntitlement(wallet || account || '');
+  return renderEvoEntitlement(data);
+}
+window.evoRefreshEntitlement = refreshEvoEntitlement;
 function savePendingPayment(payment) {
   try { localStorage.setItem(EVO_PENDING_PAYMENT_KEY, JSON.stringify(payment)); } catch {}
 }
@@ -207,5 +279,10 @@ function initEvoCheckout() {
     });
   }
   restorePendingPaymentForm();
+  window.evoWalletConnected = wallet => {
+    renderCreditBalance(wallet || account || '');
+    refreshEvoEntitlement(wallet || account || '').catch(error => checkoutStatus(error && error.message ? error.message : checkoutText('No se pudo comprobar el beneficio gratuito.', 'Could not check the free entitlement.')));
+    resumePendingPayment().catch(error => recoveryStatus(error && error.message ? error.message : checkoutText('El pago sigue pendiente de verificación.', 'The payment is still pending verification.')));
+  };
 }
 initEvoCheckout();

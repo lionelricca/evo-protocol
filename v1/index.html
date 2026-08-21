@@ -27,7 +27,7 @@
 <main>
 <section id="pricing" class="wrap block"><h2>Planes de lanzamiento</h2><p class="sub">Creá tu primer pasaporte gratis. Para los siguientes, elegí un plan y pagá con una criptomoneda disponible en tu wallet.</p>
 <div class="grid">
-  <div class="panel"><span class="kicker">DEMOSTRACIÓN</span><h3>Primer Passport</h3><p><strong style="font-size:2.4rem">Gratis</strong> <span class="sub">1 por wallet</span></p><div class="checks"><p>Incluye identificación EVO, QR, ficha pública, firma e historial.</p><p>La verificación pública siempre es gratuita.</p></div><a class="btn primary" href="#seal">Crear gratis</a></div>
+  <div class="panel" id="demoPlanCard"><span class="kicker">DEMOSTRACIÓN</span><h3>Primer Passport</h3><p><strong id="demoPlanValue" style="font-size:2.4rem">Gratis</strong> <span class="sub">1 por wallet</span></p><div id="demoPlanStatus" class="passportNotice">Conectá tu wallet para comprobar si está disponible.</div><div class="checks"><p>Incluye identificación EVO, QR, ficha pública, firma e historial.</p><p>La verificación pública siempre es gratuita.</p></div><a id="demoPlanAction" class="btn primary" href="#seal">Conectar y comprobar</a></div>
   <div class="panel"><span class="kicker">INDIVIDUAL</span><h3>1 EVO Passport</h3><p><strong style="font-size:2.4rem">US$9,90</strong></p><div class="checks"><p>Un crédito para crear un pasaporte adicional.</p><p>Pago único, sin suscripción.</p></div><button id="buyIndividualBtn" class="btn primary" type="button">Elegir cripto y pagar</button></div>
   <div class="panel"><span class="kicker">AHORRO</span><h3>Pack de 10</h3><p><strong style="font-size:2.4rem">US$49</strong></p><div class="checks"><p>Diez créditos para EVO Passport.</p><p>US$4,90 por pasaporte.</p></div><button id="buyPackBtn" class="btn gold" type="button">Elegir cripto y pagar</button></div>
 </div>
@@ -92,10 +92,10 @@
 <footer><div class="wrap"><b>EVO Passport</b> · Producto independiente creado por Lionel Ricca</div></footer>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
-<script src="./app.js?v=20260821-v14" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
+<script src="./app.js?v=20260821-v15-public-passport" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
 <script src="./i18n.js?v=20260821-v20-smart-checkout-1"></script>
 <script src="./wallet-autoconnect.js?v=20260821-v14"></script>
-<script src="./checkout.js?v=20260821-v20-smart-checkout"></script>
+<script src="./checkout.js?v=20260821-v21-wallet-entitlement"></script>
 <script src="./issuer.js?v=20260821-v14"></script>
 <script src="./organization.js?v=20260821-v14"></script>
 <script src="./organization-simple.js?v=20260821-v14"></script>
