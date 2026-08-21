@@ -1,9 +1,15 @@
 'use strict';
 
 (()=>{
-  if(document.getElementById('evoBackTop'))return;
   const t=(es,en)=>document.documentElement.lang==='en'?en:es;
   const reduced=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+  // A cached older loader may have already created V2.7.1. Replace the DOM node
+  // instead of reusing it so stale scroll/click listeners keep references only
+  // to the detached old control and cannot overwrite this version.
+  const staleButton=document.getElementById('evoBackTop');
+  if(staleButton)staleButton.remove();
+  document.querySelectorAll('.evoFooterTop').forEach(node=>node.remove());
 
   const contextualTarget=()=>{
     const hash=String(location.hash||'').toLowerCase();
@@ -12,7 +18,7 @@
       const node=document.getElementById('publicAssetPage')||document.getElementById('verify');
       if(node)return {kind:'passport',node};
     }
-    if(hash==='#myevo'){
+    if(hash==='#myevo'||document.getElementById('myEvo')?.classList.contains('ready')){
       const node=document.getElementById('myEvo');
       if(node)return {kind:'myevo',node};
     }
@@ -48,17 +54,19 @@
   button.id='evoBackTop';
   button.className='evoBackTop';
   button.type='button';
+  button.dataset.evoNavVersion='273';
   button.innerHTML='<span aria-hidden="true">↑</span><b></b>';
   document.body.appendChild(button);
 
   const footer=document.querySelector('footer .wrap');
   let footerTop=null;
-  if(footer&&!footer.querySelector('.evoFooterTop')){
+  if(footer){
     footerTop=document.createElement('button');
     footerTop.type='button';
     footerTop.className='evoFooterTop';
+    footerTop.dataset.evoNavVersion='273';
     footer.appendChild(footerTop);
-  }else footerTop=footer?.querySelector('.evoFooterTop')||null;
+  }
 
   const scrollToContext=()=>{
     const context=contextualTarget();
@@ -91,5 +99,6 @@
   window.addEventListener('evo:wallet-connected',()=>setTimeout(schedule,100));
   document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(schedule,80));
   window.addEventListener('load',()=>setTimeout(schedule,120),{once:true});
+  setTimeout(schedule,250);
   update();
 })();
