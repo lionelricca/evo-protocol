@@ -53,9 +53,11 @@ jobs:
         run: psql -X -f tests/sql/atomic-seal-fixture-v332.sql
       - name: Apply proposed atomic registration migration
         run: psql -X -f supabase/migrations/20260821234000_atomic_seal_registration_credit.sql
+      - name: Apply proposed active asset identity guard
+        run: psql -X -f supabase/migrations/20260821234200_active_asset_serial_guard.sql
       - name: Test atomic registration invariants
         run: psql -X -f tests/sql/atomic-seal-registration-v332.sql
       - name: Test concurrent wallet entitlement decisions
         run: bash tests/sql/atomic-seal-concurrency-v332.sh
       - name: Security gate scope
-        run: echo "Trust authority, CSP/browser shield, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency and concurrent entitlement safety"
+        run: echo "Trust authority, CSP/browser shield, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity guard and concurrent entitlement safety"
