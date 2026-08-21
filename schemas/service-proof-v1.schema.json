@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evo.example/schemas/service-proof-v1.schema.json",
+  "title": "EVO Service Proof V1",
+  "type": "object",
+  "required": ["sealId", "serviceType", "performedAt", "summary", "ownerWallet"],
+  "properties": {
+    "sealId": {"type": "string", "minLength": 8},
+    "serviceType": {
+      "type": "string",
+      "enum": ["INSPECTED", "SERVICED", "REPAIRED", "COMMISSIONED", "WARRANTY", "COMPONENT_REPLACED", "METER_READING", "NOTE"]
+    },
+    "performedAt": {"type": "string", "format": "date-time"},
+    "summary": {"type": "string", "minLength": 3, "maxLength": 4000},
+    "ownerWallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+    "providerWallet": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+    "providerLabel": {"type": "string", "maxLength": 160},
+    "technicianLabel": {"type": "string", "maxLength": 160},
+    "meter": {
+      "type": "object",
+      "properties": {
+        "kind": {"type": "string", "enum": ["HOURS", "ODOMETER_KM", "CYCLES", "OTHER"]},
+        "value": {"type": "number", "minimum": 0},
+        "unit": {"type": "string", "maxLength": 32}
+      },
+      "additionalProperties": false
+    },
+    "parts": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "maxLength": 200},
+          "partNumber": {"type": "string", "maxLength": 120},
+          "quantity": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "nextService": {
+      "type": "object",
+      "properties": {
+        "dueAt": {"type": "string", "format": "date-time"},
+        "dueMeterValue": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "evidenceDigests": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"}
+    },
+    "evidenceLevel": {
+      "type": "string",
+      "enum": ["OWNER_DECLARED", "PROVIDER_COUNTERSIGNED"]
+    }
+  },
+  "additionalProperties": false
+}
