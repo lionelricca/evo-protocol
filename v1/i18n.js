@@ -1,6 +1,22 @@
 'use strict';
 
 const EVO_ES_EN = {
+  "Para los siguientes, elegí un plan y pagá con una criptomoneda disponible en tu wallet.": "For additional passports, choose a plan and pay with a cryptocurrency available in your wallet.",
+  "Elegir cripto y pagar": "Choose crypto and pay",
+  "PAGO FLEXIBLE": "FLEXIBLE PAYMENT",
+  "Pagá con lo que ya tenés": "Pay with what you already have",
+  "El checkout muestra las criptomonedas compatibles disponibles en tu wallet, calcula el equivalente exacto y liquida el precio en USDC.": "The checkout shows compatible cryptocurrencies available in your wallet, calculates the exact equivalent and settles the price in USDC.",
+  "Elegís el activo": "Choose the asset",
+  "Revisás el total": "Review the total",
+  "Confirmás en tu wallet": "Confirm in your wallet",
+  "Vos controlás el pago:": "You control the payment:",
+  "ninguna operación se realiza sin tu aprobación.": "no transaction occurs without your approval.",
+  "Liquidación estable:": "Stable settlement:",
+  "EVO recibe USDC y acredita únicamente el precio completo.": "EVO receives USDC and credits only the full price.",
+  "Disponibilidad:": "Availability:",
+  "se muestran sólo activos con una ruta de conversión válida.": "only assets with a valid conversion route are shown.",
+  "Elegí un plan para consultar las opciones disponibles. Las comisiones se muestran antes de confirmar.": "Choose a plan to view available options. Fees are shown before confirmation.",
+  "Red de liquidación": "Settlement network",
   "1 EVO Passport · US$9,90": "1 EVO Passport · US$9.90",
   "Pack de 10 · US$49": "Pack of 10 · US$49",
   "¿Ya pagaste y no recibiste tus créditos?": "Already paid but did not receive your credits?",

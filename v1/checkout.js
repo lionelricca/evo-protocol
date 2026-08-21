@@ -3,19 +3,22 @@
 const EVO_CHECKOUT_URL = SUPABASE_URL + '/functions/v1/evo-checkout';
 const EVO_MERCHANT_WALLET = '0xDC6740245e026A19ea9EE2B62968ea8aeFFEAb16';
 const EVO_PAYMENT_NETWORKS = {
-  '137': { name:'Polygon', chainHex:'0x89', usdc:'0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', symbol:'POL', rpc:'https://polygon.drpc.org', explorer:'https://polygonscan.com/tx/' },
-  '8453': { name:'Base', chainHex:'0x2105', usdc:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', symbol:'ETH', rpc:'https://base.drpc.org', explorer:'https://basescan.org/tx/' },
-  '42161': { name:'Arbitrum', chainHex:'0xa4b1', usdc:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831', symbol:'ETH', rpc:'https://arbitrum.drpc.org', explorer:'https://arbiscan.io/tx/' },
-  '10': { name:'Optimism', chainHex:'0xa', usdc:'0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', symbol:'ETH', rpc:'https://optimism.drpc.org', explorer:'https://optimistic.etherscan.io/tx/' },
-  '43114': { name:'Avalanche', chainHex:'0xa86a', usdc:'0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', symbol:'AVAX', rpc:'https://api.avax.network/ext/bc/C/rpc', explorer:'https://snowtrace.io/tx/' },
-  '1': { name:'Ethereum', chainHex:'0x1', usdc:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', symbol:'ETH', rpc:'https://eth.drpc.org', explorer:'https://etherscan.io/tx/' }
+  '137': { name:'Polygon', depay:'polygon', usdc:'0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' },
+  '8453': { name:'Base', depay:'base', usdc:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' },
+  '42161': { name:'Arbitrum', depay:'arbitrum', usdc:'0xaf88d065e77c8cC2239327C5EDb3A432268e5831' },
+  '10': { name:'Optimism', depay:'optimism', usdc:'0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85' },
+  '43114': { name:'Avalanche', depay:'avalanche', usdc:'0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' },
+  '1': { name:'Ethereum', depay:'ethereum', usdc:'0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' }
 };
 const EVO_PAYMENT_PLANS = {
-  INDIVIDUAL: { label:'1 EVO Passport', amountLabel:'US$9,90', amountMinor:9900000n },
-  PACK_10: { label:'Pack de 10 EVO Passports', amountLabel:'US$49', amountMinor:49000000n }
+  INDIVIDUAL: { label:'1 EVO Passport', amountLabel:'US$9,90', amountUsdc:'9.90', amountMinor:9900000n },
+  PACK_10: { label:'Pack de 10 EVO Passports', amountLabel:'US$49', amountUsdc:'49', amountMinor:49000000n }
 };
 const EVO_PENDING_PAYMENT_KEY = 'evo_pending_payment_v1';
 const EVO_TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
+const EVO_DEPAY_SCRIPT = 'https://sdk.depay.com/widgets/v13.0.45.js';
+const EVO_VERIFYING_TXS = new Set();
+const EVO_DEPAY_CHAIN_IDS = Object.fromEntries(Object.entries(EVO_PAYMENT_NETWORKS).map(([chainId, network]) => [network.depay, chainId]));
 
 function checkoutText(es, en) {
   return document.documentElement.lang === 'en' ? en : es;
@@ -49,30 +52,23 @@ function recoveryStatus(message, kind) {
   box.className = kind === 'ok' ? 'result ok' : 'result';
   box.textContent = message;
 }
-function encodeUsdcTransfer(recipient, amountMinor) {
-  const selector = 'a9059cbb';
-  const addressWord = recipient.toLowerCase().replace(/^0x/, '').padStart(64, '0');
-  const amountWord = amountMinor.toString(16).padStart(64, '0');
-  return '0x' + selector + addressWord + amountWord;
-}
-async function ensurePaymentNetwork(network) {
-  try {
-    await walletProvider.request({ method:'wallet_switchEthereumChain', params:[{ chainId:network.chainHex }] });
-  } catch (error) {
-    if (Number(error && error.code) !== 4902) throw error;
-    await walletProvider.request({
-      method:'wallet_addEthereumChain',
-      params:[{
-        chainId:network.chainHex,
-        chainName:network.name,
-        nativeCurrency:{ name:network.symbol, symbol:network.symbol, decimals:18 },
-        rpcUrls:[network.rpc],
-        blockExplorerUrls:[network.explorer.replace('/tx/', '')]
-      }]
-    });
-  }
-  const selected = String(await walletProvider.request({ method:'eth_chainId' })).toLowerCase();
-  if (selected !== network.chainHex.toLowerCase()) throw new Error(checkoutText('MetaMask no cambió a la red elegida.', 'MetaMask did not switch to the selected network.'));
+function loadDePayWidgets() {
+  if (window.DePayWidgets) return Promise.resolve(window.DePayWidgets);
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-evo-depay]');
+    if (existing) {
+      existing.addEventListener('load', () => window.DePayWidgets ? resolve(window.DePayWidgets) : reject(new Error('depay_unavailable')), { once:true });
+      existing.addEventListener('error', () => reject(new Error('depay_unavailable')), { once:true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = EVO_DEPAY_SCRIPT;
+    script.async = true;
+    script.dataset.evoDepay = 'true';
+    script.onload = () => window.DePayWidgets ? resolve(window.DePayWidgets) : reject(new Error('depay_unavailable'));
+    script.onerror = () => reject(new Error('depay_unavailable'));
+    document.head.appendChild(script);
+  });
 }
 async function verifyCheckout(txHash, planCode, payerWallet, chainId) {
   for (let attempt = 0; attempt < 48; attempt += 1) {
@@ -100,40 +96,58 @@ async function verifyCheckout(txHash, planCode, payerWallet, chainId) {
   }
   throw new Error(checkoutText('El pago sigue pendiente. Guardá el hash: ', 'The payment is still pending. Save the hash: ') + txHash + checkoutText('. EVO puede verificarlo nuevamente.', '. EVO can verify it again.'));
 }
+function paymentDetails(transaction, planCode) {
+  const txHash = String(transaction && transaction.id || '').toLowerCase();
+  const payerWallet = String(transaction && transaction.from || '').toLowerCase();
+  const chainId = EVO_DEPAY_CHAIN_IDS[String(transaction && transaction.blockchain || '').toLowerCase()];
+  if (!EVO_TX_HASH_RE.test(txHash) || !/^0x[0-9a-f]{40}$/.test(payerWallet) || !chainId) return null;
+  return { txHash, payerWallet, chainId, planCode };
+}
+async function processSmartPayment(transaction, planCode, verifyNow) {
+  const payment = paymentDetails(transaction, planCode);
+  if (!payment) {
+    checkoutStatus(checkoutText('El pago fue enviado, pero faltan datos para acreditarlo automáticamente. Conservá el hash y usá Recuperar pago.', 'The payment was sent, but some data is missing for automatic crediting. Keep the hash and use Recover payment.'));
+    return;
+  }
+  savePendingPayment({ ...payment, createdAt:new Date().toISOString() });
+  if (!verifyNow || EVO_VERIFYING_TXS.has(payment.txHash)) {
+    checkoutStatus(checkoutText('Pago enviado. EVO esperará la confirmación de la red.', 'Payment sent. EVO will wait for network confirmation.'));
+    return;
+  }
+  EVO_VERIFYING_TXS.add(payment.txHash);
+  try {
+    checkoutStatus(checkoutText('Pago confirmado por la wallet. EVO está verificando la liquidación en USDC.', 'Payment confirmed by the wallet. EVO is verifying the USDC settlement.'));
+    const result = await verifyCheckout(payment.txHash, planCode, payment.payerWallet, payment.chainId);
+    clearPendingPayment(payment.txHash);
+    checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + result.remainingCredits + checkoutText(' crédito(s) disponibles para crear pasaportes.', ' credit(s) available to create passports.'), 'ok');
+  } finally {
+    EVO_VERIFYING_TXS.delete(payment.txHash);
+  }
+}
 async function buyEvoPlan(planCode) {
   const plan = EVO_PAYMENT_PLANS[planCode];
-  const select = document.getElementById('paymentNetwork');
-  const chainId = String(select && select.value || '137');
-  const network = EVO_PAYMENT_NETWORKS[chainId];
-  if (!plan || !network) throw new Error(checkoutText('Plan o red no disponible.', 'Plan or network unavailable.'));
-  if (!account || !walletProvider) await connectWallet();
-  await ensurePaymentNetwork(network);
-  const recipient = EVO_MERCHANT_WALLET;
-  const approved = window.confirm(
-    checkoutText('Vas a comprar ', 'You are buying ') + checkoutText(plan.label, planCode === 'INDIVIDUAL' ? '1 EVO Passport' : 'Pack of 10 EVO Passports') + '\n\n' +
-    checkoutText('Importe: ', 'Amount: ') + checkoutText(plan.amountLabel, plan.amountLabel.replace(',', '.')) + checkoutText(' en USDC\n', ' in USDC\n') +
-    checkoutText('Red: ', 'Network: ') + network.name + '\n' +
-    checkoutText('Destino: ', 'Recipient: ') + recipient + '\n\n' +
-    checkoutText('MetaMask mostrará la confirmación final. EVO nunca solicitará tu frase semilla.', 'MetaMask will show the final confirmation. EVO will never ask for your seed phrase.')
-  );
-  if (!approved) return;
-  checkoutStatus(checkoutText('Revisá y confirmá el pago en MetaMask.', 'Review and confirm the payment in MetaMask.'));
-  const txHash = await walletProvider.request({
-    method:'eth_sendTransaction',
-    params:[{
-      from:account,
-      to:network.usdc,
-      value:'0x0',
-      data:encodeUsdcTransfer(recipient, plan.amountMinor)
-    }]
+  if (!plan) throw new Error(checkoutText('Plan no disponible.', 'Plan unavailable.'));
+  checkoutStatus(checkoutText('Preparando las opciones disponibles en tu wallet…', 'Preparing the options available in your wallet…'));
+  const widgets = await loadDePayWidgets();
+  const accept = Object.values(EVO_PAYMENT_NETWORKS).map(network => ({
+    blockchain:network.depay,
+    amount:plan.amountUsdc,
+    token:network.usdc,
+    receiver:EVO_MERCHANT_WALLET
+  }));
+  await widgets.Payment({
+    accept,
+    currency:'USD',
+    title:checkoutText('Comprar EVO Passport', 'Buy EVO Passport'),
+    wallets:{ sort:['MetaMask'] },
+    style:{
+      colors:{ primary:'#73e6ff', text:'#dff9ff', buttonText:'#061018', icons:'#c493ff' },
+      colorsDarkMode:{ primary:'#73e6ff', text:'#f4f8ff', buttonText:'#061018', icons:'#c493ff' }
+    },
+    sent:transaction => { processSmartPayment(transaction, planCode, false).catch(() => {}); },
+    succeeded:transaction => { processSmartPayment(transaction, planCode, true).catch(error => checkoutStatus(error && error.message ? error.message : checkoutText('No se pudo acreditar el pago todavía. Usá Recuperar pago.', 'The payment could not be credited yet. Use Recover payment.'))); },
+    critical:() => checkoutStatus(checkoutText('El selector de pagos no está disponible temporalmente. No se realizó ningún cobro.', 'The payment selector is temporarily unavailable. No charge was made.'))
   });
-  const normalizedTxHash = String(txHash).toLowerCase();
-  const payerWallet = String(account).toLowerCase();
-  savePendingPayment({ txHash:normalizedTxHash, planCode, chainId, payerWallet, createdAt:new Date().toISOString() });
-  checkoutStatus(checkoutText('Pago enviado. EVO está verificando la cadena antes de acreditar.', 'Payment sent. EVO is verifying the chain before crediting.'));
-  const result = await verifyCheckout(normalizedTxHash, planCode, payerWallet, chainId);
-  clearPendingPayment(normalizedTxHash);
-  checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + result.remainingCredits + checkoutText(' crédito(s) disponibles para crear pasaportes.', ' credit(s) available to create passports.'), 'ok');
 }
 async function recoverEvoPayment() {
   const txInput = document.getElementById('recoveryTxHash');
