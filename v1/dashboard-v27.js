@@ -35,7 +35,8 @@
 
   function renderManageBar(){
     const bar=ensureManageBar();if(!bar||!activeSeal)return;
-    bar.hidden=false;
+    if(bar.dataset.seal===activeSeal&&bar.dataset.title===activeTitle&&!bar.hidden)return;
+    bar.hidden=false;bar.dataset.seal=activeSeal;bar.dataset.title=activeTitle;
     bar.textContent='';
 
     const copy=document.createElement('div');copy.className='evoManageCopy';
@@ -47,19 +48,22 @@
     const actions=document.createElement('div');actions.className='evoManageActions';
     const eventBtn=document.createElement('button');eventBtn.type='button';eventBtn.className='btn evoManageEvent';eventBtn.textContent=t('Registrar evento','Record event');
     eventBtn.onclick=()=>{
-      document.querySelector('.evoManageEvent')?.classList.add('active');
-      document.querySelector('.evoManageTransfer')?.classList.remove('active');
+      eventBtn.classList.add('active');transferBtn.classList.remove('active');
       const form=document.getElementById('passportEventForm');scrollToNode(form);setTimeout(()=>document.getElementById('passportType')?.focus(),350);
     };
     const transferBtn=document.createElement('button');transferBtn.type='button';transferBtn.className='btn evoManageTransfer';transferBtn.textContent=t('Transferir propiedad','Transfer ownership');
     transferBtn.onclick=()=>{
-      document.querySelector('.evoManageTransfer')?.classList.add('active');
-      document.querySelector('.evoManageEvent')?.classList.remove('active');
+      transferBtn.classList.add('active');eventBtn.classList.remove('active');
       const panel=document.querySelector('.transferPanel');scrollToNode(panel);setTimeout(()=>document.getElementById('transferToWallet')?.focus(),350);
     };
     const back=document.createElement('button');back.type='button';back.className='btn evoManageBack';back.textContent=t('Volver a Mi EVO','Back to My EVO');back.onclick=()=>{location.hash='myEvo';setTimeout(()=>scrollToNode(document.getElementById('myEvo')),0)};
     actions.append(eventBtn,transferBtn,back);
     bar.append(copy,actions);
+  }
+
+  function clearManageBar(){
+    activeSeal='';activeTitle='';
+    const bar=document.querySelector('.evoManageBar');if(bar){bar.hidden=true;bar.removeAttribute('data-seal');bar.removeAttribute('data-title');}
   }
 
   function manage(card){
@@ -99,5 +103,6 @@
   const observer=new MutationObserver(schedule);observer.observe(document.documentElement,{childList:true,subtree:true});
   document.addEventListener('click',event=>{if(event.target.closest('.myEvoTab'))setTimeout(schedule,0)});
   window.addEventListener('evo:wallet-connected',()=>setTimeout(schedule,100));
+  window.addEventListener('evo:wallet-disconnected',clearManageBar);
   schedule();
 })();
