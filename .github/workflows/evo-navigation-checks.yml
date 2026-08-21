@@ -28,3 +28,5 @@ jobs:
         run: |
           node tests/back-to-top.test.js
           node tests/i18n-v275.test.js
+      - name: V2.7.5 scope
+        run: echo "My EVO return and deterministic language switch"
