@@ -31,8 +31,19 @@ test('My EVO follows wallet connection lifecycle',()=>{
   assert.match(code,/evo:entitlement-updated/);
 });
 
-test('V2.5 loader pins dashboard assets',()=>{
+test('V2.5.2 uses one filtered EVO asset library',()=>{
+  const code=source();
+  assert.match(code,/buildLibrary/);
+  assert.match(code,/renderLibrary/);
+  assert.match(code,/Biblioteca EVO/);
+  assert.match(code,/En propiedad/);
+  assert.match(code,/Creados/);
+  assert.match(code,/Todos/);
+  assert.doesNotMatch(code,/myEvoColumns/);
+});
+
+test('V2.5.2 loader pins current dashboard assets',()=>{
   const code=loader();
-  assert.match(code,/dashboard\.css\?v=20260821-v25-my-evo/);
-  assert.match(code,/dashboard\.js\?v=20260821-v25-my-evo/);
+  assert.match(code,/dashboard-v252\.css\?v=20260821-v252-library/);
+  assert.match(code,/dashboard\.js\?v=20260821-v252-library/);
 });
