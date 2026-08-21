@@ -16,31 +16,33 @@ function evoAuthoritativeReality(g){
   const stats=g?.stats||{};
   const issuerTrust=String(stats.issuerTrust||g?.issuer?.trust||'SELF_DECLARED').toUpperCase();
   const passportEvents=Math.max(0,Number(stats.passportEvents||0));
-  // Guardian counts the initial Seal registration as one Passport event. Only
-  // later owner-signed lifecycle events are continuity evidence.
-  const signedContinuityEvents=Math.max(0,passportEvents-1);
+  const signedContinuityEvents=Math.max(0,Number(stats.signedPassportEvents??Math.max(0,passportEvents-1)));
+  const ownerSignedServiceProofs=Math.max(0,Number(stats.ownerSignedServiceProofs||0));
+  const providerCountersignedProofs=Math.max(0,Number(stats.providerCountersignedProofs||0));
   const publicPulses=Math.max(0,Number(stats.pulsesTotal||0));
   const softwareChallenges=Math.max(0,Number(stats.acceptedChallenges||0));
-  const chainOk=stats.pulseChainValid!==false;
-  const nfcVerified=stats.nfcVerified===true||stats.physicalProofState==='NFC_VERIFIED'||g?.physicalProof?.status==='NFC_VERIFIED'||g?.reality?.state?.physicalProofState==='NFC_VERIFIED';
+  const nfcVerified=stats.nfcVerified===true||stats.physicalProofState==='NFC_VERIFIED'||g?.physicalProof?.status==='NFC_VERIFIED'||g?.authority?.state?.physicalProofState==='NFC_VERIFIED'||g?.reality?.state?.physicalProofState==='NFC_VERIFIED';
   const trustedIssuer=['WALLET_PROVEN','DOMAIN_VERIFIED','ORGANIZATION_VERIFIED'].includes(issuerTrust);
   const strongerIssuer=['DOMAIN_VERIFIED','ORGANIZATION_VERIFIED'].includes(issuerTrust);
+  const signedContinuity=signedContinuityEvents>0||ownerSignedServiceProofs>0;
+  const independentEvidence=providerCountersignedProofs>0;
 
   let maxLevel=1;
   if(issuerTrust==='SUSPENDED')maxLevel=1;
   else if(nfcVerified)maxLevel=4;
-  else if(strongerIssuer&&signedContinuityEvents>0)maxLevel=3;
-  else if(signedContinuityEvents>0)maxLevel=2;
+  else if(independentEvidence||(strongerIssuer&&signedContinuity))maxLevel=3;
+  else if(signedContinuity)maxLevel=2;
 
   return {
     issuerTrust,
     trustedIssuer,
     strongerIssuer,
     signedContinuityEvents,
+    ownerSignedServiceProofs,
+    providerCountersignedProofs,
     publicPulses,
     softwareChallenges,
     publicTelemetryOnly:publicPulses>0||softwareChallenges>0,
-    pulseChainValid:chainOk,
     physical:nfcVerified,
     maxLevel
   };
@@ -48,10 +50,9 @@ function evoAuthoritativeReality(g){
 
 function evoRealityLevel(g){
   const authority=evoAuthoritativeReality(g);
-  const backendLevel=Number(g?.reality?.level);
-  // Never allow public Pulse / SOFTWARE_V0 Challenge activity to elevate the
-  // public authority display above evidence that requires a signer, verified
-  // issuer, independent counterparty or secure hardware.
+  const backendLevel=Number(g?.authority?.level??g?.reality?.level);
+  // Defense in depth: even if a backend regression returns an inflated level,
+  // public Pulse / SOFTWARE_V0 Challenge can never elevate the browser display.
   const level=Number.isFinite(backendLevel)?Math.max(1,Math.min(backendLevel,authority.maxLevel)):authority.maxLevel;
   const labels={1:'SIGNED IDENTITY',2:'SIGNED CONTINUITY',3:'TRUSTED DIGITAL IDENTITY',4:'PHYSICAL CRYPTO PROOF'};
   const label=labels[level]||'SIGNED IDENTITY';
@@ -73,20 +74,25 @@ function evoRealityMarkup(g){
   const r=evoRealityLevel(g);
   const issuer=String(r.authority.issuerTrust||'SELF_DECLARED').replaceAll('_',' ');
   const physical=r.physical?'<span class="status ok">NFC VERIFIED</span>':'<span class="status warn">NOT PHYSICAL</span>';
-  const root=String(g?.reality?.root||g?.stats?.realityRoot||'').toLowerCase();
-  const chain=String(g?.reality?.chainState||'LOCAL_EVIDENCE_ONLY').replaceAll('_',' ');
-  const rootRow=root?`<div class="kv"><span>Reality Root</span><b class="mono" title="${esc(root)}">${esc(shortRoot(root))}</b></div>`:'';
-  const copyBtn=root?`<button class="btn" type="button" data-copy-reality-root="${esc(root)}">Copiar Reality Root</button>`:'';
+  const authorityRoot=String(g?.authority?.root||g?.reality?.authorityRoot||g?.stats?.authorityRoot||'').toLowerCase();
+  const realityRoot=String(g?.reality?.root||g?.stats?.realityRoot||'').toLowerCase();
+  const chain=String(g?.authority?.chainState||g?.reality?.chainState||'LOCAL_EVIDENCE_ONLY').replaceAll('_',' ');
+  const authorityRootRow=authorityRoot?`<div class="kv"><span>Authority Root</span><b class="mono" title="${esc(authorityRoot)}">${esc(shortRoot(authorityRoot))}</b></div>`:'';
+  const realityRootRow=realityRoot?`<div class="kv"><span>Reality Root · telemetry</span><span class="mono" title="${esc(realityRoot)}">${esc(shortRoot(realityRoot))}</span></div>`:'';
+  const copyBtn=authorityRoot?`<button class="btn" type="button" data-copy-authority-root="${esc(authorityRoot)}">Copiar Authority Root</button>`:'';
   const telemetry=r.authority.publicTelemetryOnly
     ?`${r.authority.publicPulses} Pulse · ${r.authority.softwareChallenges} Software Challenge`
     :'Sin actividad pública';
 
   return `<div class="guardianSignal realityLevelCard">
     <div><span class="status ${r.className}">ERL ${r.level}</span><b>${esc(r.label)}</b></div>
-    <p><b>EVO Reality Level</b> resume la fuerza de evidencia autoritativa disponible. Actividad pública no puede elevar este nivel.</p>
-    ${rootRow}
-    <div class="kv"><span>Continuity</span><b>${esc(chain)}</b></div>
-    <div class="kv"><span>Signed continuity</span><b>${r.authority.signedContinuityEvents} EVENT(S)</b></div>
+    <p><b>Authority Root</b> representa sólo evidencia autoritativa. <b>Reality Root</b> además incorpora telemetría pública para análisis de continuidad/anomalías.</p>
+    ${authorityRootRow}
+    ${realityRootRow}
+    <div class="kv"><span>Authority continuity</span><b>${esc(chain)}</b></div>
+    <div class="kv"><span>Signed Passport events</span><b>${r.authority.signedContinuityEvents}</b></div>
+    <div class="kv"><span>Owner Service Proofs</span><b>${r.authority.ownerSignedServiceProofs}</b></div>
+    <div class="kv"><span>Provider countersignatures</span><b>${r.authority.providerCountersignedProofs}</b></div>
     <div class="kv"><span>Issuer</span><b>${esc(issuer)}</b></div>
     <div class="kv"><span>Public telemetry</span><b class="status warn">OBSERVATIONAL ONLY</b></div>
     <div class="kv"><span>Pulse / Challenge</span><span>${esc(telemetry)}</span></div>
@@ -101,15 +107,15 @@ guardianMarkup=function(g){
   const trust=String(g.stats?.issuerTrust||'SELF_DECLARED').replaceAll('_',' ');
   const issuerCard=`<div class="guardianSignal"><div><span class="status ${g.stats?.issuerTrust==='SUSPENDED'?'bad':g.stats?.issuerTrust==='SELF_DECLARED'?'warn':'ok'}">ISSUER</span><b>Issuer Trust: ${esc(trust)}</b></div><p>${esc(g.issuer?.displayName||'')}</p></div>`;
   const realityCard=evoRealityMarkup(g);
-  return html.replace('<div class="guardianSignals"><h3>Signals</h3>',`<div class="guardianSignals"><h3>EVO Reality Graph</h3>${realityCard}<h3>Issuer Trust</h3>${issuerCard}<h3>Signals</h3>`);
+  return html.replace('<div class="guardianSignals"><h3>Signals</h3>',`<div class="guardianSignals"><h3>EVO Authority + Reality</h3>${realityCard}<h3>Issuer Trust</h3>${issuerCard}<h3>Signals</h3>`);
 };
 
 function bindRealityActions(){
-  const btn=document.querySelector('[data-copy-reality-root]');
+  const btn=document.querySelector('[data-copy-authority-root]');
   if(!btn)return;
   btn.onclick=async()=>{
-    const root=btn.getAttribute('data-copy-reality-root')||'';
-    try{await navigator.clipboard.writeText(root);toast('Reality Root copiado');}
+    const root=btn.getAttribute('data-copy-authority-root')||'';
+    try{await navigator.clipboard.writeText(root);toast('Authority Root copiado');}
     catch{toast('No se pudo copiar automáticamente');}
   };
 }
@@ -118,7 +124,7 @@ analyzeGuardian=async function(sealId){
   const id=String(sealId||$('guardianSealId')?.value||'').trim().toUpperCase(),out=$('guardianResult');
   if(!id){toast('Ingresá un Seal ID');return}
   if($('guardianSealId'))$('guardianSealId').value=id;
-  out.className='result';out.textContent='EVO AI Guardian está calculando Reality Graph + Reality Root…';
+  out.className='result';out.textContent='EVO AI Guardian está calculando Authority Root + Reality Root…';
   try{
     const r=await fetch(GUARDIAN_V04_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sealId:id})});
     let data={};try{data=await r.json()}catch{}
@@ -131,4 +137,4 @@ analyzeGuardian=async function(sealId){
 if($('guardianBtn'))$('guardianBtn').onclick=()=>analyzeGuardian();
 // organization-simple.js is loaded once by index.html.
 (()=>{const s=document.createElement('script');s.src='./battery.js?v=20260821-v11';s.async=true;document.body.appendChild(s)})();
-console.info('EVO AI Guardian V0.4 UI · V3.3 authority hardening',{mode:'SIGNED AUTHORITY / PUBLIC TELEMETRY NON-AUTHORITATIVE / REALITY ROOT / ISSUER TRUST'});
+console.info('EVO AI Guardian UI · V3.3 authority hardening',{mode:'AUTHORITY ROOT / REALITY ROOT / PUBLIC TELEMETRY NON-AUTHORITATIVE / ISSUER TRUST'});
