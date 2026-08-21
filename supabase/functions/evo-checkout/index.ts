@@ -47,13 +47,23 @@ const PLANS = {
 };
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 const TX_RE = /^0x[0-9a-fA-F]{64}$/;
+const MAX_BODY_BYTES = 4096;
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" } });
+function json(data: unknown, status = 200, extraHeaders: Record<string,string> = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...cors,
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      ...extraHeaders,
+    },
+  });
 }
 function normalize(value: unknown) {
   return String(value || "").toLowerCase();
@@ -121,40 +131,51 @@ function verifyTransfer(view: any, chain: any, txHash: string, payer: string, am
     confirmedAt: new Date(Number(parseHex(view.block.timestamp)) * 1000).toISOString(),
   };
 }
+async function readEntitlement(supabase: any, wallet: string) {
+  const { data: entitlement, error } = await supabase
+    .rpc("evo_get_passport_entitlement", { p_wallet: wallet })
+    .single();
+  if (error) throw new Error("entitlement_lookup_failed");
+  const purchasedCredits = Number(entitlement?.purchased_credits || 0);
+  const consumedCredits = Number(entitlement?.consumed_credits || 0);
+  return {
+    demoAvailable: Boolean(entitlement?.demo_available),
+    purchasedCredits,
+    consumedCredits,
+    remainingCredits: Math.max(purchasedCredits - consumedCredits, 0),
+  };
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
-    const length = Number(req.headers.get("content-length") || 0);
-    if (length > 4096) return json({ error: "request_too_large" }, 413);
-    const body = await req.json();
+    const declaredLength = Number(req.headers.get("content-length") || 0);
+    if (declaredLength > MAX_BODY_BYTES) return json({ error: "request_too_large" }, 413);
+    const raw = await req.text();
+    if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return json({ error: "request_too_large" }, 413);
+    let body: Record<string,unknown>;
+    try { body = JSON.parse(raw || "{}"); }
+    catch { return json({ error: "invalid_json" }, 400); }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
+
     if (body.action === "status") {
       const wallet = normalize(body.wallet);
       if (!WALLET_RE.test(wallet)) return json({ error: "invalid_wallet" }, 400);
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-        { auth: { persistSession: false } },
-      );
-      const { data: entitlement, error } = await supabase
-        .rpc("evo_get_passport_entitlement", { p_wallet: wallet })
-        .single();
-      if (error) {
-        console.error(error);
+      try {
+        const entitlement = await readEntitlement(supabase, wallet);
+        return json({ ok: true, wallet, ...entitlement });
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : "entitlement_lookup_failed");
         return json({ error: "entitlement_lookup_failed" }, 500);
       }
-      const purchasedCredits = Number(entitlement?.purchased_credits || 0);
-      const consumedCredits = Number(entitlement?.consumed_credits || 0);
-      return json({
-        ok: true,
-        wallet,
-        demoAvailable: Boolean(entitlement?.demo_available),
-        purchasedCredits,
-        consumedCredits,
-        remainingCredits: Math.max(purchasedCredits - consumedCredits, 0),
-      });
     }
+
     if (body.action !== "verify") return json({ error: "invalid_action" }, 400);
     const txHash = normalize(body.txHash);
     const payer = normalize(body.payerWallet);
@@ -166,6 +187,72 @@ Deno.serve(async (req: Request) => {
     if (!chain) return json({ error: "unsupported_chain" }, 400);
     const plan = PLANS[planCode as keyof typeof PLANS];
     if (!plan) return json({ error: "invalid_plan" }, 400);
+
+    // A payment already committed to EVO never needs another expensive blockchain quorum read.
+    // The stored immutable payment facts must still match the request and canonical plan.
+    const { data: existingPayment, error: existingPaymentError } = await supabase
+      .from("evo_checkout_payments")
+      .select("tx_hash,payer_wallet,plan_code,amount_minor,credits,chain_id,token_contract,merchant_wallet,block_number,confirmations,confirmed_at")
+      .eq("tx_hash", txHash)
+      .maybeSingle();
+    if (existingPaymentError) {
+      console.error(existingPaymentError);
+      return json({ error: "payment_cache_lookup_failed" }, 500);
+    }
+    if (existingPayment) {
+      const requestMatches = normalize(existingPayment.payer_wallet) === payer
+        && String(existingPayment.plan_code) === planCode
+        && Number(existingPayment.chain_id) === Number(chainIdText);
+      if (!requestMatches) return json({ error: "payment_replay_mismatch" }, 409);
+
+      let amountMatches = false;
+      try { amountMatches = BigInt(String(existingPayment.amount_minor)) === plan.amount; }
+      catch { amountMatches = false; }
+      const storedCanonical = amountMatches
+        && Number(existingPayment.credits) === plan.credits
+        && normalize(existingPayment.token_contract) === chain.usdc
+        && normalize(existingPayment.merchant_wallet) === MERCHANT;
+      if (!storedCanonical) return json({ error: "stored_payment_integrity_error" }, 500);
+
+      try {
+        const entitlement = await readEntitlement(supabase, payer);
+        return json({
+          ok: true,
+          pending: false,
+          applied: false,
+          cached: true,
+          planCode,
+          network: chain.name,
+          chainId: Number(chainIdText),
+          credits: plan.credits,
+          purchasedCredits: entitlement.purchasedCredits,
+          consumedCredits: entitlement.consumedCredits,
+          remainingCredits: entitlement.remainingCredits,
+          transactionHash: txHash,
+          confirmations: Number(existingPayment.confirmations),
+        });
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : "entitlement_lookup_failed");
+        return json({ error: "entitlement_lookup_failed" }, 500);
+      }
+    }
+
+    // Durable limits are consumed before any outbound chain RPC. CORS is not an
+    // authentication mechanism; this database gate is the actual cost-control boundary.
+    const { data: verificationRate, error: verificationRateError } = await supabase
+      .rpc("evo_checkout_take_verification_slot", { p_payer_wallet: payer, p_tx_hash: txHash })
+      .single();
+    if (verificationRateError || !verificationRate) {
+      console.error(verificationRateError || "verification_rate_guard_unavailable");
+      return json({ error: "verification_guard_unavailable" }, 503);
+    }
+    if (!verificationRate.allowed) {
+      const retryAfter = Math.max(1, Number(verificationRate.retry_after_seconds || 1));
+      return json({
+        error: "verification_rate_limited",
+        retryAfterSeconds: retryAfter,
+      }, 429, { "Retry-After": String(retryAfter) });
+    }
 
     let views;
     try {
@@ -209,11 +296,6 @@ Deno.serve(async (req: Request) => {
       }, 202);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } },
-    );
     const { data, error } = await supabase.rpc("evo_apply_checkout_payment", {
       p_tx_hash: txHash,
       p_payer_wallet: payer,
@@ -234,6 +316,7 @@ Deno.serve(async (req: Request) => {
       ok: true,
       pending: false,
       applied: data.applied,
+      cached: false,
       planCode,
       network: chain.name,
       chainId: Number(chainIdText),
@@ -245,7 +328,7 @@ Deno.serve(async (req: Request) => {
       confirmations: Number(confirmations),
     });
   } catch (error) {
-    console.error(error);
+    console.error(error instanceof Error ? error.name : "unknown");
     return json({ error: "invalid_request" }, 400);
   }
 });
