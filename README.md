@@ -33,6 +33,7 @@ The next layer is the **EVO Reality Graph**: one continuously evolving trust sta
 - Company reference: **US$39/month** for up to 100 passports; commercial activation pending.
 - Public verification remains free and does not require a wallet.
 - MetaMask checkout settles only verified, Circle-issued USDC on Ethereum, Polygon, Base, Arbitrum, Optimism or Avalanche C-Chain.
+- Checkout accepts any customer EVM wallet connected through MetaMask; the payer is verified against the onchain transaction.
 - Customers may use MetaMask Buy or Swap before checkout when they hold another supported asset.
 - Every payment requires explicit wallet confirmation and is credited only after independent onchain verification.
 - All payments settle to the merchant wallet `0xDC6740245e026A19ea9EE2B62968ea8aeFFEAb16`.
