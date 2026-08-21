@@ -65,6 +65,13 @@ function containsRecoverySecretRequest(text){
   assert(guardianBase.includes('providerCountersignedProofs'),'Guardian backend must recognize independent provider countersignatures');
   assert(!/pulseChainValid\)confidence\s*\+=/i.test(guardianBase),'Pulse must not add Evidence Confidence');
   assert(!/acceptedChallenges\)confidence\s*\+=/i.test(guardianBase),'SOFTWARE Challenge must not add Evidence Confidence');
+  assert(guardianBase.includes('MAX_EVENTS=300'),'Guardian must bound Passport-event analysis cost');
+  assert(guardianBase.includes('MAX_PULSES_ANALYZED=1500'),'Guardian must bound public Pulse analysis cost');
+  assert(guardianBase.includes('MAX_CHALLENGE_ATTEMPTS=750'),'Guardian must bound Challenge-attempt analysis cost');
+  assert(guardianBase.includes('MAX_SERVICE_PROOFS=300'),'Guardian must bound Service Proof analysis cost');
+  assert(guardianBase.includes('.eq("event_type","TRANSFERRED")'),'Guardian must resolve latest ownership independently of truncated history');
+  assert(guardianBase.includes('const currentOwner=String(latestTransfer?.new_owner_wallet||seal.issuer_wallet||"").toLowerCase()'),'Guardian current owner must come from latest transfer, not a capped event slice');
+  assert(guardianBase.includes('"X-Content-Type-Options":"nosniff"'),'Guardian responses must disable MIME sniffing');
 
   const guardianAuthority=read('supabase/functions/evo-ai-guardian-v04/index.ts');
   assert(guardianAuthority.includes('EVO-AUTHORITY-STATE-V1'),'backend must produce a distinct Authority State');
