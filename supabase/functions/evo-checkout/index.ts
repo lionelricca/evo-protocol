@@ -129,6 +129,32 @@ Deno.serve(async (req: Request) => {
     const length = Number(req.headers.get("content-length") || 0);
     if (length > 4096) return json({ error: "request_too_large" }, 413);
     const body = await req.json();
+    if (body.action === "status") {
+      const wallet = normalize(body.wallet);
+      if (!WALLET_RE.test(wallet)) return json({ error: "invalid_wallet" }, 400);
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const { data: entitlement, error } = await supabase
+        .rpc("evo_get_passport_entitlement", { p_wallet: wallet })
+        .single();
+      if (error) {
+        console.error(error);
+        return json({ error: "entitlement_lookup_failed" }, 500);
+      }
+      const purchasedCredits = Number(entitlement?.purchased_credits || 0);
+      const consumedCredits = Number(entitlement?.consumed_credits || 0);
+      return json({
+        ok: true,
+        wallet,
+        demoAvailable: Boolean(entitlement?.demo_available),
+        purchasedCredits,
+        consumedCredits,
+        remainingCredits: Math.max(purchasedCredits - consumedCredits, 0),
+      });
+    }
     if (body.action !== "verify") return json({ error: "invalid_action" }, 400);
     const txHash = normalize(body.txHash);
     const payer = normalize(body.payerWallet);

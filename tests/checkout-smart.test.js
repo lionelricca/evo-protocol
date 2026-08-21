@@ -97,3 +97,15 @@ test('submitted smart payment is recoverable and verified against its settlement
   });
   assert.equal(harness.storage.has('evo_pending_payment_v1'), false);
 });
+
+test('wallet entitlement is checked before requesting a passport signature', () => {
+  const app = fs.readFileSync('v1/app.js', 'utf8');
+  const checkout = fs.readFileSync('v1/checkout.js', 'utf8');
+  const backend = fs.readFileSync('supabase/functions/evo-checkout/index.ts', 'utf8');
+  assert.match(app, /evoRefreshEntitlement/);
+  assert.match(app, /demoAvailable/);
+  assert.match(app, /No es un pago ni consume gas/);
+  assert.match(checkout, /action:'status'/);
+  assert.match(checkout, /Gratis ya usado/);
+  assert.match(backend, /evo_get_passport_entitlement/);
+});
