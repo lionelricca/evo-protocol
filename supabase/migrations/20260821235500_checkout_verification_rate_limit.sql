@@ -82,9 +82,9 @@ begin
         updated_at = excluded.updated_at
   returning r.attempts into v_tx_count;
 
-  v_retry := pg_catalog.greatest(
+  v_retry := greatest(
     1,
-    pg_catalog.ceil(pg_catalog.extract(epoch from (v_window + interval '1 minute' - v_now)))::integer
+    ceil(extract(epoch from (v_window + interval '1 minute' - v_now)))::integer
   );
 
   return query select
