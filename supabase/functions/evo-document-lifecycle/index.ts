@@ -14,7 +14,9 @@ const eventRe = /^EVD-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/;
 const hex64 = /^[0-9a-f]{64}$/;
 const hex32 = /^[0-9a-f]{32}$/;
 const allowed = new Set(["DOCUMENT_REVOKED", "DOCUMENT_SUPERSEDED", "DOCUMENT_NOTE"]);
+const terminalTypes = ["DOCUMENT_REVOKED", "DOCUMENT_SUPERSEDED"];
 const MAX_REASON = 1200;
+const MAX_BODY_BYTES = 16384;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -31,8 +33,11 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   try {
-    const body = await req.json();
-    const event = body?.event;
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) return json({ error: "payload_too_large" }, 413);
+    let body: Record<string, unknown>;
+    try { body = JSON.parse(rawBody || "{}"); } catch { return json({ error: "invalid_json" }, 400); }
+    const event = (body as { event?: Record<string, unknown> })?.event;
     if (!event || typeof event !== "object") return json({ error: "invalid_payload" }, 400);
 
     const required = ["eventId", "sealId", "version", "eventType", "actorWallet", "eventDigest", "nonce", "signature", "signatureMessage", "createdAt"];
@@ -59,7 +64,7 @@ Deno.serve(async (req) => {
       return json({ error: "related_seal_only_for_supersede" }, 400);
     }
 
-    const created = new Date(event.createdAt);
+    const created = new Date(String(event.createdAt));
     if (Number.isNaN(created.getTime())) return json({ error: "invalid_created_at" }, 400);
     if (Math.abs(Date.now() - created.getTime()) > 10 * 60 * 1000) return json({ error: "stale_or_future_timestamp" }, 400);
 
@@ -90,6 +95,17 @@ Deno.serve(async (req) => {
       if (replacementError || !replacement) return json({ error: "replacement_not_found" }, 404);
       if (String(replacement.asset_type || "").toLowerCase() !== "documento") return json({ error: "replacement_not_document" }, 409);
       if (String(replacement.issuer_wallet || "").toLowerCase() !== actor) return json({ error: "replacement_issuer_mismatch" }, 409);
+
+      const { data: replacementTerminal, error: replacementTerminalError } = await supabase
+        .from("evo_document_events")
+        .select("event_type,related_seal_id,registered_at")
+        .eq("seal_id", relatedSealId)
+        .eq("status", "ACTIVE")
+        .in("event_type", terminalTypes)
+        .order("registered_at", { ascending: false })
+        .limit(1);
+      if (replacementTerminalError) return json({ error: "database_error" }, 500);
+      if (replacementTerminal?.length) return json({ error: "replacement_is_not_current", current: replacementTerminal[0] }, 409);
     }
 
     const { data: terminalEvents, error: terminalError } = await supabase
@@ -97,7 +113,7 @@ Deno.serve(async (req) => {
       .select("event_type,related_seal_id,registered_at")
       .eq("seal_id", event.sealId)
       .eq("status", "ACTIVE")
-      .in("event_type", ["DOCUMENT_REVOKED", "DOCUMENT_SUPERSEDED"])
+      .in("event_type", terminalTypes)
       .order("registered_at", { ascending: false })
       .limit(1);
 
@@ -115,7 +131,7 @@ Deno.serve(async (req) => {
     ].join("|"));
     if (expectedDigest !== event.eventDigest) return json({ error: "event_digest_mismatch" }, 400);
 
-    const expectedEventId = `EVD-${event.eventDigest.slice(0, 8).toUpperCase()}-${event.eventDigest.slice(8, 16).toUpperCase()}-${event.eventDigest.slice(16, 24).toUpperCase()}`;
+    const expectedEventId = `EVD-${String(event.eventDigest).slice(0, 8).toUpperCase()}-${String(event.eventDigest).slice(8, 16).toUpperCase()}-${String(event.eventDigest).slice(16, 24).toUpperCase()}`;
     if (expectedEventId !== event.eventId) return json({ error: "event_id_mismatch" }, 400);
 
     const expectedMessage = `EVO DOCUMENT LIFECYCLE V1\nEvent ID: ${event.eventId}\nSeal ID: ${event.sealId}\nType: ${event.eventType}\nActor: ${actor}\nRelated seal: ${relatedSealId || "N/A"}\nDigest: ${event.eventDigest}\nCreated: ${event.createdAt}`;
@@ -151,7 +167,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (error) {
-      if (error.code === "23505") return json({ error: "event_already_exists" }, 409);
+      if (error.code === "23505") return json({ error: "document_lifecycle_conflict" }, 409);
       console.error(error);
       return json({ error: "database_error" }, 500);
     }
