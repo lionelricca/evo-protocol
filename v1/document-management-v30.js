@@ -8,7 +8,7 @@
 
   const shortWallet=value=>{const w=String(value||'');return w.length>18?`${w.slice(0,8)}…${w.slice(-6)}`:(w||'—')};
   const dateText=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat(document.documentElement.lang==='en'?'en-US':'es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value)}};
-  const escText=value=>String(value||'');
+  const escText=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
   function section(){return document.getElementById('passport')}
   function currentSeal(){return String(document.getElementById('passportSealId')?.value||'').trim().toUpperCase()}
@@ -68,7 +68,7 @@
 
   function renderHistory(events){
     if(!events.length)return `<div class="documentManageEmpty">${t('Sin eventos posteriores a la emisión.','No lifecycle events after issuance.')}</div>`;
-    return `<div class="documentManageTimeline">${events.map(event=>`<div class="documentManageEvent"><span>${eventTitle(event)}</span><b>${escText(event.reason)||'—'}</b>${event.related_seal_id?`<code>${escText(event.related_seal_id)}</code>`:''}<small>${dateText(event.registered_at||event.created_at)} · ${shortWallet(event.actor_wallet)}</small></div>`).join('')}</div>`;
+    return `<div class="documentManageTimeline">${events.map(event=>`<div class="documentManageEvent"><span>${eventTitle(event)}</span><b>${escText(event.reason)||'—'}</b>${event.related_seal_id?`<code>${escText(event.related_seal_id)}</code>`:''}<small>${escText(dateText(event.registered_at||event.created_at))} · ${escText(shortWallet(event.actor_wallet))}</small></div>`).join('')}</div>`;
   }
 
   function versionUrl(sealId){const u=new URL(location.href);u.search='';u.hash='verify';u.searchParams.set('seal',sealId);return u.toString()}
@@ -113,7 +113,7 @@
       <p class="documentManageMeaning">${copy.text}</p>
       <div class="documentManageFacts">
         <div><span>${t('EMISOR','ISSUER')}</span><b>${escText(seal.issuer_label||shortWallet(issuer))}</b></div>
-        <div><span>${t('WALLET EMISORA','ISSUER WALLET')}</span><code>${shortWallet(issuer)}</code></div>
+        <div><span>${t('WALLET EMISORA','ISSUER WALLET')}</span><code>${escText(shortWallet(issuer))}</code></div>
         <div><span>SHA-256</span><code>${escText(seal.asset_hash||'—')}</code></div>
       </div>
       ${related?`<div class="documentManageCurrent"><span>${t('VERSIÓN VIGENTE','CURRENT VERSION')}</span><code>${escText(related)}</code><a class="btn primary" href="${versionUrl(related)}">${t('Abrir versión vigente','Open current version')}</a></div>`:''}
