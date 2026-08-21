@@ -1,6 +1,7 @@
 'use strict';
 
 (() => {
+  const SECURITY_BASELINE = 'EVO-BROWSER-SHIELD-V3.3.1';
   const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.3';
   const CRITICAL_LOCAL_FILES = new Set(['browser-shield-v332.css', 'styles.css', 'app.js']);
   const APPROVED_RUNTIME_HOSTS = new Set(['cdn.jsdelivr.net', 'sdk.depay.com']);
@@ -66,6 +67,7 @@
   Object.defineProperty(window, 'EVOSecurity', {
     value: Object.freeze({
       browserShield: true,
+      baseline: SECURITY_BASELINE,
       version: SECURITY_VERSION,
       inlineScriptAttributesAllowed: false,
       inlineStyleElementsAllowed: false,
