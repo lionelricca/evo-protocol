@@ -64,6 +64,7 @@ Deno.serve(async(req)=>{
       const serviceType=String(p.serviceType||"");if(!allowed.has(serviceType))return json({error:"invalid_service_type"},400);
       const owner=String(p.ownerWallet||"").toLowerCase(),provider=String(p.providerWallet||"").toLowerCase();
       if(!walletRe.test(owner)||(provider&&!walletRe.test(provider)))return json({error:"invalid_wallet"},400);
+      if(provider&&provider===owner)return json({error:"provider_must_differ_from_owner"},400);
       const serviceDigest=String(p.serviceDigest||"");const ownerNonce=String(p.ownerNonce||"");
       if(!hex64.test(serviceDigest)||!hex32.test(ownerNonce))return json({error:"invalid_hash"},400);
       const summary=cleanText(p.summary,4000);if(summary.length<3)return json({error:"invalid_summary"},400);
@@ -119,6 +120,7 @@ Deno.serve(async(req)=>{
       if(proofError||!proof)return json({error:"proof_not_found"},404);
       if(proof.evidence_level!=="OWNER_DECLARED")return json({error:"already_countersigned"},409);
       if(!proof.provider_wallet)return json({error:"provider_not_designated"},409);
+      if(String(proof.provider_wallet).toLowerCase()===String(proof.owner_wallet).toLowerCase())return json({error:"invalid_provider_relation"},409);
       if(actor!==String(proof.provider_wallet).toLowerCase())return json({error:"only_designated_provider_can_countersign"},403);
       const createdAt=String(p.createdAt||"");const created=new Date(createdAt);
       if(Number.isNaN(created.getTime())||Math.abs(Date.now()-created.getTime())>10*60*1000)return json({error:"stale_or_future_timestamp"},400);
