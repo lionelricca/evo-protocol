@@ -22,11 +22,11 @@ jobs:
           node-version: '20'
       - name: Run V3.3 security regression checks
         run: node tests/security-hardening-v33.test.js
-      - name: Check no service-role secret is committed
+      - name: Check no service-role secret assignment is committed
         shell: bash
         run: |
-          if grep -RInE 'SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*["'"'][^"'"']+' --exclude-dir=.git .; then
-            echo 'Potential service-role secret committed.'
+          if grep -RInE "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"]" --exclude-dir=.git .; then
+            echo 'Potential service-role secret assignment committed.'
             exit 1
           fi
       - name: Security scope
