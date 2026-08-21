@@ -8,6 +8,7 @@
   if(!type||!section||!form||!file)return;
 
   const t=(es,en)=>document.documentElement.lang==='en'?en:es;
+  const esc=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const original={
     title:section.querySelector(':scope > h2')?.textContent||'',
     sub:section.querySelector(':scope > p.sub')?.textContent||'',
@@ -26,7 +27,7 @@
     let box=document.getElementById('documentProofIntro');
     if(box)return box;
     box=document.createElement('div');box.id='documentProofIntro';box.className='documentProofIntro';
-    box.innerHTML=`<div><span>DOCUMENT PROOF</span><b>${t('El original no se sube','The original is not uploaded')}</b><small>${t('EVO calcula SHA-256 localmente y registra sólo la prueba criptográfica.','EVO calculates SHA-256 locally and registers only the cryptographic proof.')}</small></div><div class="documentProofFacts"><span>SHA-256 LOCAL</span><span>QR PÚBLICO</span><span>${t('SIN CUENTA PARA VERIFICAR','NO ACCOUNT TO VERIFY')}</span></div>`;
+    box.innerHTML=`<div><span>DOCUMENT PROOF</span><b>${t('El original no se sube','The original is not uploaded')}</b><small>${t('EVO calcula SHA-256 localmente y registra sólo la prueba criptográfica.','EVO calculates SHA-256 locally and registers only the cryptographic proof.')}</small></div><div class="documentProofFacts"><span>SHA-256 LOCAL</span><span>${t('QR PÚBLICO','PUBLIC QR')}</span><span>${t('SIN CUENTA PARA VERIFICAR','NO ACCOUNT TO VERIFY')}</span></div>`;
     form.parentElement?.insertBefore(box,form.parentElement.firstChild);
     return box;
   }
@@ -52,7 +53,7 @@
     preview.hidden=false;preview.innerHTML=`<span>${t('Calculando huella digital…','Calculating fingerprint…')}</span>`;
     try{
       const hash=await hashFile(f);
-      preview.innerHTML=`<div><span>${t('DOCUMENTO SELECCIONADO','DOCUMENT SELECTED')}</span><b>${f.name}</b><small>${Math.max(1,Math.round(f.size/1024))} KB</small></div><div><span>SHA-256</span><code>${hash}</code></div>`;
+      preview.innerHTML=`<div><span>${t('DOCUMENTO SELECCIONADO','DOCUMENT SELECTED')}</span><b>${esc(f.name)}</b><small>${Math.max(1,Math.round(f.size/1024))} KB</small></div><div><span>SHA-256</span><code>${esc(hash)}</code></div>`;
     }catch{
       preview.innerHTML=`<span>${t('No se pudo calcular SHA-256 en este navegador.','SHA-256 could not be calculated in this browser.')}</span>`;
     }
@@ -79,7 +80,7 @@
     }else{
       const h2=section.querySelector(':scope > h2');if(h2)h2.textContent=original.title;
       const sub=section.querySelector(':scope > p.sub');if(sub)sub.textContent=original.sub;
-      setLabel('title','Activo / título');setLabel('issuer','Empresa / emisor');setLabel('serial','Serie / referencia');setLabel('description','Descripción');setLabel('file','Archivo opcional');
+      setLabel('title',t('Activo / título','Asset / title'));setLabel('issuer',t('Empresa / emisor','Company / issuer'));setLabel('serial',t('Serie / referencia','Serial / reference'));setLabel('description',t('Descripción','Description'));setLabel('file',t('Archivo opcional','Optional file'));
       const submit=form.querySelector('button[type="submit"]');if(submit)submit.textContent=original.submit;
     }
     updatePreview();
