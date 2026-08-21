@@ -10,16 +10,21 @@
   const shortWallet=value=>{const wallet=String(value||'');return wallet.length>18?`${wallet.slice(0,8)}…${wallet.slice(-6)}`:(wallet||'—')};
   const dateText=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat(document.documentElement.lang==='en'?'en-US':'es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value)}};
   const publicUrl=id=>{const u=new URL(location.href);u.search='';u.hash='verify';u.searchParams.set('seal',id);return u.toString()};
+  const scrollToSection=(id,behavior='auto')=>{
+    const target=document.getElementById(id);if(!target)return;
+    const nav=document.querySelector('nav');const offset=(nav?.offsetHeight||76)+14;
+    const top=Math.max(0,target.getBoundingClientRect().top+window.scrollY-offset);
+    window.scrollTo({top,behavior});
+  };
   const restoreRequestedAnchor=()=>{
     const id=decodeURIComponent(String(location.hash||'').replace(/^#/,''));
-    if(!id||id==='myEvo')return;
-    const target=document.getElementById(id);if(!target)return;
-    requestAnimationFrame(()=>requestAnimationFrame(()=>target.scrollIntoView({block:'start'})));
+    if(!id)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>scrollToSection(id)));
   };
   const goToSection=id=>{
     const target=document.getElementById(id);if(!target)return;
     const next=`#${id}`;if(location.hash!==next)history.replaceState(null,'',`${location.pathname}${location.search}${next}`);
-    requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'start'}));
+    requestAnimationFrame(()=>scrollToSection(id,'smooth'));
   };
 
   async function rest(table,params){
@@ -86,7 +91,7 @@
     if(pricing&&pricing.parentNode)pricing.parentNode.insertBefore(section,pricing);else if(main)main.prepend(section);
     const links=document.querySelector('.links');
     if(links&&!links.querySelector('a[href="#myEvo"]')){
-      const link=el('a','myEvoNav',t('Mi EVO','My EVO'));link.href='#myEvo';
+      const link=el('a','myEvoNav',t('Mi EVO','My EVO'));link.href='#myEvo';link.onclick=event=>{event.preventDefault();goToSection('myEvo')};
       const first=links.querySelector('a');if(first)links.insertBefore(link,first);else links.prepend(link);
     }
     restoreRequestedAnchor();
@@ -97,21 +102,28 @@
     const card=el('div',accent?'myEvoStat accent':'myEvoStat');card.append(el('span','',label),el('strong','',value),el('small','',detail||''));return card;
   }
 
-  function assetCard(seal,owner,wallet,kind){
-    const card=el('article','myEvoAsset');
+  function relationLabel(record){
+    if(record.isOwned&&record.isCreated)return t('TU ACTIVO','YOUR ASSET');
+    if(record.isOwned)return t('RECIBIDO','RECEIVED');
+    return t('TRANSFERIDO','TRANSFERRED');
+  }
+
+  function assetCard(record){
+    const {seal}=record;
+    const card=el('article','myEvoAsset myEvoAssetV252');
     const top=el('div','myEvoAssetTop');
-    const copy=el('div','');
+    const copy=el('div','myEvoAssetCopy');
     copy.append(el('span','myEvoAssetType',seal.asset_type||t('Activo','Asset')),el('h4','',seal.title||t('Activo sin título','Untitled asset')));
-    const badge=el('span','myEvoBadge',kind==='owned'?(String(seal.issuer_wallet||'').toLowerCase()===wallet?t('CREADO Y POSEÍDO','CREATED & OWNED'):t('PROPIEDAD ACTUAL','CURRENTLY OWNED')):t('CREADO POR VOS','CREATED BY YOU'));
-    top.append(copy,badge);card.append(top);
+    top.append(copy,el('span','myEvoBadge',relationLabel(record)));card.append(top);
+
     const meta=el('div','myEvoAssetMeta');
-    if(seal.serial)meta.append(el('span','',`${t('Serie','Serial')}: ${seal.serial}`));
-    meta.append(el('span','',`${t('Estado','Status')}: ${seal.status||'ACTIVE'}`));
-    if(owner)meta.append(el('span','',`${t('Propietario','Owner')}: ${shortWallet(owner)}`));
+    meta.append(el('span','myEvoPassportState',t('● Passport activo','● Active Passport')));
+    if(seal.serial)meta.append(el('span','',`${t('Serie','Serial')} · ${seal.serial}`));
     card.append(meta,el('code','myEvoSealId',seal.seal_id));
+
     const actions=el('div','myEvoAssetActions');
-    const open=el('button','btn',t('Abrir Passport','Open Passport'));open.type='button';open.onclick=()=>{location.href=publicUrl(seal.seal_id)};
-    const copyLink=el('button','btn',t('Copiar enlace','Copy link'));copyLink.type='button';copyLink.onclick=()=>navigator.clipboard.writeText(publicUrl(seal.seal_id)).then(()=>toast(t('Enlace público copiado','Public link copied')));
+    const open=el('button','btn myEvoOpenPassport',t('Ver Passport','View Passport'));open.type='button';open.onclick=()=>{location.href=publicUrl(seal.seal_id)};
+    const copyLink=el('button','btn myEvoCopyLink',t('Copiar enlace','Copy link'));copyLink.type='button';copyLink.onclick=()=>navigator.clipboard.writeText(publicUrl(seal.seal_id)).then(()=>toast(t('Enlace público copiado','Public link copied')));
     actions.append(open,copyLink);card.append(actions);return card;
   }
 
@@ -135,11 +147,44 @@
     const section=ensureDashboard();section.classList.remove('ready','loading');section.classList.add('disconnected');section.textContent='';
     const panel=el('div','panel myEvoConnect');panel.append(el('span','kicker','MY EVO'),el('h2','',t('Tu espacio en EVO','Your EVO space')),el('p','',t('Conectá tu wallet para ver Proofs disponibles, Passports creados, activos que poseés y actividad pública relacionada.','Connect your wallet to view available Proofs, created Passports, assets you own and related public activity.')));
     const button=el('button','btn primary',t('Conectar wallet','Connect wallet'));button.type='button';button.onclick=()=>window.evoConnectWallet?window.evoConnectWallet().catch(error=>toast(error?.message||t('No se pudo conectar','Could not connect'))):document.getElementById('walletBtn')?.click();panel.append(button);section.append(panel);
+    restoreRequestedAnchor();
+  }
+
+  function buildLibrary(created,owned,transferEvents,wallet){
+    const createdMap=new Map(created.map(seal=>[seal.seal_id,seal]));
+    const ownedMap=new Map(owned.map(item=>[item.seal.seal_id,item]));
+    const ids=[...new Set([...createdMap.keys(),...ownedMap.keys()])];
+    return ids.map(id=>{
+      const seal=createdMap.get(id)||ownedMap.get(id)?.seal;
+      const owner=ownedMap.get(id)?.owner||ownerFor(seal,transferEvents);
+      return {seal,owner,isCreated:createdMap.has(id),isOwned:owner===wallet};
+    }).sort((a,b)=>new Date(b.seal.registered_at||b.seal.created_at||0)-new Date(a.seal.registered_at||a.seal.created_at||0));
+  }
+
+  function renderLibrary(panel,library,initial='owned'){
+    const header=el('div','myEvoLibraryHead');
+    const titleWrap=el('div','');titleWrap.append(el('div','myEvoPanelTitle',t('Biblioteca EVO','EVO Library')),el('p','myEvoLibrarySub',t('Tus activos y Passports, sin información duplicada.','Your assets and Passports without duplicated information.')));
+    const tabs=el('div','myEvoTabs');
+    const grid=el('div','myEvoLibraryGrid');
+    const definitions=[
+      {key:'owned',label:t('En propiedad','Owned'),count:library.filter(item=>item.isOwned).length},
+      {key:'created',label:t('Creados','Created'),count:library.filter(item=>item.isCreated).length},
+      {key:'all',label:t('Todos','All'),count:library.length}
+    ];
+    const buttons=new Map();
+    const show=key=>{
+      grid.textContent='';buttons.forEach((button,name)=>button.classList.toggle('active',name===key));
+      const items=key==='owned'?library.filter(item=>item.isOwned):key==='created'?library.filter(item=>item.isCreated):library;
+      if(items.length)items.slice(0,24).forEach(item=>grid.append(assetCard(item)));
+      else grid.append(emptyState(t('Nada por mostrar todavía','Nothing to show yet'),key==='owned'?t('Los activos que poseas aparecerán acá.','Assets you own will appear here.'):t('Los Passports que crees aparecerán acá.','Passports you create will appear here.')));
+    };
+    definitions.forEach(def=>{const button=el('button','myEvoTab',`${def.label} · ${def.count}`);button.type='button';button.onclick=()=>show(def.key);buttons.set(def.key,button);tabs.append(button)});
+    header.append(titleWrap,tabs);panel.append(header,grid);show(initial);
   }
 
   function renderDashboard(wallet,data){
     const section=ensureDashboard();section.className='wrap block myEvo ready';section.textContent='';
-    const {created,owned,activity,entitlement}=data;
+    const {created,owned,activity,entitlement,transferEvents}=data;
     const freeAvailable=Boolean(entitlement?.demoAvailable);const purchased=Math.max(Number(entitlement?.remainingCredits||0),0);const available=purchased+(freeAvailable?1:0);
 
     const head=el('div','myEvoHead');const copy=el('div','');copy.append(el('span','kicker','MY EVO'),el('h2','',t('Tu espacio en EVO','Your EVO space')),el('p','myEvoWallet',shortWallet(wallet)));
@@ -153,18 +198,14 @@
       stat(t('Actividad reciente','Recent activity'),activity.length,t('Eventos públicos relacionados','Related public events'))
     );section.append(stats);
 
-    const columns=el('div','myEvoColumns');
-    const ownedPanel=el('div','panel myEvoPanel');ownedPanel.append(el('div','myEvoPanelTitle',t('Mis activos','My assets')));
-    const ownedList=el('div','myEvoAssetList');if(owned.length)owned.slice(0,12).forEach(item=>ownedList.append(assetCard(item.seal,item.owner,wallet,'owned')));else ownedList.append(emptyState(t('Todavía no poseés activos EVO','You do not own EVO assets yet'),t('Los activos creados por vos aparecerán aquí automáticamente, y también los que recibas mediante una transferencia aceptada.','Assets you create will appear here automatically, along with assets received through accepted transfers.')));ownedPanel.append(ownedList);
-
-    const createdPanel=el('div','panel myEvoPanel');createdPanel.append(el('div','myEvoPanelTitle',t('Passports creados','Created Passports')));
-    const createdList=el('div','myEvoAssetList');if(created.length)created.slice(0,12).forEach(seal=>createdList.append(assetCard(seal,ownerFor(seal,data.transferEvents),wallet,'created')));else createdList.append(emptyState(t('Aún no creaste un Passport','No Passport created yet'),t('Tu primer Proof puede ser gratuito si esta wallet todavía conserva el beneficio.','Your first Proof may be free if this wallet still has the benefit.')));createdPanel.append(createdList);
-    columns.append(ownedPanel,createdPanel);section.append(columns);
+    const library=buildLibrary(created,owned,transferEvents,wallet);
+    const libraryPanel=el('div','panel myEvoPanel myEvoLibrary');renderLibrary(libraryPanel,library,'owned');section.append(libraryPanel);
 
     const activityPanel=el('div','panel myEvoActivity');const title=el('div','myEvoPanelTitle',t('Actividad reciente','Recent activity'));activityPanel.append(title);
     const activityList=el('div','myEvoActivityList');if(activity.length)activity.slice(0,18).forEach(event=>activityList.append(activityItem(event,wallet)));else activityList.append(emptyState(t('Sin actividad todavía','No activity yet'),t('Las reparaciones, inspecciones, notas y transferencias aceptadas aparecerán aquí.','Repairs, inspections, notes and accepted transfers will appear here.')));activityPanel.append(activityList);section.append(activityPanel);
 
     const note=el('div','myEvoPrivacy');note.append(el('b','',t('Cómo funciona My EVO: ','How My EVO works: ')),document.createTextNode(t('esta vista organiza información pública asociada a la wallet conectada. No accede a fondos, no lee claves privadas y no muestra ofertas de transferencia pendientes.','this view organizes public information associated with the connected wallet. It does not access funds, read private keys or expose pending transfer offers.')));section.append(note);
+    if(location.hash==='#myEvo')restoreRequestedAnchor();
   }
 
   async function load(wallet,force=false){
