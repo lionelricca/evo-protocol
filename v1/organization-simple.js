@@ -102,8 +102,11 @@
     if(!document.querySelector('link[data-evo-dashboard-style]')){
       const style=document.createElement('link');style.rel='stylesheet';style.href='./dashboard.css?v=20260821-v251-polish';style.dataset.evoDashboardStyle='true';document.head.appendChild(style);
     }
+    if(!document.querySelector('link[data-evo-dashboard-v252-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./dashboard-v252.css?v=20260821-v252-library';style.dataset.evoDashboardV252Style='true';document.head.appendChild(style);
+    }
     if(document.querySelector('script[data-evo-dashboard]'))return;
-    const script=document.createElement('script');script.src='./dashboard.js?v=20260821-v251-polish';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
+    const script=document.createElement('script');script.src='./dashboard.js?v=20260821-v252-library';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
   };
   if(document.readyState==='complete')loadDashboard();else window.addEventListener('load',loadDashboard,{once:true});
 })();
