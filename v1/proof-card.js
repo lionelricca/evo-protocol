@@ -1,6 +1,10 @@
 'use strict';
 
 (()=>{
+  const stylesheet=document.createElement('link');
+  stylesheet.rel='stylesheet';stylesheet.href='./proof-card.css?v=20260821-v23-proof-card';stylesheet.dataset.evoProofCardStyle='true';
+  if(!document.querySelector('link[data-evo-proof-card-style]'))document.head.appendChild(stylesheet);
+
   const t=(es,en)=>document.documentElement.lang==='en'?en:es;
   const text=(tag,className,value)=>{const node=document.createElement(tag);if(className)node.className=className;node.textContent=value;return node};
   function values(root){
@@ -35,10 +39,10 @@
     hero.append(copy,text('div','proofCardMark','EVO'));
 
     const states=document.createElement('div');states.className='proofStateGrid';
-    addState(states,'PROOF',mode==='create'?t('CREATED','CREATED'):t('REGISTERED','REGISTERED'));
-    addState(states,'PASSPORT',t('ACTIVE','ACTIVE'));
-    addState(states,'OWNER',t('SIGNED','SIGNED'));
-    addState(states,'VERIFY',t('PUBLIC','PUBLIC'));
+    addState(states,'PROOF',mode==='create'?'CREATED':'REGISTERED');
+    addState(states,'PASSPORT','ACTIVE');
+    addState(states,'OWNER','SIGNED');
+    addState(states,'VERIFY','PUBLIC');
 
     const foot=document.createElement('div');foot.className='proofCardFootnote';
     const strong=document.createElement('b');strong.textContent=t('Qué prueba EVO: ','What EVO proves: ');
