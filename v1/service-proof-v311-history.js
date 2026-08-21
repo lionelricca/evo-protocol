@@ -15,9 +15,11 @@
     METER_READING:t('Lectura de medidor','Meter reading'),
     NOTE:t('Nota técnica','Technical note')
   }[type]||String(type||'SERVICE'));
-  const evidenceLabel=level=>level==='PROVIDER_COUNTERSIGNED'
+  const evidenceLabel=proof=>proof.evidence_level==='PROVIDER_COUNTERSIGNED'
     ?t('CONTRAFIRMADO POR PROVEEDOR','PROVIDER COUNTERSIGNED')
-    :t('DECLARADO POR PROPIETARIO','OWNER DECLARED');
+    :proof.provider_wallet
+      ?t('PENDIENTE DE PROVEEDOR','PROVIDER PENDING')
+      :t('DECLARADO POR PROPIETARIO','OWNER DECLARED');
 
   async function fetchProofs(sealId){
     if(typeof SUPABASE_URL==='undefined'||typeof SUPABASE_KEY==='undefined')return [];
@@ -44,7 +46,7 @@
     const detail=document.createElement('p');detail.textContent=proof.summary||'';
     const level=document.createElement('span');
     level.className=proof.evidence_level==='PROVIDER_COUNTERSIGNED'?'status ok':'status';
-    level.textContent=evidenceLabel(proof.evidence_level);
+    level.textContent=evidenceLabel(proof);
     const meta=document.createElement('div');meta.className='eventMeta';
     const parts=[dateText(proof.performed_at),proof.proof_id];
     if(proof.provider_label)parts.push(`${t('Proveedor','Provider')}: ${proof.provider_label}`);
@@ -70,8 +72,8 @@
     const notice=out.querySelector('.passportNotice');
     if(notice&&proofs.length){
       notice.textContent=t(
-        'El historial combina eventos del propietario y Service Proofs. Cada Service Proof indica si fue sólo declarado por el propietario o contrafirmado por el proveedor designado.',
-        'History combines owner events and Service Proofs. Each Service Proof shows whether it was owner-declared only or countersigned by the designated provider.'
+        'El historial combina eventos del propietario y Service Proofs. Cada Service Proof distingue entre declaración del propietario, contrafirma pendiente y contrafirma realizada por el proveedor designado.',
+        'History combines owner events and Service Proofs. Each Service Proof distinguishes owner declaration, pending provider countersignature and completed provider countersignature.'
       );
     }
     return true;
@@ -115,4 +117,12 @@
   },300);
 
   window.evoSyncServiceHistory=syncManagedHistory;
+
+  if(!document.querySelector('script[data-evo-service-trust-v312]')){
+    const script=document.createElement('script');
+    script.src='./service-proof-v312-trust.js?v=20260821-v312-trust';
+    script.async=true;
+    script.dataset.evoServiceTrustV312='true';
+    document.head.appendChild(script);
+  }
 })();
