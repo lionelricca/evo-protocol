@@ -1,0 +1,34 @@
+name: EVO Origin Verifier Checks
+
+on:
+  pull_request:
+    paths:
+      - 'v1/origin-verifier-v322.js'
+      - 'v1/origin-verifier-v322.css'
+      - 'v1/document-proof-v30.js'
+      - 'tests/origin-verifier-v322.test.js'
+      - '.github/workflows/evo-origin-verifier-checks.yml'
+  push:
+    paths:
+      - 'v1/origin-verifier-v322.js'
+      - 'v1/origin-verifier-v322.css'
+      - 'v1/document-proof-v30.js'
+      - 'tests/origin-verifier-v322.test.js'
+      - '.github/workflows/evo-origin-verifier-checks.yml'
+
+jobs:
+  origin-verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax checks
+        run: |
+          node --check v1/origin-verifier-v322.js
+          node --check v1/document-proof-v30.js
+      - name: Run Origin verifier regression checks
+        run: node tests/origin-verifier-v322.test.js
+      - name: Privacy scope
+        run: echo "Local SHA-256 comparison only; document bytes are never uploaded by the verifier"
