@@ -3,39 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EVO Seal · The Digital Seal</title>
-<meta name="description" content="Create and verify EVO digital seals with local SHA-256 hashing. V0 safety prototype: no custody, no token movement.">
-<link rel="stylesheet" href="styles.css">
+<title>EVO · Trust Layer</title>
+<meta name="description" content="EVO crea Proofs y Passports verificables para activos, productos y documentos.">
+<meta name="theme-color" content="#03050a">
+<meta http-equiv="refresh" content="0; url=./v1/?v=20260821-v25">
+<link rel="canonical" href="./v1/">
+<style>
+html,body{margin:0;min-height:100%;background:#05050d;color:#f8f5ff;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body{display:grid;place-items:center;min-height:100vh}.launch{max-width:620px;margin:24px;padding:34px;border:1px solid #ffffff14;border-radius:24px;background:linear-gradient(145deg,#0c1020,#080710);box-shadow:0 24px 80px #0008;text-align:center}.mark{width:64px;height:64px;margin:0 auto 18px;display:grid;place-items:center;border-radius:18px;background:linear-gradient(135deg,#66e3ff,#a77bff);color:#05050d;font-weight:950;font-size:30px}.kicker{color:#66e3ff;font:800 11px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em}.launch h1{margin:12px 0 8px;font-size:clamp(36px,8vw,68px);letter-spacing:-.06em}.launch p{color:#9ca8ba;line-height:1.6}.launch a{display:inline-flex;margin-top:14px;padding:12px 18px;border-radius:12px;background:#f4ca75;color:#090713;font-weight:850;text-decoration:none}
+</style>
+<script>location.replace('./v1/?v=20260821-v25');</script>
 </head>
-<body>
-<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#seal">Sellar</a><a href="#verify">Verificar</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
-<header id="top" class="hero wrap">
-  <section class="heroCopy panel">
-    <span class="kicker">EVO Protocol · V0 Safety Prototype</span>
-    <h1>EVO <span>SEAL</span></h1>
-    <h2>The Digital Seal</h2>
-    <p>Sellá lo que importa. Probá que un archivo o registro existía, quién lo declaró y si su contenido fue modificado.</p>
-    <div class="actions"><a class="btn primary" href="#seal">Crear un sello</a><a class="btn" href="#verify">Verificar</a></div>
-    <div class="chips"><span>SHA-256 local</span><span>Sin custodia</span><span>0 EVO en V0</span><span>Polygon-ready</span></div>
-  </section>
-  <section class="heroSeal panel" aria-label="Animated EVO Seal"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="sealCore"><span class="drop">◆</span><strong>EVO</strong><small>VERIFIED</small></div></section>
-</header>
-<main>
-<section id="seal" class="wrap block"><h2>Crear EVO Seal</h2><p class="sub">El hash se calcula en tu navegador. V0 no sube archivos, no mueve tokens y no despliega contratos.</p>
-<div class="grid"><form id="sealForm" class="panel form">
-<label>Tipo<select id="type"><option>Producto</option><option>Documento</option><option>Imagen</option><option>Video</option><option>Certificado</option><option>Otro</option></select></label>
-<label>Nombre<input id="title" required placeholder="Ej. Certificado original"></label>
-<label>Emisor declarado<input id="issuer" required placeholder="Nombre, empresa o wallet"></label>
-<label>Serial / referencia<input id="serial" placeholder="Opcional"></label>
-<label class="full">Descripción<textarea id="description" placeholder="Información no sensible del activo"></textarea></label>
-<label class="full file">Archivo opcional<input id="file" type="file"><span>Se calcula SHA-256 localmente. El archivo no sale de tu navegador.</span></label>
-<div class="full actions"><button class="btn primary" type="submit">Crear sello local</button><button id="clearBtn" class="btn" type="button">Limpiar</button></div>
-</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Todavía no creaste un sello.</div><h3>Sellos locales</h3><div id="sealList" class="list"></div></div></div></section>
-<section id="verify" class="wrap block"><h2>Verificar</h2><p class="sub">La verificación de EVO debe permanecer gratuita. En V0 el registro vive sólo en este navegador.</p>
-<div class="grid"><div class="panel form"><label>Seal ID<input id="verifyId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><label class="file">Archivo a comparar<input id="verifyFile" type="file"><span>Opcional. Si existe un hash registrado, se compara localmente.</span></label><button id="verifyBtn" class="btn primary">Verificar</button></div><div class="panel"><h3>Estado</h3><div id="verifyResult" class="empty">Ingresá un Seal ID.</div></div></div></section>
-<section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0:</b> hashing local, registro local, sin transferencias.</p><p><b>V1:</b> registro público + firma de wallet + QR verificable.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
-</main>
-<footer><div class="wrap"><b>EVO Protocol</b> · The Digital Seal · Polygon · EVO contract <code>0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f</code></div></footer>
-<div id="toast" class="toast"></div>
-<script src="app.js"></script>
-</body></html>
+<body><main class="launch"><div class="mark">E</div><span class="kicker">EVO TRUST LAYER</span><h1>EVO</h1><p>Abriendo la versión actual de EVO Passport.</p><a href="./v1/?v=20260821-v25">Entrar a EVO</a></main></body>
+</html>
