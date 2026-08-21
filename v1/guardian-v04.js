@@ -97,5 +97,5 @@ analyzeGuardian=async function(sealId){
 
 if($('guardianBtn'))$('guardianBtn').onclick=()=>analyzeGuardian();
 // organization-simple.js is loaded once by index.html.
-(()=>{const s=document.createElement('script');s.src='/evo-protocol/v1/battery.js?v=20260816-2347';s.async=true;document.body.appendChild(s)})();
+(()=>{const s=document.createElement('script');s.src='./battery.js?v=20260821-v11';s.async=true;document.body.appendChild(s)})();
 console.info('EVO AI Guardian V0.4 UI',{mode:'REALITY GRAPH + BACKEND REALITY ROOT + ISSUER TRUST + EXISTING EVIDENCE'});
