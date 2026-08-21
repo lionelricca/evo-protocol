@@ -25,10 +25,12 @@ jobs:
           node --check v1/service-proof-v31.js
           node --check v1/service-proof-v311-history.js
           node --check v1/service-proof-v312-trust.js
+          node --check v1/service-provider-inbox-v313.js
       - name: Run Service Proof regression checks
         run: |
           node tests/service-proof-v31.test.js
           node tests/service-proof-history-v311.test.js
           node tests/service-proof-trust-v312.test.js
+          node tests/service-provider-inbox-v313.test.js
       - name: V3.1 scope
-        run: echo "Owner-signed service evidence, distinct provider countersignature and unified Passport history"
+        run: echo "Owner-signed service evidence, distinct provider countersignature, unified history and provider inbox"

@@ -71,9 +71,19 @@
     });
   }
 
+  function loadProviderInbox(){
+    if(!document.querySelector('link[data-evo-provider-inbox-v313]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./service-provider-inbox-v313.css?v=20260821-v313-provider-inbox';style.dataset.evoProviderInboxV313='true';document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-provider-inbox-v313]')){
+      const script=document.createElement('script');script.src='./service-provider-inbox-v313.js?v=20260821-v313-provider-inbox';script.async=true;script.dataset.evoProviderInboxV313='true';document.head.appendChild(script);
+    }
+  }
+
   let queued=false;const schedule=()=>{if(queued)return;queued=true;setTimeout(async()=>{queued=false;try{await decorateEvidenceStates()}catch{}},180)};
   new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
   window.addEventListener('evo:wallet-connected',schedule);
   document.addEventListener('click',event=>{if(event.target.closest('.myEvoManageAsset,#passportLoadBtn'))schedule()});
+  loadProviderInbox();
   setTimeout(schedule,400);
 })();
