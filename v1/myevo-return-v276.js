@@ -3,9 +3,12 @@
 (()=>{
   const t=(es,en)=>document.documentElement.lang==='en'?en:es;
 
-  document.getElementById('evoBackTop')?.remove();
+  const removeLegacy=()=>{
+    document.getElementById('evoBackTop')?.remove();
+    document.querySelectorAll('.evoFooterTop').forEach(node=>node.remove());
+  };
+  removeLegacy();
   document.getElementById('evoMyEvoReturn')?.remove();
-  document.querySelectorAll('.evoFooterTop').forEach(node=>node.remove());
 
   const destination=()=>{
     const url=new URL(location.href);
@@ -48,5 +51,11 @@
     const label=button.querySelector('b');
     if(label)label.textContent=t('Mi EVO','My EVO');
   };
+
+  // Old cached loaders may inject the legacy navigation after window.load.
+  // Keep removing only those legacy nodes; the V2.7.6 control is never touched.
+  const guard=new MutationObserver(()=>removeLegacy());
+  guard.observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('load',()=>setTimeout(removeLegacy,250),{once:true});
   document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(refreshLabel,50));
 })();
