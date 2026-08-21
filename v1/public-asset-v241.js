@@ -6,7 +6,7 @@
     const raw=String(value||'').trim().toUpperCase().replaceAll('_',' ');
     const es={
       'DOMAIN VERIFIED':'DOMINIO VERIFICADO',
-      'WALLET PROVEN':'WALLET VERIFICADA',
+      'WALLET PROVEN':'CONTROL CONFIRMADO',
       'ORGANIZATION VERIFIED':'ORGANIZACIÓN VERIFICADA',
       'SELF DECLARED':'AUTODECLARADO',
       'REGISTERED':'REGISTRADO',
@@ -14,7 +14,7 @@
     };
     const en={
       'DOMAIN VERIFIED':'DOMAIN VERIFIED',
-      'WALLET PROVEN':'WALLET VERIFIED',
+      'WALLET PROVEN':'CONTROL CONFIRMED',
       'ORGANIZATION VERIFIED':'ORGANIZATION VERIFIED',
       'SELF DECLARED':'SELF DECLARED',
       'REGISTERED':'REGISTERED',
@@ -22,13 +22,14 @@
     };
     return (document.documentElement.lang==='en'?en:es)[raw]||raw;
   };
+  const looksLikeWallet=value=>/^0x[0-9a-f]{4,}.*[0-9a-f]{4,}$/i.test(String(value||'').trim());
 
   function enhance(){
     const host=document.getElementById('publicAssetPage');
     if(!host?.classList.contains('ready'))return false;
     const shell=host.querySelector('.publicAssetShell');
-    if(!shell||shell.dataset.evoV241==='1')return false;
-    shell.dataset.evoV241='1';
+    if(!shell||shell.dataset.evoV242==='1')return false;
+    shell.dataset.evoV242='1';
 
     const intro=host.querySelector('.publicAssetIntro');
     const kicker=host.querySelector('.publicAssetKicker');
@@ -53,7 +54,12 @@
     if(intro&&id&&(issuer||owner)){
       const quick=document.createElement('div');quick.className='publicAssetQuickFacts';
       if(issuer){const item=document.createElement('div');item.innerHTML=`<span>${t('EMISOR','ISSUER')}</span><b></b>`;item.querySelector('b').textContent=issuer;quick.append(item);}
-      if(owner){const item=document.createElement('div');item.innerHTML=`<span>${t('PROPIETARIO','OWNER')}</span><b class="mono"></b>`;item.querySelector('b').textContent=owner;quick.append(item);}
+      if(owner){
+        const item=document.createElement('div');
+        const label=looksLikeWallet(owner)?t('WALLET PROPIETARIA','OWNER WALLET'):t('PROPIETARIO ACTUAL','CURRENT OWNER');
+        item.innerHTML=`<span>${label}</span><b></b>`;
+        const value=item.querySelector('b');value.textContent=owner;if(looksLikeWallet(owner))value.classList.add('mono');quick.append(item);
+      }
       intro.insertBefore(quick,id);
     }
     if(id&&!id.dataset.evoLabeled){id.dataset.evoLabeled='1';id.textContent=`EVO ID · ${id.textContent}`;}
@@ -81,7 +87,7 @@
   const observer=new MutationObserver(()=>requestAnimationFrame(enhance));
   observer.observe(document.documentElement,{childList:true,subtree:true});
   document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(()=>{
-    const shell=document.querySelector('#publicAssetPage .publicAssetShell');if(shell)delete shell.dataset.evoV241;enhance();
+    const shell=document.querySelector('#publicAssetPage .publicAssetShell');if(shell){delete shell.dataset.evoV241;delete shell.dataset.evoV242;}enhance();
   },80));
   setTimeout(enhance,100);
 })();
