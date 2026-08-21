@@ -1,0 +1,23 @@
+name: EVO navigation V2.7.3 checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check navigation syntax
+        run: node --check v1/back-to-top.js
+      - name: Run navigation regression checks
+        run: node tests/back-to-top.test.js
