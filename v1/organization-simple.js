@@ -119,7 +119,7 @@
       const script=document.createElement('script');script.src='./dashboard.js?v=20260821-v252-library';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
     }
     if(!document.querySelector('script[data-evo-dashboard-v253]')){
-      const enhance=document.createElement('script');enhance.src='./dashboard-v253.js?v=20260821-v253-premium';enhance.async=true;enhance.dataset.evoDashboardV253='true';document.head.appendChild(enhance);
+      const enhance=document.createElement('script');enhance.src='./dashboard-v253.js?v=20260821-v27-actions-loader';enhance.async=true;enhance.dataset.evoDashboardV253='true';document.head.appendChild(enhance);
     }
     if(!document.querySelector('link[data-evo-transfer-inbox-style]')){
       const style=document.createElement('link');style.rel='stylesheet';style.href='./transfer-inbox.css?v=20260821-v261-compact';style.dataset.evoTransferInboxStyle='true';document.head.appendChild(style);
