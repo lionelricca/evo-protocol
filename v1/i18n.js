@@ -186,7 +186,8 @@ const EVO_ES_EN = {
   "historial firmado + propiedad + transferencias de doble firma, todavía sin EVO.": "signed history + ownership + two-signature transfers, still without EVO.",
   "arquitectura diseñada; prueba física pendiente de hardware seguro.": "architecture designed; physical test pending secure hardware.",
   "contrato mínimo, límites y pruebas automatizadas.": "minimal contract, limits and automated tests.",
-  "EVO Passport crea una identidad digital verificable para activos, con QR único, historial firmado, trazabilidad y consulta pública gratuita.": "EVO Passport creates a verifiable digital identity for assets, with a unique QR code, signed history, traceability and free public lookup."
+  "EVO Passport crea una identidad digital verificable para activos, con QR único, historial firmado, trazabilidad y consulta pública gratuita.": "EVO Passport creates a verifiable digital identity for assets, with a unique QR code, signed history, traceability and free public lookup.",
+  "US$9,90": "US$9.90"
 };
 const EVO_EN_ES = Object.fromEntries(Object.entries(EVO_ES_EN).map(([es,en]) => [en,es]));
 let evoLanguage = 'es';
