@@ -1,0 +1,32 @@
+name: EVO Document Provenance Checks
+
+on:
+  pull_request:
+    paths:
+      - 'standards/document-provenance-v321.mjs'
+      - 'schemas/document-provenance-v1.schema.json'
+      - 'tests/document-provenance-v321.test.mjs'
+      - 'docs/DOCUMENT_PROVENANCE_V321.md'
+      - '.github/workflows/evo-document-provenance-checks.yml'
+  push:
+    paths:
+      - 'standards/document-provenance-v321.mjs'
+      - 'schemas/document-provenance-v1.schema.json'
+      - 'tests/document-provenance-v321.test.mjs'
+      - 'docs/DOCUMENT_PROVENANCE_V321.md'
+      - '.github/workflows/evo-document-provenance-checks.yml'
+
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: node --check standards/document-provenance-v321.mjs
+      - name: Run provenance regression checks
+        run: node tests/document-provenance-v321.test.mjs
+      - name: Profile scope
+        run: echo "Exact-file integrity, issuer provenance, version chain and explicit external trust evidence"
