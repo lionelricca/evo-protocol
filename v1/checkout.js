@@ -15,11 +15,14 @@ const EVO_PAYMENT_PLANS = {
   PACK_10: { label:'Pack de 10 EVO Passports', amountLabel:'US$49', amountMinor:49000000n }
 };
 
+function checkoutText(es, en) {
+  return document.documentElement.lang === 'en' ? en : es;
+}
 function checkoutStatus(message, kind) {
   const box = document.getElementById('checkoutStatus');
   if (!box) return;
   box.className = kind === 'ok' ? 'passportNotice ok' : 'passportNotice';
-  box.textContent = message;
+  box.textContent = window.evoT ? window.evoT(message) : message;
 }
 function encodeUsdcTransfer(recipient, amountMinor) {
   const selector = 'a9059cbb';
@@ -44,7 +47,7 @@ async function ensurePaymentNetwork(network) {
     });
   }
   const selected = String(await walletProvider.request({ method:'eth_chainId' })).toLowerCase();
-  if (selected !== network.chainHex.toLowerCase()) throw new Error('MetaMask no cambió a la red elegida.');
+  if (selected !== network.chainHex.toLowerCase()) throw new Error(checkoutText('MetaMask no cambió a la red elegida.', 'MetaMask did not switch to the selected network.'));
 }
 async function verifyCheckout(txHash, planCode, payerWallet, chainId) {
   for (let attempt = 0; attempt < 48; attempt += 1) {
@@ -57,39 +60,39 @@ async function verifyCheckout(txHash, planCode, payerWallet, chainId) {
         body:JSON.stringify({ action:'verify', txHash, planCode, payerWallet, chainId:Number(chainId) })
       });
     } catch {
-      checkoutStatus('La red de verificación está temporalmente ocupada. Reintentando…');
+      checkoutStatus(checkoutText('La red de verificación está temporalmente ocupada. Reintentando…', 'The verification network is temporarily busy. Retrying…'));
       continue;
     }
     let data = {};
     try { data = await response.json(); } catch {}
     if (response.status === 202 || response.status === 503) {
       const progress = data.confirmations !== undefined ? ' (' + data.confirmations + '/' + data.requiredConfirmations + ' confirmaciones)' : '';
-      checkoutStatus('Pago enviado. Esperando confirmación segura' + progress + '…');
+      checkoutStatus(checkoutText('Pago enviado. Esperando confirmación segura', 'Payment sent. Waiting for secure confirmation') + progress + '…');
       continue;
     }
-    if (!response.ok) throw new Error(data.reason || data.error || 'No se pudo verificar el pago.');
+    if (!response.ok) throw new Error(data.reason || data.error || checkoutText('No se pudo verificar el pago.', 'The payment could not be verified.'));
     return data;
   }
-  throw new Error('El pago sigue pendiente. Guardá el hash: ' + txHash + '. EVO puede verificarlo nuevamente.');
+  throw new Error(checkoutText('El pago sigue pendiente. Guardá el hash: ', 'The payment is still pending. Save the hash: ') + txHash + checkoutText('. EVO puede verificarlo nuevamente.', '. EVO can verify it again.'));
 }
 async function buyEvoPlan(planCode) {
   const plan = EVO_PAYMENT_PLANS[planCode];
   const select = document.getElementById('paymentNetwork');
   const chainId = String(select && select.value || '137');
   const network = EVO_PAYMENT_NETWORKS[chainId];
-  if (!plan || !network) throw new Error('Plan o red no disponible.');
+  if (!plan || !network) throw new Error(checkoutText('Plan o red no disponible.', 'Plan or network unavailable.'));
   if (!account || !walletProvider) await connectWallet();
   await ensurePaymentNetwork(network);
   const recipient = EVO_MERCHANT_WALLET;
   const approved = window.confirm(
-    'Vas a comprar ' + plan.label + '\n\n' +
-    'Importe: ' + plan.amountLabel + ' en USDC\n' +
-    'Red: ' + network.name + '\n' +
-    'Destino: ' + recipient + '\n\n' +
-    'MetaMask mostrará la confirmación final. EVO nunca solicitará tu frase semilla.'
+    checkoutText('Vas a comprar ', 'You are buying ') + plan.label + '\n\n' +
+    checkoutText('Importe: ', 'Amount: ') + plan.amountLabel + checkoutText(' en USDC\n', ' in USDC\n') +
+    checkoutText('Red: ', 'Network: ') + network.name + '\n' +
+    checkoutText('Destino: ', 'Recipient: ') + recipient + '\n\n' +
+    checkoutText('MetaMask mostrará la confirmación final. EVO nunca solicitará tu frase semilla.', 'MetaMask will show the final confirmation. EVO will never ask for your seed phrase.')
   );
   if (!approved) return;
-  checkoutStatus('Revisá y confirmá el pago en MetaMask.');
+  checkoutStatus(checkoutText('Revisá y confirmá el pago en MetaMask.', 'Review and confirm the payment in MetaMask.'));
   const txHash = await walletProvider.request({
     method:'eth_sendTransaction',
     params:[{
@@ -99,9 +102,9 @@ async function buyEvoPlan(planCode) {
       data:encodeUsdcTransfer(recipient, plan.amountMinor)
     }]
   });
-  checkoutStatus('Pago enviado. EVO está verificando la cadena antes de acreditar.');
+  checkoutStatus(checkoutText('Pago enviado. EVO está verificando la cadena antes de acreditar.', 'Payment sent. EVO is verifying the chain before crediting.'));
   const result = await verifyCheckout(String(txHash).toLowerCase(), planCode, account, chainId);
-  checkoutStatus('Pago verificado. Tenés ' + result.remainingCredits + ' crédito(s) disponibles para crear pasaportes.', 'ok');
+  checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + result.remainingCredits + checkoutText(' crédito(s) disponibles para crear pasaportes.', ' credit(s) available to create passports.'), 'ok');
 }
 function initEvoCheckout() {
   const buttons = [
@@ -114,7 +117,7 @@ function initEvoCheckout() {
       buttons.forEach(([item]) => { if (item) item.disabled = true; });
       try { await buyEvoPlan(planCode); }
       catch (error) {
-        const message = error && error.message ? error.message : 'Compra cancelada o no completada.';
+        const message = error && error.message ? error.message : checkoutText('Compra cancelada o no completada.', 'Purchase cancelled or not completed.');
         checkoutStatus(message);
       } finally {
         buttons.forEach(([item]) => { if (item) item.disabled = false; });
