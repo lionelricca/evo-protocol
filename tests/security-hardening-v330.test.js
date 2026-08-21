@@ -88,6 +88,22 @@ function containsRecoverySecretRequest(text){
   assert(challenge.includes('reused:true'),'Challenge must reuse a still-live pending challenge');
   assert(challenge.includes('authority:"OBSERVATIONAL_ONLY"'),'SOFTWARE Challenge must be explicitly non-authoritative');
 
+  const sealRegistration=read('supabase/functions/register-evo-seal/index.ts');
+  assert(sealRegistration.includes('.rpc("evo_register_seal_with_credit"'),'Seal registration must cross the economic boundary through one atomic RPC');
+  assert(!sealRegistration.includes('.rpc("evo_claim_passport_credit"'),'Edge registration must not consume credit in a separate transaction');
+  assert(!/from\("evo_seals"\)\.insert\(/.test(sealRegistration),'Edge registration must not insert the Seal outside the atomic RPC');
+  assert(sealRegistration.includes('atomic: true'),'successful registration must explicitly report the atomic path');
+  assert(sealRegistration.includes('"X-Content-Type-Options": "nosniff"'),'Seal-registration responses must disable MIME sniffing');
+
+  const atomicMigration=read('supabase/migrations/20260821234000_atomic_seal_registration_credit.sql');
+  assert(atomicMigration.includes('create or replace function public.evo_register_seal_with_credit'),'atomic registration RPC must be migration-controlled');
+  assert(atomicMigration.includes("'evo-credit|' || v_wallet"),'credit decisions must use a wallet-wide transaction lock');
+  assert(atomicMigration.includes('insert into public.evo_seals as s'),'Seal insert must live inside the database transaction');
+  assert(atomicMigration.includes('insert into public.evo_credit_consumptions'),'credit consumption must live inside the same database transaction');
+  assert(atomicMigration.includes("raise exception 'duplicate_asset_serial'"),'duplicate asset/serial rule must be rechecked inside the transaction');
+  assert(atomicMigration.includes('revoke all on function public.evo_register_seal_with_credit(jsonb) from authenticated'),'browser roles must not execute the atomic SECURITY DEFINER RPC');
+  assert(atomicMigration.includes('grant execute on function public.evo_register_seal_with_credit(jsonb) to service_role'),'service role must be the application execution path for the atomic RPC');
+
   const indexHtml=read('v1/index.html');
   assert(indexHtml.includes('Content-Security-Policy'),'browser entrypoint must enforce a CSP baseline');
   assert(indexHtml.includes("base-uri 'none'"),'CSP must disable base tag rewriting');
@@ -141,5 +157,5 @@ function containsRecoverySecretRequest(text){
     }
   }
 
-  console.log('EVO V3.3.1 security hardening checks passed');
+  console.log('EVO V3.3.2 security hardening checks passed');
 })().catch(error=>{console.error(error);process.exit(1)});
