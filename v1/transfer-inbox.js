@@ -41,7 +41,7 @@
   }
 
   function lockedMarkup(){
-    return `<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">↘</div><div><span class="evoInboxEyebrow">TRANSFER INBOX</span><h3>${t('Transferencias pendientes','Pending transfers')}</h3><p>${t('Las ofertas dirigidas a tu wallet son privadas. Firmá una comprobación para verlas.','Offers addressed to your wallet are private. Sign a verification message to view them.')}</p></div></div><div class="evoInboxActions"><span class="evoInboxPrivacy">${t('No mueve fondos · No acepta activos','No funds moved · No asset accepted')}</span><button class="btn evoInboxUnlock" type="button">${t('Ver transferencias','View transfers')}</button></div>`;
+    return `<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">⇄</div><div><span class="evoInboxEyebrow">${t('TRANSFERENCIAS','TRANSFERS')}</span><h3>${t('Bandeja privada','Private inbox')}</h3><p>${t('Sólo vos podés consultar ofertas dirigidas a esta wallet.','Only you can view offers addressed to this wallet.')}</p></div></div><div class="evoInboxActions"><span class="evoInboxPrivacy">${t('Firma de acceso · 5 min · no mueve fondos','Access signature · 5 min · no funds moved')}</span><button class="btn evoInboxUnlock" type="button">${t('Abrir bandeja','Open inbox')}</button></div>`;
   }
 
   function renderLocked(){
@@ -53,13 +53,13 @@
   function renderLoading(){
     const panel=ensurePanel();if(!panel)return;
     panel.className='panel evoTransferInbox loading';
-    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon pulse" aria-hidden="true">↘</div><div><span class="evoInboxEyebrow">TRANSFER INBOX</span><h3>${t('Comprobando tu bandeja…','Checking your inbox…')}</h3><p>${t('EVO está validando la firma de esta wallet.','EVO is validating this wallet signature.')}</p></div></div>`;
+    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon pulse" aria-hidden="true">⇄</div><div><span class="evoInboxEyebrow">${t('TRANSFERENCIAS','TRANSFERS')}</span><h3>${t('Abriendo bandeja…','Opening inbox…')}</h3><p>${t('Validando el acceso de esta wallet.','Validating access for this wallet.')}</p></div></div>`;
   }
 
   function renderError(message){
     const panel=ensurePanel();if(!panel)return;
     panel.className='panel evoTransferInbox error';
-    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">!</div><div><span class="evoInboxEyebrow">TRANSFER INBOX</span><h3>${t('No se pudo abrir la bandeja','Could not open inbox')}</h3><p>${escHtml(message||t('Intentá nuevamente.','Try again.'))}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRetry" type="button">${t('Reintentar','Retry')}</button></div>`;
+    panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon" aria-hidden="true">!</div><div><span class="evoInboxEyebrow">${t('TRANSFERENCIAS','TRANSFERS')}</span><h3>${t('No se pudo abrir la bandeja','Could not open inbox')}</h3><p>${escHtml(message||t('Intentá nuevamente.','Try again.'))}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRetry" type="button">${t('Reintentar','Retry')}</button></div>`;
     panel.querySelector('.evoInboxRetry')?.addEventListener('click',()=>unlockAndLoad(true));
   }
 
@@ -77,13 +77,13 @@
     const panel=ensurePanel();if(!panel)return;
     if(!offers.length){
       panel.className='panel evoTransferInbox verified empty';
-      panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon ok" aria-hidden="true">✓</div><div><span class="evoInboxEyebrow">TRANSFER INBOX · VERIFIED</span><h3>${t('Sin transferencias pendientes','No pending transfers')}</h3><p>${t('No hay activos esperando aceptación para esta wallet.','No assets are waiting for acceptance by this wallet.')}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRefresh" type="button">${t('Actualizar','Refresh')}</button></div>`;
+      panel.innerHTML=`<div class="evoInboxLead"><div class="evoInboxIcon ok" aria-hidden="true">✓</div><div><span class="evoInboxEyebrow">${t('TRANSFERENCIAS · VERIFICADO','TRANSFERS · VERIFIED')}</span><h3>${t('Sin pendientes','Nothing pending')}</h3><p>${t('No hay activos esperando tu aceptación.','No assets are waiting for your acceptance.')}</p></div></div><div class="evoInboxActions"><button class="btn evoInboxRefresh" type="button">${t('Actualizar','Refresh')}</button></div>`;
       panel.querySelector('.evoInboxRefresh')?.addEventListener('click',()=>unlockAndLoad(false));
       return;
     }
     panel.className='panel evoTransferInbox verified hasOffers';panel.textContent='';
     const head=document.createElement('div');head.className='evoInboxHeader';
-    head.innerHTML=`<div><span class="evoInboxEyebrow">TRANSFER INBOX · VERIFIED</span><h3>${offers.length} ${offers.length===1?t('transferencia pendiente','pending transfer'):t('transferencias pendientes','pending transfers')}</h3><p>${t('Revisá el activo antes de aceptar. La propiedad cambia sólo después de tu segunda firma.','Review the asset before accepting. Ownership changes only after your second signature.')}</p></div><button class="btn evoInboxRefresh" type="button">${t('Actualizar','Refresh')}</button>`;
+    head.innerHTML=`<div><span class="evoInboxEyebrow">${t('TRANSFERENCIAS · VERIFICADO','TRANSFERS · VERIFIED')}</span><h3>${offers.length} ${offers.length===1?t('transferencia pendiente','pending transfer'):t('transferencias pendientes','pending transfers')}</h3><p>${t('Revisá el activo antes de aceptar. La propiedad cambia sólo después de tu segunda firma.','Review the asset before accepting. Ownership changes only after your second signature.')}</p></div><button class="btn evoInboxRefresh" type="button">${t('Actualizar','Refresh')}</button>`;
     const list=document.createElement('div');list.className='evoInboxList';panel.append(head,list);
     head.querySelector('.evoInboxRefresh').onclick=()=>unlockAndLoad(false);
     const cards=await Promise.all(offers.map(offerCard));cards.forEach(card=>list.append(card));
