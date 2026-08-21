@@ -1,6 +1,8 @@
 'use strict';
 
 const EVO_ES_EN = {
+  "1 EVO Passport · US$9,90": "1 EVO Passport · US$9.90",
+  "Pack de 10 · US$49": "Pack of 10 · US$49",
   "¿Ya pagaste y no recibiste tus créditos?": "Already paid but did not receive your credits?",
   "Recuperá la acreditación con el hash de la transacción. Debés conectar la misma wallet que realizó el pago.": "Recover your credits with the transaction hash. You must connect the same wallet that made the payment.",
   "Hash de transacción": "Transaction hash",
