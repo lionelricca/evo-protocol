@@ -1,12 +1,12 @@
-# EVO Protocol
+# EVO Passport
 
-**The Digital Seal — Seal what matters. Prove what’s real.**
+**Identity, history and traceability for every asset.**
 
-EVO Protocol is an experimental trust protocol for creating signed digital seals, public verification records, evolving product passports and explainable risk analysis powered by the EVO ecosystem on Polygon.
+EVO Passport is an independent product created by Lionel Ricca. It gives physical and digital assets a wallet-signed identity, a public QR verification record, lifecycle history and controlled ownership transfer, supported by the EVO ecosystem on Polygon.
 
-## Current stage: V1 Safety Prototype
+## Current stage: V1.5 Commercial Pilot
 
-The current prototype is intentionally non-custodial and conservative. It does **not** move EVO or POL, does **not** store private keys and does **not** claim that a physical object is authentic merely because a digital record exists.
+The current commercial pilot is non-custodial and conservative. A payment moves USDC only after explicit confirmation in MetaMask; EVO never stores private keys and does **not** claim that a physical object is authentic merely because a digital record exists.
 
 The working stack has evolved beyond a static seal:
 
@@ -24,6 +24,19 @@ The next layer is the **EVO Reality Graph**: one continuously evolving trust sta
 - **Security before mainnet.** New value-moving contracts require tests and independent review.
 - **Privacy by default.** Public observation features should minimize personal data.
 - **Standards before lock-in.** Future work should remain compatible where useful with GS1 Digital Link, C2PA and W3C Verifiable Credentials.
+
+## Commercial model
+
+- One free demonstration passport per wallet.
+- Individual: **US$9.90** for one additional passport.
+- Pack: **US$49** for ten passports.
+- Company reference: **US$39/month** for up to 100 passports; commercial activation pending.
+- Public verification remains free and does not require a wallet.
+- MetaMask checkout settles only verified, Circle-issued USDC on Ethereum, Polygon, Base, Arbitrum, Optimism or Avalanche C-Chain.
+- Customers may use MetaMask Buy or Swap before checkout when they hold another supported asset.
+- Every payment requires explicit wallet confirmation and is credited only after independent onchain verification.
+- All payments settle to the merchant wallet `0xDC6740245e026A19ea9EE2B62968ea8aeFFEAb16`.
+- The EVO token is not used for EVO Passport purchases at this stage.
 
 ## EVO token
 

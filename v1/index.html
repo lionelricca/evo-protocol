@@ -3,32 +3,42 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>EVO Asset Passport · Pasaportes digitales verificables</title>
-<meta name="description" content="Creá pasaportes digitales verificables para equipos, productos, documentos y baterías. QR único, historial, firma y verificación pública con EVO Protocol.">
+<title>EVO Passport · Identidad e historial verificable</title>
+<meta name="description" content="EVO Passport crea una identidad digital verificable para activos, con QR único, historial firmado, trazabilidad y consulta pública gratuita.">
 <style>html,body{margin:0;background:#05050d;color:#f8f5ff;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}body.asset-fallback:before{content:'EVO · cargando interfaz segura…';display:block;padding:10px 16px;background:#0f0d20;color:#f4ca75;font-size:12px}</style>
 <link rel="stylesheet" href="./styles.css?v=20260821-v14" onerror="document.body&&document.body.classList.add('asset-fallback')">
 <link rel="stylesheet" href="./passport.css?v=20260821-v14">
 <link rel="stylesheet" href="./guardian.css?v=20260821-v14">
 </head>
 <body>
-<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#seal">Crear</a><a href="#verify">Verificar</a><a href="#passport">Historial</a><a href="#guardian">Riesgo IA</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
+<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#pricing">Precio</a><a href="#seal">Crear</a><a href="#verify">Verificar</a><a href="#passport">Historial</a><a href="#guardian">Tecnología</a><a href="#security">Seguridad</a><select id="languageSelect" class="btn" aria-label="Idioma"><option value="es">ES</option><option value="en">EN</option></select><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
 <header id="top" class="hero wrap">
   <section class="heroCopy panel">
     <span class="kicker">TRAZABILIDAD · HISTORIAL · VERIFICACIÓN</span>
     <h1>EVO <span>PASSPORT</span></h1>
     <h2>El pasaporte digital de cada activo</h2>
     <p>Identificá equipos, productos y documentos con un QR único. Conservá su historial, respaldá cada intervención y permití que clientes, técnicos o compradores verifiquen la información.</p>
-    <div class="actions"><a class="btn primary" href="#seal">Crear pasaporte</a><a class="btn" href="#verify">Verificar QR</a><a class="btn gold" href="#passport">Ver historial</a><a class="btn" href="#issuerTrust">Para empresas</a></div>
-    <div class="chips"><span>QR único</span><span>Historial verificable</span><span>Documentos protegidos</span><span>Firma del responsable</span><span>Consulta pública</span><span>Transferencia segura</span><span>Sin costo blockchain en V1</span></div>
+    <div class="actions"><a class="btn primary" href="#pricing">Ver precio</a><a class="btn" href="#seal">Crear demostración</a><a class="btn" href="#verify">Verificar QR</a><a class="btn gold" href="#passport">Ver historial</a></div>
+    <div class="chips"><span>Desde US$9,90</span><span>QR único</span><span>Historial verificable</span><span>Documentos protegidos</span><span>Firma del responsable</span><span>Consulta pública gratuita</span><span>Transferencia segura</span></div>
   </section>
   <section class="heroSeal panel" aria-label="Animated EVO Seal"><div class="orbit o1"></div><div class="orbit o2"></div><div class="orbit o3"></div><div class="sealCore"><span class="drop">◆</span><strong>EVO</strong><small>VERIFIED</small></div></section>
 </header>
 <main>
-<section id="seal" class="wrap block"><h2>Crear un pasaporte digital</h2><p class="sub">Registrá un activo y obtené su identificación EVO y QR verificable. En V1 la wallet firma el registro sin mover fondos. Los archivos permanecen en tu dispositivo: EVO conserva únicamente su huella SHA-256 y los datos no sensibles que decidas publicar.</p>
+<section id="pricing" class="wrap block"><h2>Planes de lanzamiento</h2><p class="sub">Creá el primer pasaporte sin costo. Para comprar más, podés usar MetaMask en seis redes y pagar con USDC oficial; si tenés otro activo, usá Comprar o Swap en MetaMask antes de confirmar.</p>
+<div class="grid">
+  <div class="panel"><span class="kicker">DEMOSTRACIÓN</span><h3>Primer Passport</h3><p><strong style="font-size:2.4rem">Gratis</strong> <span class="sub">1 por wallet</span></p><div class="checks"><p>Incluye identificación EVO, QR, ficha pública, firma e historial.</p><p>La verificación pública siempre es gratuita.</p></div><a class="btn primary" href="#seal">Crear demostración</a></div>
+  <div class="panel"><span class="kicker">INDIVIDUAL</span><h3>1 EVO Passport</h3><p><strong style="font-size:2.4rem">US$9,90</strong></p><div class="checks"><p>Un crédito para crear un pasaporte adicional.</p><p>Pago único, sin suscripción.</p></div><button id="buyIndividualBtn" class="btn primary" type="button">Comprar con MetaMask</button></div>
+  <div class="panel"><span class="kicker">AHORRO</span><h3>Pack de 10</h3><p><strong style="font-size:2.4rem">US$49</strong></p><div class="checks"><p>Diez créditos para EVO Passport.</p><p>US$4,90 por pasaporte.</p></div><button id="buyPackBtn" class="btn gold" type="button">Comprar pack con MetaMask</button></div>
+  <div class="panel"><span class="kicker">EMPRESA</span><h3>Hasta 100 Passports</h3><p><strong style="font-size:2.4rem">US$39</strong> <span class="sub">por mes</span></p><div class="checks"><p>Plan comercial sujeto a activación y acuerdo de servicio.</p><p>No se cobra automáticamente desde la wallet.</p></div><button class="btn" type="button" disabled>Próxima etapa comercial</button></div>
+</div>
+<div class="panel" style="margin-top:16px"><span class="kicker">PAGO MULTIRED</span><div class="form"><label>Elegí la red de MetaMask<select id="paymentNetwork"><option value="137">Polygon · recomendado por bajo costo</option><option value="8453">Base</option><option value="42161">Arbitrum</option><option value="10">Optimism</option><option value="43114">Avalanche C-Chain</option><option value="1">Ethereum</option></select></label></div><div class="checks"><p><b>Moneda de liquidación:</b> USDC oficial de Circle en la red elegida.</p><p><b>Wallet receptora:</b> <code>0xDC6740245e026A19ea9EE2B62968ea8aeFFEAb16</code></p><p><b>Seguridad:</b> EVO verifica importe, red, contrato, origen, destino y confirmaciones en dos nodos independientes antes de acreditar.</p><p><b>Importante:</b> el token EVO no se utiliza en esta compra. Nunca ingreses tu frase semilla.</p></div><div id="checkoutStatus" class="passportNotice">No se iniciará ningún pago hasta que elijas un plan y lo confirmes dentro de MetaMask.</div></div>
+</section>
+
+<section id="seal" class="wrap block"><h2>Crear un pasaporte digital</h2><p class="sub">Registrá un activo y obtené su EVO Passport ID y QR verificable. La wallet firma el registro; cualquier compra se inicia por separado y requiere confirmación explícita en MetaMask. Los archivos permanecen en tu dispositivo: EVO conserva únicamente su huella SHA-256 y los datos no sensibles que decidas publicar.</p>
 <div class="grid"><form id="sealForm" class="panel form">
 <label>Tipo de activo<select id="type"><option value="Producto">Equipo / producto</option><option value="Documento">Informe / documento</option><option value="Imagen">Fotografía</option><option value="Video">Video</option><option value="Certificado">Certificado</option><option value="Otro">Otro activo</option></select></label>
 <label>Activo / título<input id="title" required maxlength="160" placeholder="Ej. Generador Doosan GE08TI"></label>
-<label>Empresa / emisor<input id="issuer" maxlength="160" placeholder="Ej. Power Service SPA"></label>
+<label>Empresa / emisor<input id="issuer" maxlength="160" placeholder="Ej. EVO Demo o nombre de la empresa"></label>
 <label>Serie / referencia<input id="serial" maxlength="160" placeholder="Ej. GE08TI-001"></label>
 <details class="full"><summary>Ficha técnica del activo (opcional)</summary><div class="form" style="margin-top:12px">
 <label>Fabricante<input id="assetManufacturer" maxlength="160" placeholder="Ej. Doosan"></label>
@@ -41,7 +51,7 @@
 <label class="full">Descripción<textarea id="description" maxlength="2000" placeholder="Modelo, características o información pública del activo"></textarea></label>
 <label class="full file">Archivo opcional<input id="file" type="file"><span>SHA-256 local. El archivo no sale de tu navegador.</span></label>
 <div class="full actions"><button class="btn primary" type="submit">Crear pasaporte verificable</button><button id="clearBtn" class="btn" type="button">Limpiar</button></div>
-</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá tu wallet para crear el pasaporte.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Issuer Trust:</b> combina pruebas opcionales e independientes: wallet, dominio cuando existe y evidencia organizacional cuando aplica.</p><p><b>Registro:</b> público y consultable.</p><p><b>QR:</b> abre la verificación pública.</p><p><b>Pulse:</b> encadena observaciones públicas sin guardar IP ni ubicación.</p><p><b>Guardian:</b> analiza anomalías explicables.</p><p><b>Passport:</b> historial firmado por el propietario.</p><p><b>Costo token:</b> 0 EVO durante V1.</p></div></div></div></section>
+</form><div class="panel"><h3>Resultado</h3><div id="createResult" class="empty">Conectá tu wallet para crear el pasaporte.</div><h3>Estado V1</h3><div class="checks"><p><b>Archivo:</b> permanece local.</p><p><b>Identidad:</b> wallet firmante.</p><p><b>Issuer Trust:</b> combina pruebas opcionales e independientes: wallet, dominio cuando existe y evidencia organizacional cuando aplica.</p><p><b>Registro:</b> público y consultable.</p><p><b>QR:</b> abre la verificación pública.</p><p><b>Pulse:</b> encadena observaciones públicas sin guardar IP ni ubicación.</p><p><b>Guardian:</b> analiza anomalías explicables.</p><p><b>Passport:</b> historial firmado por el propietario.</p><p><b>Modo comercial:</b> una demostración gratuita por wallet; los pasaportes adicionales requieren un crédito comprado desde el checkout.</p></div></div></div></section>
 
 <section id="verify" class="wrap block"><h2>Verificar un pasaporte</h2><p class="sub">La consulta pública es gratuita. Ingresá un EVO Seal ID o escaneá el QR del activo para revisar su registro. También podés comparar un archivo original: su hash se calcula localmente y el archivo no sale de tu dispositivo.</p>
 <div class="grid"><div class="panel form"><label>Seal ID<input id="verifyId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><label class="file">Archivo a comparar<input id="verifyFile" type="file"><span>Opcional. El hash se calcula localmente y se compara con el registro público.</span></label><button id="verifyBtn" class="btn primary">Verificar</button></div><div class="panel"><h3>Estado</h3><div id="verifyResult" class="empty">Ingresá un Seal ID.</div></div></div></section>
@@ -70,7 +80,7 @@
 </div>
 
 <div class="panel transferPanel">
-  <div class="transferHeader"><div><span class="kicker">SAFE OWNERSHIP</span><h3>Transferencia segura · 2 firmas</h3><p>La wallet actual crea una oferta de 24 horas. La propiedad no cambia hasta que la wallet destino la acepta con una segunda firma.</p></div><span class="status ok">0 EVO · 0 POL</span></div>
+  <div class="transferHeader"><div><span class="kicker">SAFE OWNERSHIP</span><h3>Transferencia segura · 2 firmas</h3><p>La wallet actual crea una oferta de 24 horas. La propiedad no cambia hasta que la wallet destino la acepta con una segunda firma.</p></div><span class="status ok">SIN COBRO EN PILOTO</span></div>
   <div class="grid transferGrid">
     <div class="form transferBox"><label class="full">Nueva wallet propietaria<input id="transferToWallet" placeholder="0x..."></label><button id="createTransferOfferBtn" class="btn primary" type="button">Crear oferta firmada</button><div id="transferOfferResult" class="empty">No hay una oferta nueva.</div></div>
     <div class="transferBox"><h3>Oferta para aceptar / cancelar</h3><div id="incomingTransfer" class="empty">Abrí un enlace de transferencia o creá una oferta.</div></div>
@@ -80,11 +90,13 @@
 
 <section id="security" class="wrap block"><h2>Security Gate</h2><p class="sub">No avanzamos a una fase que maneje valor hasta que la anterior pase sus controles.</p><div class="panel checks"><p><b>V0 ✓:</b> hashing local, detección original/modificado, sin transferencias.</p><p><b>V1 Seal ✓:</b> registro público + firma de wallet + verificación pública + QR + bloqueo de duplicado exacto hash/serial.</p><p><b>Issuer Trust V0:</b> perfil firmado por wallet; dominio opcional; evidencia organizacional opcional y sujeta a revisión independiente.</p><p><b>EVO Pulse V0 ✓:</b> observaciones públicas encadenadas, sin IP/ubicación/fingerprint y con control de integridad.</p><p><b>Challenge V0 ✓:</b> frescura, expiración, anti-replay y auditoría de intentos.</p><p><b>AI Guardian V0.4:</b> Seal + Issuer Trust + Passport + Pulse + Challenge Audit; todavía sin inferencias físicas.</p><p><b>V1 Passport:</b> historial firmado + propiedad + transferencias de doble firma, todavía sin EVO.</p><p><b>NFC:</b> arquitectura diseñada; prueba física pendiente de hardware seguro.</p><p><b>Testnet:</b> contrato mínimo, límites y pruebas automatizadas.</p><p><b>Mainnet:</b> sólo después de revisión de seguridad independiente.</p></div></section>
 </main>
-<footer><div class="wrap"><b>EVO Protocol</b> · The Digital Seal · Polygon · EVO contract <code>0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f</code></div></footer>
+<footer><div class="wrap"><b>EVO Passport</b> · Producto independiente creado por Lionel Ricca</div></footer>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
 <script src="./app.js?v=20260821-v14" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
+<script src="./i18n.js?v=20260821-v15c"></script>
 <script src="./wallet-autoconnect.js?v=20260821-v14"></script>
+<script src="./checkout.js?v=20260821-v15b"></script>
 <script src="./issuer.js?v=20260821-v14"></script>
 <script src="./organization.js?v=20260821-v14"></script>
 <script src="./organization-simple.js?v=20260821-v14"></script>
