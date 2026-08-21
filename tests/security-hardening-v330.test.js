@@ -100,9 +100,13 @@ function containsRecoverySecretRequest(text){
   assert(atomicMigration.includes("'evo-credit|' || v_wallet"),'credit decisions must use a wallet-wide transaction lock');
   assert(atomicMigration.includes('insert into public.evo_seals as s'),'Seal insert must live inside the database transaction');
   assert(atomicMigration.includes('insert into public.evo_credit_consumptions'),'credit consumption must live inside the same database transaction');
-  assert(atomicMigration.includes("raise exception 'duplicate_asset_serial'"),'duplicate asset/serial rule must be rechecked inside the transaction');
   assert(atomicMigration.includes('revoke all on function public.evo_register_seal_with_credit(jsonb) from authenticated'),'browser roles must not execute the atomic SECURITY DEFINER RPC');
   assert(atomicMigration.includes('grant execute on function public.evo_register_seal_with_credit(jsonb) to service_role'),'service role must be the application execution path for the atomic RPC');
+
+  const identityGuard=read('supabase/migrations/20260821234200_active_asset_serial_guard.sql');
+  assert(identityGuard.includes("raise exception 'duplicate_asset_serial'"),'duplicate asset/serial identity must fail closed at the table boundary');
+  assert(identityGuard.includes('before insert or update of issuer_wallet, asset_hash, serial, status'),'duplicate guard must protect every relevant write path, not only one Edge Function');
+  assert(identityGuard.includes('s.seal_id <> new.seal_id'),'duplicate guard must allow updates to the same Seal while rejecting a second active identity');
 
   const indexHtml=read('v1/index.html');
   assert(indexHtml.includes('Content-Security-Policy'),'browser entrypoint must enforce a CSP baseline');
