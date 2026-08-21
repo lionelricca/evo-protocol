@@ -160,7 +160,10 @@ function evoTranslateNode(root, language) {
   if (!root) return;
   if (root.nodeType === Node.TEXT_NODE) {
     const parent = root.parentElement;
-    if (parent && !/^(SCRIPT|STYLE|CODE)$/i.test(parent.tagName)) root.nodeValue = evoTranslateValue(root.nodeValue, language);
+    if (parent && !/^(SCRIPT|STYLE|CODE)$/i.test(parent.tagName)) {
+      const translated = evoTranslateValue(root.nodeValue, language);
+      if (translated !== root.nodeValue) root.nodeValue = translated;
+    }
     return;
   }
   if (root.nodeType !== Node.ELEMENT_NODE && root.nodeType !== Node.DOCUMENT_FRAGMENT_NODE) return;
@@ -173,7 +176,10 @@ function evoTranslateNode(root, language) {
   let node;
   while ((node = walker.nextNode())) {
     const parent = node.parentElement;
-    if (parent && !/^(SCRIPT|STYLE|CODE)$/i.test(parent.tagName)) node.nodeValue = evoTranslateValue(node.nodeValue, language);
+    if (parent && !/^(SCRIPT|STYLE|CODE)$/i.test(parent.tagName)) {
+      const translated = evoTranslateValue(node.nodeValue, language);
+      if (translated !== node.nodeValue) node.nodeValue = translated;
+    }
   }
 }
 function evoSetLanguage(language, remember = true) {
