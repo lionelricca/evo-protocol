@@ -11,7 +11,9 @@ where n.nspname='public'
   and not c.relrowsecurity
 order by c.relname;
 
--- 2) SECURITY DEFINER routines must not be executable by PUBLIC/anon/authenticated.
+-- 2) SECURITY DEFINER routines must not be executable by browser roles.
+-- Any EXECUTE granted to PUBLIC is inherited by anon/authenticated, so these
+-- two checks also catch accidental PUBLIC execution grants.
 select
   n.nspname as schema_name,
   p.proname,
@@ -22,8 +24,7 @@ join pg_catalog.pg_namespace n on n.oid=p.pronamespace
 where n.nspname='public'
   and p.prosecdef
   and (
-    pg_catalog.has_function_privilege('public',p.oid,'EXECUTE')
-    or pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
+    pg_catalog.has_function_privilege('anon',p.oid,'EXECUTE')
     or pg_catalog.has_function_privilege('authenticated',p.oid,'EXECUTE')
   )
 order by p.proname;
