@@ -32,4 +32,5 @@ jobs:
       - name: Run Document Proof regression checks
         run: |
           node tests/document-proof-v30.test.js
+          node tests/document-proof-v301.test.js
           node tests/document-lifecycle-v30.test.js
