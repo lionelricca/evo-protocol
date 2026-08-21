@@ -151,7 +151,7 @@ function renderEvoEntitlement(data) {
   saveCreditBalance(data.wallet, data.remainingCredits);
   renderProofWalletSummary(data);
   window.evoEntitlement = data;
-  window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
+  if (typeof window.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
   return data;
 }
 async function refreshEvoEntitlement(wallet) {
@@ -250,7 +250,10 @@ async function processSmartPayment(transaction, planCode, verifyNow) {
     const result = await verifyCheckout(payment.txHash, planCode, payment.payerWallet, payment.chainId);
     clearPendingPayment(payment.txHash);
     checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + proofQuantity(result.remainingCredits) + checkoutText(' disponible(s) para crear Passports.', ' available to create Passports.'), 'ok');
-    if (payment.payerWallet) refreshEvoEntitlement(payment.payerWallet).catch(() => {});
+    saveCreditBalance(payment.payerWallet, result.remainingCredits);
+    const summary = { ...(window.evoEntitlement || {}), wallet:payment.payerWallet, purchasedCredits:result.purchasedCredits, consumedCredits:result.consumedCredits, remainingCredits:result.remainingCredits };
+    renderProofWalletSummary(summary);
+    window.evoEntitlement = summary;
   } finally {
     EVO_VERIFYING_TXS.delete(payment.txHash);
   }
@@ -298,7 +301,10 @@ async function recoverEvoPayment() {
   const message = checkoutText('Pago recuperado. Tenés ', 'Payment recovered. You have ') + proofQuantity(result.remainingCredits) + checkoutText(' disponible(s).', ' available.');
   recoveryStatus(message, 'ok');
   checkoutStatus(message, 'ok');
-  refreshEvoEntitlement(payerWallet).catch(() => {});
+  saveCreditBalance(payerWallet, result.remainingCredits);
+  const summary = { ...(window.evoEntitlement || {}), wallet:payerWallet, purchasedCredits:result.purchasedCredits, consumedCredits:result.consumedCredits, remainingCredits:result.remainingCredits };
+  renderProofWalletSummary(summary);
+  window.evoEntitlement = summary;
 }
 function restorePendingPaymentForm() {
   const payment = readPendingPayment();
@@ -331,7 +337,7 @@ function rewriteLegacyCreditText(text) {
     ['Use this option only if the payment was sent but the credits have not appeared yet.', 'Use this option only if the payment was sent but your EVO Proofs have not appeared yet.'],
     ['1 EVO Passport · US$9,90', en ? '1 EVO Proof · US$9.90' : '1 EVO Proof · US$9,90'],
     ['1 EVO Passport · US$9.90', '1 EVO Proof · US$9.90'],
-    ['Pack de 10 · US$49', en ? '10 EVO Proofs · US$49' : '10 EVO Proofs · US$49'],
+    ['Pack de 10 · US$49', '10 EVO Proofs · US$49'],
     ['Pack of 10 · US$49', '10 EVO Proofs · US$49'],
     ['Esta wallet ya usó su Passport gratuito y no tiene créditos disponibles. Comprá un crédito antes de continuar.', en ? 'This wallet already used its free Passport and has no EVO Proofs available. Buy 1 EVO Proof to continue.' : 'Esta wallet ya usó su Passport gratuito y no tiene EVO Proofs disponibles. Comprá 1 EVO Proof antes de continuar.'],
     ['Firma tu Passport. Se usará 1 crédito; no es una transacción blockchain.', en ? 'Sign your Passport. 1 EVO Proof will be used; this is not a blockchain transaction.' : 'Firmá tu Passport. Se usará 1 EVO Proof; no es una transacción blockchain.']
@@ -339,7 +345,7 @@ function rewriteLegacyCreditText(text) {
   return exact.get(text) || text;
 }
 function rewriteLegacyCreditNodes(root) {
-  if (!root) return;
+  if (!root || typeof Node === 'undefined') return;
   if (root.nodeType === Node.TEXT_NODE) {
     const parent = root.parentElement;
     if (parent && !/^(SCRIPT|STYLE|CODE)$/i.test(parent.tagName)) {
@@ -359,6 +365,7 @@ function rewriteLegacyCreditNodes(root) {
   }
 }
 function initProofPresentationObserver() {
+  if (!document.body || typeof MutationObserver === 'undefined' || typeof Node === 'undefined' || typeof NodeFilter === 'undefined') return;
   rewriteLegacyCreditNodes(document.body);
   const observer = new MutationObserver(mutations => {
     for (const mutation of mutations) {
@@ -410,12 +417,14 @@ function initEvoCheckout() {
     refreshEvoEntitlement(connectedWallet).catch(error => checkoutStatus(error && error.message ? error.message : checkoutText('No se pudo comprobar el beneficio gratuito.', 'Could not check the free entitlement.')));
     resumePendingPayment().catch(error => recoveryStatus(error && error.message ? error.message : checkoutText('El pago sigue pendiente de verificación.', 'The payment is still pending verification.')));
   };
-  window.addEventListener('evo:wallet-connected', event => window.evoWalletConnected(event.detail && event.detail.account));
-  window.addEventListener('evo:wallet-disconnected', () => {
-    renderCreditBalance('');
-    const ids = ['proofBalanceFree','proofBalancePurchased','proofBalanceUsed'];
-    ids.forEach(id => { const node = document.getElementById(id); if (node) node.textContent = '—'; });
-  });
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('evo:wallet-connected', event => window.evoWalletConnected(event.detail && event.detail.account));
+    window.addEventListener('evo:wallet-disconnected', () => {
+      renderCreditBalance('');
+      const ids = ['proofBalanceFree','proofBalancePurchased','proofBalanceUsed'];
+      ids.forEach(id => { const node = document.getElementById(id); if (node) node.textContent = '—'; });
+    });
+  }
   renderCreditBalance(account || '');
 }
 initEvoCheckout();
