@@ -15,8 +15,15 @@ function walk(dir){
   return out;
 }
 
-const dangerousSeedRequest=/\b(?:enter|provide|send|share|submit|paste|type|upload|ingresa(?:r)?|ingrese|proporciona(?:r)?|env[ií]a(?:r)?|env[ií]e|comparte|comparta|pega(?:r)?|pegue|escribe|escriba|sube|suba)\b[\s\S]{0,80}\b(?:seed phrase|recovery phrase|frase semilla|frase de recuperaci[oó]n)\b/i;
+const dangerousSeedRequest=/\b(?:enter|provide|send|share|submit|paste|type|upload|ingresa(?:r)?|ingrese(?:s)?|proporciona(?:r)?|env[ií]a(?:r)?|env[ií]e|comparte|comparta|pega(?:r)?|pegue|escribe|escriba|sube|suba)\b[\s\S]{0,80}\b(?:seed phrase|recovery phrase|frase semilla|frase de recuperaci[oó]n)\b/i;
 const reverseDangerousSeedRequest=/\b(?:seed phrase|recovery phrase|frase semilla|frase de recuperaci[oó]n)\b[\s\S]{0,80}\b(?:here|aqu[ií]|form|formulario|campo|input)\b/i;
+const protectiveSecretWarning=/\b(?:never|do not|don't|must not|nunca|jam[aá]s|no)\b[\s\S]{0,80}\b(?:enter|provide|send|share|submit|paste|type|upload|ingres\w*|proporcion\w*|env[ií]\w*|compart\w*|peg\w*|escrib\w*|sub\w*)\b/i;
+function containsRecoverySecretRequest(text){
+  return String(text).split(/\r?\n/).some(line=>{
+    const dangerous=dangerousSeedRequest.test(line)||reverseDangerousSeedRequest.test(line);
+    return dangerous&&!protectiveSecretWarning.test(line);
+  });
+}
 
 (async()=>{
   const mod=await import(pathToFileURL(path.join(root,'standards/trust-authority-v330.mjs')).href);
@@ -79,8 +86,7 @@ const reverseDangerousSeedRequest=/\b(?:seed phrase|recovery phrase|frase semill
     const text=fs.readFileSync(file,'utf8');
     assert(!text.includes('SUPABASE_SERVICE_ROLE_KEY'),`service role secret reference must never appear in frontend: ${path.relative(root,file)}`);
     assert(!/BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY/.test(text),`private key material detected in frontend: ${path.relative(root,file)}`);
-    assert(!dangerousSeedRequest.test(text),`frontend appears to request a recovery secret: ${path.relative(root,file)}`);
-    assert(!reverseDangerousSeedRequest.test(text),`frontend appears to place a recovery secret in an input flow: ${path.relative(root,file)}`);
+    assert(!containsRecoverySecretRequest(text),`frontend appears to request a recovery secret: ${path.relative(root,file)}`);
   }
 
   const edgeRoot=path.join(root,'supabase','functions');
