@@ -112,3 +112,15 @@
   };
   if(document.readyState==='complete')loadOriginVerifier();else window.addEventListener('load',loadOriginVerifier,{once:true});
 })();
+
+(()=>{
+  const loadOriginAuthority=()=>{
+    if(!document.querySelector('link[data-evo-origin-authority-v323-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./origin-authority-v323.css?v=20260821-v323-origin-authority';style.dataset.evoOriginAuthorityV323Style='true';document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-origin-authority-v323]')){
+      const script=document.createElement('script');script.src='./origin-authority-v323.js?v=20260821-v323-origin-authority';script.async=true;script.dataset.evoOriginAuthorityV323='true';document.head.appendChild(script);
+    }
+  };
+  if(document.readyState==='complete')loadOriginAuthority();else window.addEventListener('load',loadOriginAuthority,{once:true});
+})();
