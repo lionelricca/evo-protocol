@@ -92,3 +92,23 @@
   document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(apply,60));
   apply();
 })();
+
+(()=>{
+  const loadOriginVerifier=()=>{
+    if(!document.querySelector('link[data-evo-origin-verifier-v322-style]')){
+      const style=document.createElement('link');
+      style.rel='stylesheet';
+      style.href='./origin-verifier-v322.css?v=20260821-v322-origin-verifier';
+      style.dataset.evoOriginVerifierV322Style='true';
+      document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-origin-verifier-v322]')){
+      const script=document.createElement('script');
+      script.src='./origin-verifier-v322.js?v=20260821-v322-origin-verifier';
+      script.async=true;
+      script.dataset.evoOriginVerifierV322='true';
+      document.head.appendChild(script);
+    }
+  };
+  if(document.readyState==='complete')loadOriginVerifier();else window.addEventListener('load',loadOriginVerifier,{once:true});
+})();
