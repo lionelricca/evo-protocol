@@ -47,6 +47,8 @@ jobs:
         run: node --check v1/guardian-v04.js
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
+      - name: Guard atomic registration structure
+        run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
         run: psql -X -f tests/sql/atomic-seal-fixture-v332.sql
       - name: Apply proposed atomic registration migration
