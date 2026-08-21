@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="./guardian.css?v=20260821-v14">
 </head>
 <body>
-<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#pricing">Precio</a><a href="#seal">Crear</a><a href="#verify">Verificar</a><a href="#passport">Historial</a><a href="#guardian">Tecnología</a><a href="#security">Seguridad</a><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
+<nav><div class="wrap nav"><a class="brand" href="#top"><span class="mark">E</span><b>EVO</b></a><div class="links"><a href="#pricing">Precio</a><a href="#seal">Crear</a><a href="#verify">Verificar</a><a href="#passport">Historial</a><a href="#guardian">Tecnología</a><a href="#security">Seguridad</a><select id="languageSelect" class="btn" aria-label="Idioma"><option value="es">ES</option><option value="en">EN</option></select><button id="walletBtn" class="btn gold">Conectar wallet</button></div></div></nav>
 <header id="top" class="hero wrap">
   <section class="heroCopy panel">
     <span class="kicker">TRAZABILIDAD · HISTORIAL · VERIFICACIÓN</span>
@@ -94,6 +94,7 @@
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787/qrcode.min.js"></script>
 <script src="./app.js?v=20260821-v14" onerror="document.body.classList.add('asset-fallback');document.getElementById('verifyResult').textContent='La lógica de EVO no cargó. Recargá la página.'"></script>
+<script src="./i18n.js?v=20260821-v15"></script>
 <script src="./wallet-autoconnect.js?v=20260821-v14"></script>
 <script src="./checkout.js?v=20260821-v15"></script>
 <script src="./issuer.js?v=20260821-v14"></script>
