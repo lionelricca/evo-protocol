@@ -47,6 +47,8 @@ jobs:
         run: node --check v1/guardian-v04.js
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
+      - name: Run V3.3.3 browser style CSP checks
+        run: node tests/browser-shield-v333.test.js
       - name: Guard atomic registration structure
         run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
@@ -62,4 +64,4 @@ jobs:
       - name: Test concurrent wallet entitlement decisions
         run: bash tests/sql/atomic-seal-concurrency-v332.sh
       - name: Security gate scope
-        run: echo "Trust authority, CSP/browser shield, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
+        run: echo "Trust authority, local-style CSP, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
