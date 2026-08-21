@@ -9,9 +9,9 @@ assert(source.includes("event.stopImmediatePropagation()"),'Language switch must
 assert(source.includes("url.searchParams.set('lang',lang)"),'Language choice must be encoded in the URL');
 assert(source.includes("url.searchParams.set('v','20260821-v276')"),'Language switch must force a fresh versioned reload');
 assert(source.includes('location.assign(url.toString())'),'Language switch must reload the same view deterministically');
-assert(source.includes('myevo-return-v276.js?v=20260821-v276-fixed'),'Active i18n layer must load the immutable My EVO return control');
 assert(index.includes('class="notranslate" translate="no"'),'EVO must opt out of browser auto-translation conflicts');
 assert(index.includes('meta name="google" content="notranslate"'),'EVO must advertise its own translation control');
-assert(index.includes('i18n-v275.js?v=20260821-v275-global'),'Index must directly load the language controller');
+assert(index.includes('i18n-v275.js?v=20260821-v277-global'),'Index must directly load the language controller with the V2.7.7 cache key');
+assert(index.includes('myevo-nav-v277.js?v=20260821-v277-nav'),'V2.7.7 must load My EVO navigation independently from i18n');
 
-console.log('EVO V2.7.6 language and My EVO loader checks passed');
+console.log('EVO V2.7.7 language and My EVO loader checks passed');
