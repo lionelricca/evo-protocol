@@ -64,13 +64,9 @@
       if(n.id!=='organizationAutofillState' && !n.closest('details'))n.style.display='none';
     });
 
-    // No polling, no automatic wallet access and no automatic signing.
-    // Refresh wallet-derived data only after the user explicitly clicks Connect wallet.
     walletSummary();
     const walletBtn=document.getElementById('walletBtn');
-    if(walletBtn)walletBtn.addEventListener('click',()=>{
-      setTimeout(walletSummary,700);
-    });
+    if(walletBtn)walletBtn.addEventListener('click',()=>{setTimeout(walletSummary,700);});
     return true;
   }
 
@@ -92,13 +88,13 @@
       const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset.css?v=20260821-v24-public-asset';style.dataset.evoPublicAssetStyle='true';document.head.appendChild(style);
     }
     if(!document.querySelector('link[data-evo-public-asset-v241-style]')){
-      const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset-v241.css?v=20260821-v241-polish';style.dataset.evoPublicAssetV241Style='true';document.head.appendChild(style);
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset-v241.css?v=20260821-v242-precision';style.dataset.evoPublicAssetV241Style='true';document.head.appendChild(style);
     }
     if(!document.querySelector('script[data-evo-public-asset]')){
       const script=document.createElement('script');script.src='./public-asset.js?v=20260821-v24-public-asset';script.async=true;script.dataset.evoPublicAsset='true';document.head.appendChild(script);
     }
     if(!document.querySelector('script[data-evo-public-asset-v241]')){
-      const enhance=document.createElement('script');enhance.src='./public-asset-v241.js?v=20260821-v241-polish';enhance.async=true;enhance.dataset.evoPublicAssetV241='true';document.head.appendChild(enhance);
+      const enhance=document.createElement('script');enhance.src='./public-asset-v241.js?v=20260821-v242-precision';enhance.async=true;enhance.dataset.evoPublicAssetV241='true';document.head.appendChild(enhance);
     }
   };
   if(document.readyState==='complete')loadPublicAsset();else window.addEventListener('load',loadPublicAsset,{once:true});
