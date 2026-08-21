@@ -8,12 +8,13 @@ async function transferCall(action,payload){
 }
 
 async function fetchTransferOffer(offerId){
-  const q=new URL(`${SUPABASE_URL}/rest/v1/evo_passport_transfers`);
-  q.searchParams.set('offer_id',`eq.${offerId}`);
-  q.searchParams.set('select','offer_id,seal_id,from_wallet,to_wallet,offer_digest,created_at,expires_at,status,accepted_at,registered_at');
-  const r=await fetch(q,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
-  if(!r.ok)throw new Error(`No se pudo consultar la transferencia (${r.status})`);
-  const rows=await r.json();return rows[0]||null;
+  try{
+    const data=await transferCall('lookup',{offerId:String(offerId||'').toUpperCase()});
+    return data.offer||null;
+  }catch(e){
+    if(e.message==='offer_not_found')return null;
+    throw e;
+  }
 }
 
 function transferLink(offer){
@@ -101,4 +102,4 @@ async function cancelTransfer(o){
 const transferQuery=new URLSearchParams(location.search).get('transfer');
 if(transferQuery)setTimeout(()=>showTransferOffer(transferQuery.toUpperCase()),650);
 
-console.info('EVO Passport Transfer V1',{mode:'TWO PARTY SIGNATURE / 24H OFFER / CANCELLABLE / NO TOKEN MOVEMENT'});
+console.info('EVO Passport Transfer V2',{mode:'TWO PARTY SIGNATURE / 24H OFFER / CANCELLABLE / NO TOKEN MOVEMENT'});
