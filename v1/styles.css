@@ -440,6 +440,13 @@ footer b{color:#e7edf8}
   transition:.25s ease;
 }
 .toast.show{opacity:1;transform:none}
+.paymentRecovery{margin-top:16px;padding:0;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(2,6,13,.36);overflow:hidden}
+.paymentRecovery summary{padding:15px 17px;color:#d9e4f4;font-weight:750;cursor:pointer;list-style-position:inside}
+.paymentRecovery[open] summary{border-bottom:1px solid rgba(255,255,255,.07)}
+.paymentRecovery>.sub{margin:16px 18px 0;font-size:13px}
+.paymentRecovery>.form{padding:16px 18px 4px}
+.paymentRecovery>#recoveryStatus{margin:12px 18px 18px}
+.paymentRecovery .mono{font-size:12px}
 .clientAdvanced,
 #issuerTrust,
 #challenge,
