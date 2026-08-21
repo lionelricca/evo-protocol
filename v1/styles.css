@@ -342,7 +342,7 @@ nav:after{
 .block>.sub{max-width:880px;margin:0 0 24px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .grid>.panel{padding:28px}
-#pricing>.grid{grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch}
+#pricing>.grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
 #pricing>.grid>.panel{
   display:flex;
   flex-direction:column;
@@ -440,6 +440,16 @@ footer b{color:#e7edf8}
   transition:.25s ease;
 }
 .toast.show{opacity:1;transform:none}
+.clientAdvanced,
+#issuerTrust,
+#challenge,
+#battery-dpp,
+.links a[href="#issuerTrust"],
+.links a[href="#challenge"],
+.links a[href="#guardian"],
+.links a[href="#security"],
+.links a[href="#battery-dpp"]{display:none!important}
+.paymentPanel .form{max-width:620px}
 @media(max-width:1100px){
   #pricing>.grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .links{gap:3px}.links>a{padding:8px 7px;font-size:12px}
