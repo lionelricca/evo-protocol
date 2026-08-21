@@ -5,6 +5,8 @@ const assert=require('assert');
 
 const source=fs.readFileSync('v1/dashboard-v27.js','utf8');
 const loader=fs.readFileSync('v1/dashboard-v253.js','utf8');
+const organizationLoader=fs.readFileSync('v1/organization-simple.js','utf8');
+const index=fs.readFileSync('v1/index.html','utf8');
 
 assert(source.includes("className='btn myEvoManageAsset'"),'V2.7 must add a Manage action to owned assets');
 assert(source.includes("document.getElementById('passportSealId')"),'Manage must preload the existing Passport ID field');
@@ -16,5 +18,7 @@ assert(!source.includes('personal_sign'),'Dashboard quick actions must not sign 
 assert(!source.includes('eth_sendTransaction'),'Dashboard quick actions must not send transactions');
 assert(loader.includes('dashboard-v27.js?v=20260821-v27-actions'),'V2.5.3 must load the V2.7 enhancer with a versioned asset');
 assert(loader.includes('dashboard-v27.css?v=20260821-v27-actions'),'V2.5.3 must load the V2.7 styles with a versioned asset');
+assert(organizationLoader.includes('dashboard-v253.js?v=20260821-v27-actions-loader'),'Organization loader must request the V2.7 dashboard chain');
+assert(index.includes('organization-simple.js?v=20260821-v27-loader'),'Main page must bust the organization loader cache for V2.7');
 
 console.log('EVO V2.7 dashboard quick action checks passed');
