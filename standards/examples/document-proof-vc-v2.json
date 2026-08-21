@@ -1,0 +1,22 @@
+{
+  "@context": ["https://www.w3.org/ns/credentials/v2"],
+  "type": ["VerifiableCredential", "EvoDocumentProofCredential"],
+  "issuer": "https://evo.example/issuers/example-company",
+  "validFrom": "2026-08-21T00:00:00Z",
+  "credentialSubject": {
+    "id": "urn:evo:document:example",
+    "evoId": "EVO-EXAMPLE-EXAMPLE-EXAMPLE",
+    "proofType": "DocumentProof",
+    "subjectType": "TechnicalReport",
+    "title": "Example technical report",
+    "reference": "RPT-2026-001",
+    "digestAlgorithm": "SHA-256",
+    "digest": "0000000000000000000000000000000000000000000000000000000000000000",
+    "verificationUrl": "https://evo.example/verify/EVO-EXAMPLE-EXAMPLE-EXAMPLE",
+    "evidenceLevel": "EVO_CRYPTOGRAPHIC_PROOF"
+  },
+  "credentialSchema": {
+    "id": "https://evo.example/schemas/evo-proof-credential-v2.schema.json",
+    "type": "JsonSchema"
+  }
+}
