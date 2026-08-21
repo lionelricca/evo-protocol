@@ -114,6 +114,12 @@
     if(!document.querySelector('script[data-evo-dashboard-v253]')){
       const enhance=document.createElement('script');enhance.src='./dashboard-v253.js?v=20260821-v253-premium';enhance.async=true;enhance.dataset.evoDashboardV253='true';document.head.appendChild(enhance);
     }
+    if(!document.querySelector('link[data-evo-transfer-inbox-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./transfer-inbox.css?v=20260821-v26-inbox';style.dataset.evoTransferInboxStyle='true';document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-transfer-inbox]')){
+      const inbox=document.createElement('script');inbox.src='./transfer-inbox.js?v=20260821-v26-inbox';inbox.async=true;inbox.dataset.evoTransferInbox='true';document.head.appendChild(inbox);
+    }
   };
   if(document.readyState==='complete')loadDashboard();else window.addEventListener('load',loadDashboard,{once:true});
 })();
