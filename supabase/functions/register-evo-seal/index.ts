@@ -152,7 +152,8 @@ Deno.serve(async (req) => {
     if (walletUpsertError) { console.error(walletUpsertError); return json({ error: "wallet_account_error" }, 500); }
 
     // Friendly preflight duplicate check. The atomic RPC repeats this inside its transaction,
-    // so a concurrent request cannot bypass the business rule.
+    // so a concurrent request cannot bypass the business rule. An exact same-Seal retry is
+    // allowed through so the RPC can return its original idempotent result without recharging.
     if (metadata.assetHash && metadata.serial) {
       const { data: dup, error: dupError } = await supabase.from("evo_seals")
         .select("seal_id,registered_at,status")
@@ -163,7 +164,9 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
       if (dupError) { console.error(dupError); return json({ error: "database_error" }, 500); }
-      if (dup) return json({ error: "duplicate_asset_serial", existingSealId: dup.seal_id, meaning: "An active EVO Seal already exists for this issuer with the same asset hash and serial/reference." }, 409);
+      if (dup && String(dup.seal_id).toUpperCase() !== String(seal.sealId).toUpperCase()) {
+        return json({ error: "duplicate_asset_serial", existingSealId: dup.seal_id, meaning: "An active EVO Seal already exists for this issuer with the same asset hash and serial/reference." }, 409);
+      }
     }
 
     const row = {
@@ -204,6 +207,8 @@ Deno.serve(async (req) => {
         }, 402);
       }
       if (message.includes("duplicate_asset_serial")) return json({ error: "duplicate_asset_serial" }, 409);
+      if (message.includes("seal_id_conflict")) return json({ error: "seal_id_conflict" }, 409);
+      if (message.includes("seal_credit_state_missing")) return json({ error: "seal_credit_state_missing" }, 409);
       if (message.includes("seal_already_exists") || String(registrationError.code || "") === "23505") return json({ error: "seal_already_exists" }, 409);
       console.error(registrationError);
       return json({ error: "atomic_registration_error" }, 500);
