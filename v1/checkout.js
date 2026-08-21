@@ -85,8 +85,8 @@ async function buyEvoPlan(planCode) {
   await ensurePaymentNetwork(network);
   const recipient = EVO_MERCHANT_WALLET;
   const approved = window.confirm(
-    checkoutText('Vas a comprar ', 'You are buying ') + plan.label + '\n\n' +
-    checkoutText('Importe: ', 'Amount: ') + plan.amountLabel + checkoutText(' en USDC\n', ' in USDC\n') +
+    checkoutText('Vas a comprar ', 'You are buying ') + checkoutText(plan.label, planCode === 'INDIVIDUAL' ? '1 EVO Passport' : 'Pack of 10 EVO Passports') + '\n\n' +
+    checkoutText('Importe: ', 'Amount: ') + checkoutText(plan.amountLabel, plan.amountLabel.replace(',', '.')) + checkoutText(' en USDC\n', ' in USDC\n') +
     checkoutText('Red: ', 'Network: ') + network.name + '\n' +
     checkoutText('Destino: ', 'Recipient: ') + recipient + '\n\n' +
     checkoutText('MetaMask mostrará la confirmación final. EVO nunca solicitará tu frase semilla.', 'MetaMask will show the final confirmation. EVO will never ask for your seed phrase.')
