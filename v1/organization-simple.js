@@ -142,7 +142,7 @@
 (()=>{
   const loadDocumentProof=()=>{
     const styles=[
-      ['evoDocumentProofStyle','./document-proof-v30.css?v=20260821-v30-document-proof'],
+      ['evoDocumentProofStyle','./document-proof-v30.css?v=20260821-v301-document-proof'],
       ['evoDocumentLifecycleStyle','./document-lifecycle-v30.css?v=20260821-v30-document-lifecycle'],
       ['evoDocumentManagementStyle','./document-management-v30.css?v=20260821-v30-document-management']
     ];
@@ -152,7 +152,7 @@
     });
 
     const scripts=[
-      ['evoDocumentProof','./document-proof-v30.js?v=20260821-v30-document-proof'],
+      ['evoDocumentProof','./document-proof-v30.js?v=20260821-v301-document-proof'],
       ['evoDocumentLifecycle','./document-lifecycle-v30.js?v=20260821-v30-document-lifecycle'],
       ['evoDocumentManagement','./document-management-v30.js?v=20260821-v30-document-management']
     ];
