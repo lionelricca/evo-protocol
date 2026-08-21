@@ -1,8 +1,8 @@
 'use strict';
 
 (() => {
-  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.1';
-  const CRITICAL_LOCAL_FILES = new Set(['styles.css', 'app.js']);
+  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.3';
+  const CRITICAL_LOCAL_FILES = new Set(['browser-shield-v332.css', 'styles.css', 'app.js']);
   const APPROVED_RUNTIME_HOSTS = new Set(['cdn.jsdelivr.net', 'sdk.depay.com']);
 
   function applyFallback(message) {
@@ -68,6 +68,7 @@
       browserShield: true,
       version: SECURITY_VERSION,
       inlineScriptAttributesAllowed: false,
+      inlineStyleElementsAllowed: false,
       publicTelemetryAuthoritative: false,
     }),
     configurable: false,
