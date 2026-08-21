@@ -81,6 +81,27 @@ function containsRecoverySecretRequest(text){
   assert(challenge.includes('reused:true'),'Challenge must reuse a still-live pending challenge');
   assert(challenge.includes('authority:"OBSERVATIONAL_ONLY"'),'SOFTWARE Challenge must be explicitly non-authoritative');
 
+  const indexHtml=read('v1/index.html');
+  assert(indexHtml.includes('Content-Security-Policy'),'browser entrypoint must enforce a CSP baseline');
+  assert(indexHtml.includes("base-uri 'none'"),'CSP must disable base tag rewriting');
+  assert(indexHtml.includes("object-src 'none'"),'CSP must disable plugin/object execution');
+  assert(indexHtml.includes("script-src-attr 'none'"),'CSP must disable inline event-handler scripts');
+  assert(indexHtml.includes('strict-origin-when-cross-origin'),'browser entrypoint must set a restrictive referrer policy');
+  assert(indexHtml.includes('security-bootstrap-v331.js'),'browser shield bootstrap must load before the application scripts');
+  assert(!/\son[a-z]+\s*=/i.test(indexHtml),'inline event-handler attributes must stay removed from the HTML entrypoint');
+  assert(indexHtml.includes('qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787'),'QR runtime must remain pinned to the reviewed immutable upstream commit while CDN delivery is transitional');
+
+  const browserShield=read('v1/security-bootstrap-v331.js');
+  assert(browserShield.includes('EVO-BROWSER-SHIELD-V3.3.1'),'browser shield must expose its security version');
+  assert(browserShield.includes('securitypolicyviolation'),'browser shield must surface CSP violations for diagnostics');
+  assert(browserShield.includes("rel.add('noopener')"),'blank-target links must receive noopener');
+  assert(browserShield.includes("rel.add('noreferrer')"),'blank-target links must receive noreferrer');
+  assert(browserShield.includes('inlineScriptAttributesAllowed: false'),'browser shield must declare inline script attributes disabled');
+  assert(browserShield.includes('publicTelemetryAuthoritative: false'),'browser shield must preserve the zero-authority telemetry rule');
+
+  const checkout=read('v1/checkout.js');
+  assert(checkout.includes('https://sdk.depay.com/widgets/v13.0.45.js'),'DePay runtime must remain exact-version pinned while external loading is still required');
+
   const frontendFiles=walk(path.join(root,'v1')).filter(file=>/\.(?:js|html|css)$/i.test(file));
   for(const file of frontendFiles){
     const text=fs.readFileSync(file,'utf8');
@@ -113,5 +134,5 @@ function containsRecoverySecretRequest(text){
     }
   }
 
-  console.log('EVO V3.3 security hardening checks passed');
+  console.log('EVO V3.3.1 security hardening checks passed');
 })().catch(error=>{console.error(error);process.exit(1)});
