@@ -91,8 +91,15 @@
     if(!document.querySelector('link[data-evo-public-asset-style]')){
       const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset.css?v=20260821-v24-public-asset';style.dataset.evoPublicAssetStyle='true';document.head.appendChild(style);
     }
-    if(document.querySelector('script[data-evo-public-asset]'))return;
-    const script=document.createElement('script');script.src='./public-asset.js?v=20260821-v24-public-asset';script.async=true;script.dataset.evoPublicAsset='true';document.head.appendChild(script);
+    if(!document.querySelector('link[data-evo-public-asset-v241-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset-v241.css?v=20260821-v241-polish';style.dataset.evoPublicAssetV241Style='true';document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-public-asset]')){
+      const script=document.createElement('script');script.src='./public-asset.js?v=20260821-v24-public-asset';script.async=true;script.dataset.evoPublicAsset='true';document.head.appendChild(script);
+    }
+    if(!document.querySelector('script[data-evo-public-asset-v241]')){
+      const enhance=document.createElement('script');enhance.src='./public-asset-v241.js?v=20260821-v241-polish';enhance.async=true;enhance.dataset.evoPublicAssetV241='true';document.head.appendChild(enhance);
+    }
   };
   if(document.readyState==='complete')loadPublicAsset();else window.addEventListener('load',loadPublicAsset,{once:true});
 })();
