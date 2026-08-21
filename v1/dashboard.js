@@ -10,6 +10,17 @@
   const shortWallet=value=>{const wallet=String(value||'');return wallet.length>18?`${wallet.slice(0,8)}…${wallet.slice(-6)}`:(wallet||'—')};
   const dateText=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat(document.documentElement.lang==='en'?'en-US':'es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value)}};
   const publicUrl=id=>{const u=new URL(location.href);u.search='';u.hash='verify';u.searchParams.set('seal',id);return u.toString()};
+  const restoreRequestedAnchor=()=>{
+    const id=decodeURIComponent(String(location.hash||'').replace(/^#/,''));
+    if(!id||id==='myEvo')return;
+    const target=document.getElementById(id);if(!target)return;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>target.scrollIntoView({block:'start'})));
+  };
+  const goToSection=id=>{
+    const target=document.getElementById(id);if(!target)return;
+    const next=`#${id}`;if(location.hash!==next)history.replaceState(null,'',`${location.pathname}${location.search}${next}`);
+    requestAnimationFrame(()=>target.scrollIntoView({behavior:'smooth',block:'start'}));
+  };
 
   async function rest(table,params){
     const url=new URL(`${SUPABASE_URL}/rest/v1/${table}`);
@@ -78,6 +89,7 @@
       const link=el('a','myEvoNav',t('Mi EVO','My EVO'));link.href='#myEvo';
       const first=links.querySelector('a');if(first)links.insertBefore(link,first);else links.prepend(link);
     }
+    restoreRequestedAnchor();
     return section;
   }
 
@@ -131,7 +143,7 @@
     const freeAvailable=Boolean(entitlement?.demoAvailable);const purchased=Math.max(Number(entitlement?.remainingCredits||0),0);const available=purchased+(freeAvailable?1:0);
 
     const head=el('div','myEvoHead');const copy=el('div','');copy.append(el('span','kicker','MY EVO'),el('h2','',t('Tu espacio en EVO','Your EVO space')),el('p','myEvoWallet',shortWallet(wallet)));
-    const actions=el('div','myEvoHeadActions');const create=el('a','btn primary',t('Crear Proof','Create Proof'));create.href='#seal';const refresh=el('button','btn',t('Actualizar','Refresh'));refresh.type='button';refresh.onclick=()=>load(wallet,true);actions.append(create,refresh);head.append(copy,actions);section.append(head);
+    const actions=el('div','myEvoHeadActions');const create=el('a','btn primary',t('Crear Proof','Create Proof'));create.href='#seal';create.onclick=event=>{event.preventDefault();goToSection('seal')};const refresh=el('button','btn',t('Actualizar','Refresh'));refresh.type='button';refresh.onclick=()=>load(wallet,true);actions.append(create,refresh);head.append(copy,actions);section.append(head);
 
     const stats=el('div','myEvoStats');
     stats.append(
