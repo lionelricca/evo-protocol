@@ -76,3 +76,12 @@
 
   wait(simplify);
 })();
+
+(()=>{
+  if(document.querySelector('script[data-evo-proof-card]'))return;
+  const script=document.createElement('script');
+  script.src='./proof-card.js?v=20260821-v23-proof-card';
+  script.async=true;
+  script.dataset.evoProofCard='true';
+  document.head.appendChild(script);
+})();
