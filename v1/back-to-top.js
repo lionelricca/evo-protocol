@@ -5,42 +5,91 @@
   const t=(es,en)=>document.documentElement.lang==='en'?en:es;
   const reduced=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
+  const contextualTarget=()=>{
+    const hash=String(location.hash||'').toLowerCase();
+    const publicMode=document.body.classList.contains('evoPublicAssetMode')||new URLSearchParams(location.search).has('seal');
+    if(publicMode){
+      const node=document.getElementById('publicAssetPage')||document.getElementById('verify');
+      if(node)return {kind:'passport',node};
+    }
+    if(hash==='#myevo'){
+      const node=document.getElementById('myEvo');
+      if(node)return {kind:'myevo',node};
+    }
+    return {kind:'page',node:null};
+  };
+
+  const targetTop=context=>{
+    if(!context.node)return 0;
+    const nav=document.querySelector('nav');
+    const offset=(nav?.offsetHeight||76)+12;
+    return Math.max(0,context.node.getBoundingClientRect().top+window.scrollY-offset);
+  };
+
+  const contextCopy=context=>{
+    if(context.kind==='myevo')return {
+      label:t('Volver al inicio de Mi EVO','Back to My EVO start'),
+      short:t('Mi EVO','My EVO'),
+      footer:t('↑ Volver a Mi EVO','↑ Back to My EVO')
+    };
+    if(context.kind==='passport')return {
+      label:t('Volver al inicio del Passport','Back to Passport start'),
+      short:'Passport',
+      footer:t('↑ Volver al Passport','↑ Back to Passport')
+    };
+    return {
+      label:t('Volver al inicio','Back to top'),
+      short:t('Inicio','Top'),
+      footer:t('↑ Volver al inicio','↑ Back to top')
+    };
+  };
+
   const button=document.createElement('button');
   button.id='evoBackTop';
   button.className='evoBackTop';
   button.type='button';
-  button.setAttribute('aria-label',t('Volver al inicio','Back to top'));
   button.innerHTML='<span aria-hidden="true">↑</span><b></b>';
-  button.querySelector('b').textContent=t('Inicio','Top');
-  button.onclick=()=>window.scrollTo({top:0,behavior:reduced()?'auto':'smooth'});
   document.body.appendChild(button);
 
   const footer=document.querySelector('footer .wrap');
+  let footerTop=null;
   if(footer&&!footer.querySelector('.evoFooterTop')){
-    const footerTop=document.createElement('button');
+    footerTop=document.createElement('button');
     footerTop.type='button';
     footerTop.className='evoFooterTop';
-    footerTop.textContent=t('↑ Volver al inicio','↑ Back to top');
-    footerTop.onclick=button.onclick;
     footer.appendChild(footerTop);
-  }
+  }else footerTop=footer?.querySelector('.evoFooterTop')||null;
+
+  const scrollToContext=()=>{
+    const context=contextualTarget();
+    window.scrollTo({top:targetTop(context),behavior:reduced()?'auto':'smooth'});
+  };
+  button.onclick=scrollToContext;
+  if(footerTop)footerTop.onclick=scrollToContext;
 
   let ticking=false;
   const update=()=>{
     ticking=false;
-    const visible=window.scrollY>560;
+    const context=contextualTarget();
+    const copy=contextCopy(context);
+    button.setAttribute('aria-label',copy.label);
+    button.querySelector('b').textContent=copy.short;
+    if(footerTop)footerTop.textContent=copy.footer;
+
+    const origin=targetTop(context);
+    const threshold=context.kind==='page'?560:430;
+    const visible=window.scrollY-origin>threshold;
     button.classList.toggle('visible',visible);
     button.setAttribute('aria-hidden',visible?'false':'true');
     button.tabIndex=visible?0:-1;
   };
   const schedule=()=>{if(ticking)return;ticking=true;requestAnimationFrame(update)};
+
   window.addEventListener('scroll',schedule,{passive:true});
   window.addEventListener('resize',schedule,{passive:true});
-  document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(()=>{
-    button.setAttribute('aria-label',t('Volver al inicio','Back to top'));
-    button.querySelector('b').textContent=t('Inicio','Top');
-    const footerTop=document.querySelector('.evoFooterTop');
-    if(footerTop)footerTop.textContent=t('↑ Volver al inicio','↑ Back to top');
-  },60));
+  window.addEventListener('hashchange',schedule);
+  window.addEventListener('evo:wallet-connected',()=>setTimeout(schedule,100));
+  document.getElementById('languageSelect')?.addEventListener('change',()=>setTimeout(schedule,80));
+  window.addEventListener('load',()=>setTimeout(schedule,120),{once:true});
   update();
 })();
