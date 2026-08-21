@@ -129,3 +129,12 @@
   document.addEventListener('click',event=>{if(event.target.closest('.myEvoTab'))setTimeout(schedule,0)});
   schedule();
 })();
+
+(()=>{
+  if(!document.querySelector('link[data-evo-dashboard-v27-style]')){
+    const style=document.createElement('link');style.rel='stylesheet';style.href='./dashboard-v27.css?v=20260821-v27-actions';style.dataset.evoDashboardV27Style='true';document.head.appendChild(style);
+  }
+  if(!document.querySelector('script[data-evo-dashboard-v27]')){
+    const script=document.createElement('script');script.src='./dashboard-v27.js?v=20260821-v27-actions';script.async=true;script.dataset.evoDashboardV27='true';document.head.appendChild(script);
+  }
+})();
