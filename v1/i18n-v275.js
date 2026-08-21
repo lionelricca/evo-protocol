@@ -10,6 +10,16 @@
     document.head.appendChild(meta);
   }
 
+  const ensureMyEvoReturn=()=>{
+    if(document.querySelector('script[data-evo-myevo-return-v276]'))return;
+    const script=document.createElement('script');
+    script.src='./myevo-return-v276.js?v=20260821-v276-fixed';
+    script.async=false;
+    script.dataset.evoMyevoReturnV276='true';
+    document.head.appendChild(script);
+  };
+  ensureMyEvoReturn();
+
   const selector=document.getElementById('languageSelect');
   if(!selector)return;
 
@@ -22,7 +32,7 @@
     localStorage.setItem('evo-language',lang);
     const url=new URL(location.href);
     url.searchParams.set('lang',lang);
-    url.searchParams.set('v','20260821-v275');
+    url.searchParams.set('v','20260821-v276');
     location.assign(url.toString());
   },true);
 })();
