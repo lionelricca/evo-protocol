@@ -164,3 +164,15 @@
   };
   if(document.readyState==='complete')loadDocumentProof();else window.addEventListener('load',loadDocumentProof,{once:true});
 })();
+
+(()=>{
+  const loadServiceHistory=()=>{
+    if(document.querySelector('script[data-evo-service-history-v311]'))return;
+    const script=document.createElement('script');
+    script.src='./service-proof-v311-history.js?v=20260821-v311-history';
+    script.async=true;
+    script.dataset.evoServiceHistoryV311='true';
+    document.head.appendChild(script);
+  };
+  if(document.readyState==='complete')loadServiceHistory();else window.addEventListener('load',loadServiceHistory,{once:true});
+})();
