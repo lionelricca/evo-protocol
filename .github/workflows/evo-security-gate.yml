@@ -49,6 +49,8 @@ jobs:
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.3 browser style CSP checks
         run: node tests/browser-shield-v333.test.js
+      - name: Run V3.3.4 checkout hardening checks
+        run: node tests/checkout-hardening-v334.test.js
       - name: Guard atomic registration structure
         run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
@@ -57,11 +59,15 @@ jobs:
         run: psql -X -f supabase/migrations/20260821234000_atomic_seal_registration_credit.sql
       - name: Apply proposed active asset identity guard
         run: psql -X -f supabase/migrations/20260821234200_active_asset_serial_guard.sql
+      - name: Apply proposed checkout verification limits
+        run: psql -X -f supabase/migrations/20260821235500_checkout_verification_rate_limit.sql
       - name: Test atomic registration invariants
         run: psql -X -f tests/sql/atomic-seal-registration-v332.sql
       - name: Test duplicate asset identity rollback
         run: psql -X -f tests/sql/active-asset-serial-guard-v332.sql
       - name: Test concurrent wallet entitlement decisions
         run: bash tests/sql/atomic-seal-concurrency-v332.sh
+      - name: Test checkout verification rate limits
+        run: psql -X -f tests/sql/checkout-rate-limit-v334.sql
       - name: Security gate scope
-        run: echo "Trust authority, local-style CSP, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
+        run: echo "Trust authority, local-style CSP, checkout cost controls, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
