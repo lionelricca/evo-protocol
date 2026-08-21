@@ -12,7 +12,26 @@ permissions:
 jobs:
   security-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: evo_security_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d evo_security_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: evo_security_test
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -26,7 +45,15 @@ jobs:
         run: node --check v1/security-bootstrap-v331.js
       - name: Syntax check hardened Guardian UI
         run: node --check v1/guardian-v04.js
-      - name: Run V3.3.1 security regression checks
+      - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
+      - name: Prepare isolated PostgreSQL fixture
+        run: psql -X -f tests/sql/atomic-seal-fixture-v332.sql
+      - name: Apply proposed atomic registration migration
+        run: psql -X -f supabase/migrations/20260821234000_atomic_seal_registration_credit.sql
+      - name: Test atomic registration invariants
+        run: psql -X -f tests/sql/atomic-seal-registration-v332.sql
+      - name: Test concurrent wallet entitlement decisions
+        run: bash tests/sql/atomic-seal-concurrency-v332.sh
       - name: Security gate scope
-        run: echo "Trust authority, CSP/browser shield, XSS escaping, secret exposure, dependency pinning and Edge request-size guards"
+        run: echo "Trust authority, CSP/browser shield, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency and concurrent entitlement safety"
