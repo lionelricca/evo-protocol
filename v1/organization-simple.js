@@ -126,3 +126,15 @@
   };
   if(document.readyState==='complete')loadDashboard();else window.addEventListener('load',loadDashboard,{once:true});
 })();
+
+(()=>{
+  const loadBackToTop=()=>{
+    if(!document.querySelector('link[data-evo-back-top-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./back-to-top.css?v=20260821-v271';style.dataset.evoBackTopStyle='true';document.head.appendChild(style);
+    }
+    if(!document.querySelector('script[data-evo-back-top]')){
+      const script=document.createElement('script');script.src='./back-to-top.js?v=20260821-v271';script.async=true;script.dataset.evoBackTop='true';document.head.appendChild(script);
+    }
+  };
+  if(document.readyState==='complete')loadBackToTop();else window.addEventListener('load',loadBackToTop,{once:true});
+})();
