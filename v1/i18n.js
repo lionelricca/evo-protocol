@@ -1,6 +1,7 @@
 'use strict';
 
 const EVO_ES_EN = {
+  "Creá tu primer pasaporte gratis. Para los siguientes, elegí un plan y pagá con una criptomoneda disponible en tu wallet.": "Create your first passport free. For additional passports, choose a plan and pay with a cryptocurrency available in your wallet.",
   "Para los siguientes, elegí un plan y pagá con una criptomoneda disponible en tu wallet.": "For additional passports, choose a plan and pay with a cryptocurrency available in your wallet.",
   "Elegir cripto y pagar": "Choose crypto and pay",
   "PAGO FLEXIBLE": "FLEXIBLE PAYMENT",
