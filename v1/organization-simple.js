@@ -85,3 +85,14 @@
   script.dataset.evoProofCard='true';
   document.head.appendChild(script);
 })();
+
+(()=>{
+  const loadPublicAsset=()=>{
+    if(!document.querySelector('link[data-evo-public-asset-style]')){
+      const style=document.createElement('link');style.rel='stylesheet';style.href='./public-asset.css?v=20260821-v24-public-asset';style.dataset.evoPublicAssetStyle='true';document.head.appendChild(style);
+    }
+    if(document.querySelector('script[data-evo-public-asset]'))return;
+    const script=document.createElement('script');script.src='./public-asset.js?v=20260821-v24-public-asset';script.async=true;script.dataset.evoPublicAsset='true';document.head.appendChild(script);
+  };
+  if(document.readyState==='complete')loadPublicAsset();else window.addEventListener('load',loadPublicAsset,{once:true});
+})();
