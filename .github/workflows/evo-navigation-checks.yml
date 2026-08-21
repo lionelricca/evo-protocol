@@ -24,9 +24,11 @@ jobs:
         run: |
           node --check v1/back-to-top.js
           node --check v1/i18n-v275.js
+          node --check v1/myevo-return-v276.js
       - name: Run navigation and language regression checks
         run: |
           node tests/back-to-top.test.js
           node tests/i18n-v275.test.js
-      - name: V2.7.5 scope
-        run: echo "My EVO return and deterministic language switch"
+          node tests/myevo-return-v276.test.js
+      - name: V2.7.6 scope
+        run: echo "Immutable My EVO return and immediate language switch"
