@@ -20,7 +20,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Check navigation syntax
-        run: node --check v1/back-to-top.js
-      - name: Run navigation regression checks
-        run: node tests/back-to-top.test.js
+      - name: Check navigation and language syntax
+        run: |
+          node --check v1/back-to-top.js
+          node --check v1/i18n-v275.js
+      - name: Run navigation and language regression checks
+        run: |
+          node tests/back-to-top.test.js
+          node tests/i18n-v275.test.js
+      - name: V2.7.5 scope
+        run: echo "My EVO return and deterministic language switch"
