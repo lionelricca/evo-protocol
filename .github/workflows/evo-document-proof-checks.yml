@@ -1,0 +1,35 @@
+name: EVO Document Proof checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  document-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check browser module syntax
+        run: |
+          node --check v1/document-proof-v30.js
+          node --check v1/document-lifecycle-v30.js
+          node --check v1/document-management-v30.js
+          node --check v1/organization-simple.js
+
+      - name: Run Document Proof regression checks
+        run: |
+          node tests/document-proof-v30.test.js
+          node tests/document-lifecycle-v30.test.js
