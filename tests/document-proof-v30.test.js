@@ -12,6 +12,7 @@ assert(source.includes("crypto.subtle.digest('SHA-256'"),'Document Proof must ca
 assert(source.includes('El original no se sube'),'UI must state that the original is not uploaded');
 assert(source.includes('Crear Document Proof'),'Document mode needs a dedicated creation action');
 assert(source.includes('Referencia / número de documento'),'Document mode needs a document reference field');
+assert(source.includes('esc(f.name)'),'local file names must be escaped before HTML rendering');
 assert(!source.includes('fetch('),'The Document Proof enhancer must not upload the selected original');
 assert(css.includes('.documentHashPreview'),'Document hash preview must be styled');
 
