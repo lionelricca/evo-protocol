@@ -7,14 +7,14 @@ const cors={
   "Access-Control-Allow-Methods":"POST, OPTIONS",
 };
 const MAX_BODY_BYTES=2048;
-const MAX_EVENTS=1000;
-const MAX_TRANSFERS=1000;
-const MAX_PULSES_ANALYZED=5000;
-const MAX_CHALLENGE_ATTEMPTS=2000;
-const MAX_SERVICE_PROOFS=1000;
+const MAX_EVENTS=300;
+const MAX_TRANSFERS=300;
+const MAX_PULSES_ANALYZED=1500;
+const MAX_CHALLENGE_ATTEMPTS=750;
+const MAX_SERVICE_PROOFS=300;
 const sealRe=/^EVO-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/;
 const ZERO="0".repeat(64);
-function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}})}
+function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
 async function sha256(text:string){const b=new TextEncoder().encode(text);const d=await crypto.subtle.digest("SHA-256",b);return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 
 Deno.serve(async(req)=>{
@@ -34,13 +34,13 @@ Deno.serve(async(req)=>{
       .eq("seal_id",sealId).single();
     if(sealError||!seal)return json({error:"seal_not_found"},404);
 
-    const [eventsResult,transfersResult,pulsesResult,challengeResult,serviceResult]=await Promise.all([
+    const [eventsResult,transfersResult,pulsesResult,challengeResult,serviceResult,latestTransferResult]=await Promise.all([
       supabase.from("evo_passport_events")
         .select("event_id,event_type,actor_wallet,new_owner_wallet,note,event_digest,created_at,registered_at,status",{count:"exact"})
-        .eq("seal_id",sealId).eq("status","ACTIVE").order("registered_at",{ascending:true}).limit(MAX_EVENTS),
+        .eq("seal_id",sealId).eq("status","ACTIVE").order("registered_at",{ascending:false}).limit(MAX_EVENTS),
       supabase.from("evo_passport_transfers")
         .select("offer_id,from_wallet,to_wallet,status,created_at,expires_at,accepted_at,registered_at",{count:"exact"})
-        .eq("seal_id",sealId).order("registered_at",{ascending:true}).limit(MAX_TRANSFERS),
+        .eq("seal_id",sealId).order("registered_at",{ascending:false}).limit(MAX_TRANSFERS),
       supabase.from("evo_pulses")
         .select("pulse_id,source,client_nonce,prev_pulse_hash,pulse_hash,observed_at,observed_ms,status",{count:"exact"})
         .eq("seal_id",sealId).eq("status","ACTIVE").order("observed_ms",{ascending:true}).limit(MAX_PULSES_ANALYZED),
@@ -50,14 +50,19 @@ Deno.serve(async(req)=>{
       supabase.from("evo_service_proofs")
         .select("proof_id,evidence_level,service_digest,provider_digest,registered_at,countersigned_at,status",{count:"exact"})
         .eq("seal_id",sealId).eq("status","ACTIVE").order("registered_at",{ascending:false}).limit(MAX_SERVICE_PROOFS),
+      supabase.from("evo_passport_events")
+        .select("new_owner_wallet,registered_at")
+        .eq("seal_id",sealId).eq("status","ACTIVE").eq("event_type","TRANSFERRED")
+        .order("registered_at",{ascending:false}).limit(1),
     ]);
-    for(const r of [eventsResult,transfersResult,pulsesResult,challengeResult,serviceResult])if(r.error)return json({error:"database_error"},500);
+    for(const r of [eventsResult,transfersResult,pulsesResult,challengeResult,serviceResult,latestTransferResult])if(r.error)return json({error:"database_error"},500);
 
     const ev=eventsResult.data||[];
     const tr=transfersResult.data||[];
     const pu=pulsesResult.data||[];
     const ca=challengeResult.data||[];
     const sp=serviceResult.data||[];
+    const latestTransfer=(latestTransferResult.data||[])[0] as any;
     const totalEvents=eventsResult.count??ev.length;
     const totalTransfers=transfersResult.count??tr.length;
     const totalPulses=pulsesResult.count??pu.length;
@@ -89,10 +94,10 @@ Deno.serve(async(req)=>{
     if(duplicateSerialCount>1)add("DUPLICATE_SERIAL","HIGH","Serial repetido","El mismo emisor tiene más de un sello activo con este serial.",30);
 
     const blankEvents=ev.filter((e:any)=>!String(e.note||"").trim()&&["NOTE","SOLD","REPAIRED","WARRANTY","INSPECTED"].includes(e.event_type));
-    if(blankEvents.length)add("LEGACY_EMPTY_DETAILS","LOW","Evento sin detalle","Hay eventos antiguos sin detalle descriptivo. La regla actual impide nuevos eventos vacíos.",3);
-    if(totalEvents>MAX_EVENTS)add("EVENT_ANALYSIS_TRUNCATED","INFO","Historial extenso",`Guardian analizó los primeros ${MAX_EVENTS} eventos de ${totalEvents}.`);
+    if(blankEvents.length)add("LEGACY_EMPTY_DETAILS","LOW","Evento sin detalle","Hay eventos recientes sin detalle descriptivo. La regla actual impide nuevos eventos vacíos.",3);
+    if(totalEvents>MAX_EVENTS)add("EVENT_ANALYSIS_TRUNCATED","INFO","Historial extenso",`Guardian analizó los últimos ${MAX_EVENTS} eventos de ${totalEvents}. El propietario actual se resuelve con una consulta independiente al último evento de transferencia.`);
 
-    const transferEvents=ev.filter((e:any)=>e.event_type==="TRANSFERRED");
+    const transferEvents=ev.filter((e:any)=>e.event_type==="TRANSFERRED").sort((a:any,b:any)=>new Date(a.registered_at).getTime()-new Date(b.registered_at).getTime());
     for(let i=1;i<transferEvents.length;i++){
       const a=new Date(transferEvents[i-1].registered_at).getTime();const b=new Date(transferEvents[i].registered_at).getTime();
       if(Number.isFinite(a)&&Number.isFinite(b)&&b-a<5*60*1000){add("RAPID_TRANSFERS","HIGH","Transferencias demasiado rápidas","Se detectaron cambios de propietario separados por menos de 5 minutos.",30);break}
@@ -100,7 +105,7 @@ Deno.serve(async(req)=>{
 
     const now=Date.now();
     const recentTransfers=transferEvents.filter((e:any)=>now-new Date(e.registered_at).getTime()<30*24*60*60*1000).length;
-    if(recentTransfers>10)add("HIGH_TRANSFER_VELOCITY","MEDIUM","Alta rotación de propiedad",`Se registraron ${recentTransfers} transferencias en los últimos 30 días.`,20);
+    if(recentTransfers>10)add("HIGH_TRANSFER_VELOCITY","MEDIUM","Alta rotación de propiedad",`Se registraron al menos ${recentTransfers} transferencias en los últimos 30 días.`,20);
     const pending=tr.filter((t:any)=>t.status==="PENDING"&&new Date(t.expires_at).getTime()>now).length;
     if(pending)add("PENDING_TRANSFER","INFO","Transferencia pendiente",`Hay ${pending} oferta(s) de transferencia todavía pendientes. La propiedad aún no cambia.`);
 
@@ -161,8 +166,7 @@ Deno.serve(async(req)=>{
     if(ageMs>24*60*60*1000)confidence+=5;
     confidence=Math.min(85,confidence);
 
-    let currentOwner=String(seal.issuer_wallet||"").toLowerCase();
-    for(const e of ev as any[])if(e.event_type==="TRANSFERRED"&&e.new_owner_wallet)currentOwner=String(e.new_owner_wallet).toLowerCase();
+    const currentOwner=String(latestTransfer?.new_owner_wallet||seal.issuer_wallet||"").toLowerCase();
 
     return json({
       ok:true,
