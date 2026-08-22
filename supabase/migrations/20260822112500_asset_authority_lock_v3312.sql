@@ -43,18 +43,20 @@ begin
   if length(v_message) < 1 or length(v_message) > 2048 then raise exception 'invalid_signature_evidence'; end if;
   if coalesce(p_row ->> 'new_owner_wallet','') <> '' then raise exception 'new_owner_only_via_two_party_transfer'; end if;
 
-  begin v_created_at := (p_row ->> 'created_at')::timestamptz;
-  exception when others then raise exception 'invalid_created_at'; end;
+  begin
+    v_created_at := (p_row ->> 'created_at')::timestamptz;
+  exception when others then
+    raise exception 'invalid_created_at';
+  end;
   if v_created_at is null or v_created_at < pg_catalog.now() - interval '10 minutes' or v_created_at > pg_catalog.now() + interval '1 minute' then
     raise exception 'stale_or_future_timestamp';
   end if;
 
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('evo-asset-authority|' || v_seal_id, 0));
 
-  select e.* into v_existing from public.evo_passport_events e where e.event_id = v_event_id;
-  if found then
-    if e.event_id is not null then null; end if;
-  end if;
+  select e.* into v_existing
+  from public.evo_passport_events e
+  where e.event_id = v_event_id;
 
   if found then
     if v_existing.seal_id <> v_seal_id or lower(v_existing.actor_wallet) <> v_actor or v_existing.event_digest <> v_digest then
@@ -65,13 +67,17 @@ begin
        where pe.seal_id=v_seal_id and pe.event_type='TRANSFERRED' and pe.status='ACTIVE'
        order by pe.registered_at desc, pe.event_id desc limit 1),
       lower(s.issuer_wallet)
-    ) into v_owner from public.evo_seals s where s.seal_id=v_seal_id and s.status='ACTIVE';
+    ) into v_owner
+    from public.evo_seals s
+    where s.seal_id=v_seal_id and s.status='ACTIVE';
     if v_owner is null then raise exception 'seal_not_found'; end if;
     return query select v_existing.event_id,v_existing.seal_id,v_existing.event_type,v_existing.registered_at,v_existing.status,v_owner;
     return;
   end if;
 
-  select lower(s.issuer_wallet) into v_issuer from public.evo_seals s where s.seal_id=v_seal_id and s.status='ACTIVE';
+  select lower(s.issuer_wallet) into v_issuer
+  from public.evo_seals s
+  where s.seal_id=v_seal_id and s.status='ACTIVE';
   if not found then raise exception 'seal_not_found'; end if;
 
   select coalesce(
@@ -121,7 +127,10 @@ declare
   current_owner text;
   issuer text;
 begin
-  select * into o from public.evo_passport_transfers where offer_id=p_offer_id for update;
+  select * into o
+  from public.evo_passport_transfers
+  where offer_id=p_offer_id
+  for update;
   if not found then raise exception 'offer_not_found'; end if;
 
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('evo-asset-authority|' || o.seal_id, 0));
@@ -135,7 +144,9 @@ begin
   if length(coalesce(p_accept_message,'')) < 1 or length(p_accept_message) > 2048 then raise exception 'invalid_signature_evidence'; end if;
   if p_accepted_at < pg_catalog.now() - interval '10 minutes' or p_accepted_at > pg_catalog.now() + interval '1 minute' then raise exception 'stale_or_future_timestamp'; end if;
 
-  select lower(s.issuer_wallet) into issuer from public.evo_seals s where s.seal_id=o.seal_id and s.status='ACTIVE';
+  select lower(s.issuer_wallet) into issuer
+  from public.evo_seals s
+  where s.seal_id=o.seal_id and s.status='ACTIVE';
   if not found then raise exception 'seal_not_found'; end if;
 
   select coalesce(
@@ -148,9 +159,9 @@ begin
   if current_owner <> lower(o.from_wallet) then raise exception 'owner_changed'; end if;
 
   update public.evo_passport_transfers
-     set status='ACCEPTED',accepted_at=p_accepted_at,accept_digest=lower(p_accept_digest),
-         accept_nonce=lower(p_accept_nonce),accept_signature=p_accept_signature,accept_message=p_accept_message
-   where offer_id=o.offer_id;
+  set status='ACCEPTED',accepted_at=p_accepted_at,accept_digest=lower(p_accept_digest),
+      accept_nonce=lower(p_accept_nonce),accept_signature=p_accept_signature,accept_message=p_accept_message
+  where offer_id=o.offer_id;
 
   insert into public.evo_passport_events(
     event_id,seal_id,version,event_type,actor_wallet,new_owner_wallet,note,event_digest,nonce,
