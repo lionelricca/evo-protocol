@@ -5,10 +5,10 @@ const BUILTIN_OFFICIAL_ORIGINS = new Set([
 const ALLOW_HEADERS = "authorization, x-client-info, apikey, content-type";
 const ALLOW_METHODS = "POST, OPTIONS";
 
-function canonicalOrigin(value: unknown) {
+function canonicalOrigin(value) {
   const origin = String(value || "").trim();
   if (!origin || origin.length > 240 || origin === "null") throw new Error("invalid_origin");
-  let parsed: URL;
+  let parsed;
   try { parsed = new URL(origin); } catch { throw new Error("invalid_origin"); }
   if (parsed.origin !== origin) throw new Error("invalid_origin");
   if (parsed.username || parsed.password) throw new Error("invalid_origin");
@@ -33,7 +33,7 @@ function configuredOrigins() {
   return origins;
 }
 
-function localOriginAllowed(origin: string) {
+function localOriginAllowed(origin) {
   if (Deno.env.get("EVO_ALLOW_LOCAL_ORIGINS") !== "true") return false;
   try {
     const parsed = new URL(origin);
@@ -43,20 +43,20 @@ function localOriginAllowed(origin: string) {
   }
 }
 
-export function isAllowedBrowserOrigin(value: unknown) {
-  let origin: string;
+export function isAllowedBrowserOrigin(value) {
+  let origin;
   try { origin = canonicalOrigin(value); } catch { return false; }
   return configuredOrigins().has(origin) || localOriginAllowed(origin);
 }
 
-export function canonicalAllowedBrowserOrigin(value: unknown) {
+export function canonicalAllowedBrowserOrigin(value) {
   const origin = canonicalOrigin(value);
   if (!isAllowedBrowserOrigin(origin)) throw new Error("untrusted_origin");
   return origin;
 }
 
-export function restrictedCorsHeaders(req: Request) {
-  const headers: Record<string, string> = {
+export function restrictedCorsHeaders(req) {
+  const headers = {
     "Access-Control-Allow-Headers": ALLOW_HEADERS,
     "Access-Control-Allow-Methods": ALLOW_METHODS,
     "Access-Control-Max-Age": "600",
@@ -69,7 +69,7 @@ export function restrictedCorsHeaders(req: Request) {
   return headers;
 }
 
-export function restrictedPreflight(req: Request) {
+export function restrictedPreflight(req) {
   if (req.method !== "OPTIONS") return null;
   const requestOrigin = String(req.headers.get("origin") || "").trim();
   const allowed = !requestOrigin || isAllowedBrowserOrigin(requestOrigin);
@@ -83,7 +83,7 @@ export function restrictedPreflight(req: Request) {
   });
 }
 
-export function rejectUntrustedBrowserOrigin(req: Request) {
+export function rejectUntrustedBrowserOrigin(req) {
   const requestOrigin = String(req.headers.get("origin") || "").trim();
   if (!requestOrigin || isAllowedBrowserOrigin(requestOrigin)) return null;
   return new Response(JSON.stringify({ error: "browser_origin_not_allowed" }), {
@@ -97,7 +97,7 @@ export function rejectUntrustedBrowserOrigin(req: Request) {
   });
 }
 
-export function withRestrictedCors(req: Request, response: Response) {
+export function withRestrictedCors(req, response) {
   const headers = restrictedCorsHeaders(req);
   for (const [key, value] of Object.entries(headers)) response.headers.set(key, value);
   return response;
