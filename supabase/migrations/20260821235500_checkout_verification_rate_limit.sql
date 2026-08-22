@@ -15,6 +15,27 @@ revoke all on table public.evo_checkout_verification_limits from public;
 revoke all on table public.evo_checkout_verification_limits from anon;
 revoke all on table public.evo_checkout_verification_limits from authenticated;
 
+-- Explicit deny policies keep the private rate-limit state auditable and avoid
+-- relying only on the absence of allow policies. service_role bypasses RLS and
+-- remains the only intended application role that can consume these rows.
+drop policy if exists evo_checkout_verification_limits_deny_anon
+  on public.evo_checkout_verification_limits;
+create policy evo_checkout_verification_limits_deny_anon
+  on public.evo_checkout_verification_limits
+  for all
+  to anon
+  using (false)
+  with check (false);
+
+drop policy if exists evo_checkout_verification_limits_deny_authenticated
+  on public.evo_checkout_verification_limits;
+create policy evo_checkout_verification_limits_deny_authenticated
+  on public.evo_checkout_verification_limits
+  for all
+  to authenticated
+  using (false)
+  with check (false);
+
 create index if not exists evo_checkout_verification_limits_window_idx
   on public.evo_checkout_verification_limits(window_start);
 
