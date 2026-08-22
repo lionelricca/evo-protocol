@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { canonicalAllowedBrowserOrigin, rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
 const CHAINS = {
   "1": { name: "Ethereum", usdc: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", confirmations: 12n, rpc: ["https://eth.drpc.org", "https://ethereum-rpc.publicnode.com"] },
@@ -22,13 +23,8 @@ const NONCE_RE = /^[0-9a-f]{32}$/;
 const MAX_BODY_BYTES = 4096;
 const BALANCE_SIGNATURE_MAX_AGE_MS = 2 * 60 * 1000;
 const BALANCE_SIGNATURE_FUTURE_SKEW_MS = 60 * 1000;
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 function json(data: unknown, status = 200, extraHeaders: Record<string,string> = {}) {
-  return new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...extraHeaders } });
+  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...extraHeaders } });
 }
 function normalize(value: unknown) { return String(value || "").toLowerCase(); }
 function topicAddress(address: string) { return "0x" + "0".repeat(24) + address.slice(2).toLowerCase(); }
@@ -38,14 +34,7 @@ function parseHex(value: unknown) {
   return BigInt(text);
 }
 function canonicalBrowserOrigin(value: unknown) {
-  const origin = String(value || "").trim();
-  if (origin.length < 1 || origin.length > 240) throw new Error("invalid_origin");
-  let parsed: URL;
-  try { parsed = new URL(origin); } catch { throw new Error("invalid_origin"); }
-  if (parsed.origin !== origin) throw new Error("invalid_origin");
-  const localHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
-  if (parsed.protocol !== "https:" && !localHttp) throw new Error("invalid_origin");
-  return origin;
+  return canonicalAllowedBrowserOrigin(value);
 }
 function balanceMessage(wallet: string, origin: string, nonce: string, signedAt: string) {
   return `EVO CHECKOUT BALANCE V1\nWallet: ${wallet}\nOrigin: ${origin}\nNonce: ${nonce}\nSigned: ${signedAt}`;
@@ -101,8 +90,7 @@ async function readEntitlement(supabase: any, wallet: string) {
   return { demoAvailable: Boolean(entitlement?.demo_available), purchasedCredits, consumedCredits, remainingCredits: Math.max(purchasedCredits - consumedCredits, 0) };
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+async function handle(req: Request) {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
     const declaredLength = Number(req.headers.get("content-length") || 0);
@@ -238,4 +226,12 @@ Deno.serve(async (req: Request) => {
     console.error(error instanceof Error ? error.name : "unknown");
     return json({ error: "invalid_request" }, 400);
   }
+}
+
+Deno.serve(async (req: Request) => {
+  const preflight = restrictedPreflight(req);
+  if (preflight) return preflight;
+  const denied = rejectUntrustedBrowserOrigin(req);
+  if (denied) return denied;
+  return withRestrictedCors(req, await handle(req));
 });
