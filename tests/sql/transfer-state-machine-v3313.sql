@@ -35,7 +35,7 @@ select public.evo_accept_passport_transfer_authoritative(
   'EVX-22222222-33333333-44444444',
   '0x2222222222222222222222222222222222222222',
   repeat('8',64),repeat('9',32),'accept-sig-2','accept-message-2',now(),
-  'EVP-22222222-33333333-44444444',repeat('a',64)
+  'EVP-22222222-33333333-44444444',repeat('0',64)
 );
 
 -- Exact acceptance retry must remain accepted without another ownership event.
@@ -43,7 +43,7 @@ select public.evo_accept_passport_transfer_authoritative(
   'EVX-22222222-33333333-44444444',
   '0x2222222222222222222222222222222222222222',
   repeat('8',64),repeat('9',32),'accept-sig-2','accept-message-2',now(),
-  'EVP-22222222-33333333-44444444',repeat('a',64)
+  'EVP-22222222-33333333-44444444',repeat('0',64)
 );
 
 do $$
