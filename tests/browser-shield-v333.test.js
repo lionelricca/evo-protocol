@@ -17,18 +17,23 @@ assert(html.includes("style-src 'self'"),'CSP default style source must be local
 assert(html.includes("style-src-elem 'self'"),'CSP must forbid inline <style> elements');
 assert(html.includes("style-src-attr 'unsafe-inline'"),'style attributes remain an explicit temporary compatibility exception for runtime libraries');
 assert(!html.includes("style-src 'self' 'unsafe-inline'"),'unsafe-inline must not remain on the broad style-src directive');
-assert(html.includes('id="evoProofWalletStyle" rel="stylesheet" href="./browser-shield-v332.css'),'trusted local stylesheet must replace checkout runtime CSS injection');
-assert(html.indexOf('id="evoProofWalletStyle"') < html.indexOf('src="./checkout.js'),'checkout CSS sentinel must exist before checkout executes');
+assert(html.includes('id="evoProofWalletStyle" rel="stylesheet" href="./browser-shield-v332.css'),'trusted local stylesheet must provide Proof Wallet presentation');
+assert(html.indexOf('id="evoProofWalletStyle"') < html.indexOf('src="./checkout.js'),'trusted Proof Wallet stylesheet must load before checkout executes');
 assert(css.includes('.proofWalletCard'),'local shield stylesheet must contain proof-wallet styles');
 assert(css.includes('.evoPriceValue') && css.includes('.evoPanelGap16') && css.includes('.evoDetailsForm'),'former inline HTML declarations must be represented by local classes');
 assert(bootstrap.includes("'browser-shield-v332.css'"),'browser shield stylesheet must be a critical local resource');
 assert(bootstrap.includes('EVO-BROWSER-SHIELD-V3.3.3'),'browser shield must publish the current hardening version');
 assert(bootstrap.includes('inlineStyleElementsAllowed: false'),'browser shield must declare inline style elements disabled');
 
-// Legacy checkout code still contains a compatibility injector, but the trusted local
-// stylesheet uses the same sentinel id before checkout runs. CSP would also reject
-// the inline <style> element if the sentinel were accidentally absent.
-assert(checkout.includes("getElementById('evoProofWalletStyle')"),'checkout compatibility guard must remain tied to the trusted stylesheet sentinel');
-assert(checkout.includes("document.createElement('style')"),'legacy compatibility injector is tracked until the next checkout refactor');
+assert(!checkout.includes("document.createElement('style')"),'checkout must not recreate the retired runtime style injector');
+assert(!checkout.includes('document.createElement("style")'),'checkout must not recreate the retired runtime style injector');
 
-console.log('EVO V3.3.3 browser style/CSP checks passed');
+const firstPartyScripts=fs.readdirSync(path.join(root,'v1'))
+  .filter(name=>name.endsWith('.js'));
+const inlineStyleCreators=firstPartyScripts.filter(name=>{
+  const source=read(path.join('v1',name));
+  return /createElement\(\s*['"]style['"]\s*\)/i.test(source);
+});
+assert.deepStrictEqual(inlineStyleCreators,[],'first-party browser scripts must not create runtime <style> elements: '+inlineStyleCreators.join(', '));
+
+console.log('EVO V3.3.7 browser style/CSP checks passed');
