@@ -125,7 +125,6 @@ Deno.serve(async (req: Request) => {
           wallet,
           demoAvailable: entitlement.demoAvailable,
           canCreate: entitlement.demoAvailable || paidCapability,
-          remainingCredits: paidCapability ? 1 : 0,
           balanceRedacted: true,
           privacy: "PUBLIC_SUMMARY",
           exactBalanceRequiresWalletSignature: true,
