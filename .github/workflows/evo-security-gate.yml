@@ -45,9 +45,11 @@ jobs:
         run: node --check v1/security-bootstrap-v331.js
       - name: Syntax check hardened Guardian UI
         run: node --check v1/guardian-v04.js
+      - name: Syntax check checkout
+        run: node --check v1/checkout.js
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
-      - name: Run V3.3.3 browser style CSP checks
+      - name: Run V3.3.7 browser style CSP checks
         run: node tests/browser-shield-v333.test.js
       - name: Run V3.3.5 local QR supply-chain checks
         run: node tests/qrcode-vendor-v335.test.js
@@ -74,4 +76,4 @@ jobs:
       - name: Test checkout verification rate limits
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/checkout-rate-limit-v334.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, local-style CSP, checkout cost controls, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, tracked runtime-style inventory, checkout syntax and cost controls, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
