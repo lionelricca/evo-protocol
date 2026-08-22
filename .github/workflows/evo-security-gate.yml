@@ -12,7 +12,7 @@ permissions:
 jobs:
   security-gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:17
@@ -59,6 +59,8 @@ jobs:
         run: node --check supabase/functions/register-evo-passport-event/index.ts
       - name: Syntax check Passport transfer
         run: node --check supabase/functions/evo-passport-transfer/index.ts
+      - name: Syntax check Battery Passport
+        run: node --check supabase/functions/evo-battery-passport/index.ts
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -77,6 +79,8 @@ jobs:
         run: node tests/organization-hardening-v3310.test.js
       - name: Run V3.3.11 Reality Continuity hardening checks
         run: node tests/reality-continuity-hardening-v3311.test.js
+      - name: Run V3.3.14 Battery Passport hardening checks
+        run: node tests/battery-hardening-v3314.test.js
       - name: Guard atomic registration structure
         run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
@@ -105,5 +109,11 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113500_transfer_state_machine_v3313.sql
       - name: Test Transfer State Machine
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/transfer-state-machine-v3313.sql
+      - name: Prepare Battery atomic fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-fixture-v3314.sql
+      - name: Apply Battery atomic migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822115000_battery_atomic_registration_v3314.sql
+      - name: Test Battery atomic registration
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
