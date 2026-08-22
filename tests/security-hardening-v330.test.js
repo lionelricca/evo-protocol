@@ -116,10 +116,11 @@ function containsRecoverySecretRequest(text){
   assert(indexHtml.includes('strict-origin-when-cross-origin'),'browser entrypoint must set a restrictive referrer policy');
   assert(indexHtml.includes('security-bootstrap-v331.js'),'browser shield bootstrap must load before the application scripts');
   assert(!/\son[a-z]+\s*=/i.test(indexHtml),'inline event-handler attributes must stay removed from the HTML entrypoint');
-  assert(indexHtml.includes('qrcodejs@06c7a5e134f116402699f03cda5819e10a0e5787'),'QR runtime must remain pinned to the reviewed immutable upstream commit while CDN delivery is transitional');
+  assert(indexHtml.includes('./vendor/qrcode.min.js?v=06c7a5e134f116402699f03cda5819e10a0e5787'),'QR runtime must load from the reviewed local vendored copy');
+  assert(!indexHtml.includes('cdn.jsdelivr.net'),'retired QR CDN must not remain in the browser entrypoint or CSP');
 
   const browserShield=read('v1/security-bootstrap-v331.js');
-  assert(browserShield.includes('EVO-BROWSER-SHIELD-V3.3.1'),'browser shield must expose its security version');
+  assert(browserShield.includes('EVO-BROWSER-SHIELD-V3.3.1'),'browser shield must expose its security baseline');
   assert(browserShield.includes('securitypolicyviolation'),'browser shield must surface CSP violations for diagnostics');
   assert(browserShield.includes("rel.add('noopener')"),'blank-target links must receive noopener');
   assert(browserShield.includes("rel.add('noreferrer')"),'blank-target links must receive noreferrer');
