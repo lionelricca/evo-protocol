@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
+import { verifyMessage } from "npm:viem@2.21.54";
 
 const CHAINS = {
   "1": {
@@ -47,7 +48,10 @@ const PLANS = {
 };
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 const TX_RE = /^0x[0-9a-fA-F]{64}$/;
+const NONCE_RE = /^[0-9a-f]{32}$/;
 const MAX_BODY_BYTES = 4096;
+const BALANCE_SIGNATURE_MAX_AGE_MS = 2 * 60 * 1000;
+const BALANCE_SIGNATURE_FUTURE_SKEW_MS = 60 * 1000;
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -75,6 +79,20 @@ function parseHex(value: unknown) {
   const text = String(value || "");
   if (!/^0x[0-9a-fA-F]+$/.test(text)) throw new Error("invalid_rpc_hex");
   return BigInt(text);
+}
+function canonicalBrowserOrigin(value: unknown) {
+  const origin = String(value || "").trim();
+  if (origin.length < 1 || origin.length > 240) throw new Error("invalid_origin");
+  let parsed: URL;
+  try { parsed = new URL(origin); }
+  catch { throw new Error("invalid_origin"); }
+  if (parsed.origin !== origin) throw new Error("invalid_origin");
+  const localHttp = parsed.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !localHttp) throw new Error("invalid_origin");
+  return origin;
+}
+function balanceMessage(wallet: string, origin: string, nonce: string, signedAt: string) {
+  return `EVO CHECKOUT BALANCE V1\nWallet: ${wallet}\nOrigin: ${origin}\nNonce: ${nonce}\nSigned: ${signedAt}`;
 }
 async function rpc(endpoint: string, method: string, params: unknown[]) {
   const controller = new AbortController();
@@ -169,7 +187,65 @@ Deno.serve(async (req: Request) => {
       if (!WALLET_RE.test(wallet)) return json({ error: "invalid_wallet" }, 400);
       try {
         const entitlement = await readEntitlement(supabase, wallet);
-        return json({ ok: true, wallet, ...entitlement });
+        return json({
+          ok: true,
+          wallet,
+          demoAvailable: entitlement.demoAvailable,
+          canCreate: entitlement.demoAvailable || entitlement.remainingCredits > 0,
+          privacy: "PUBLIC_SUMMARY",
+          exactBalanceRequiresWalletSignature: true,
+        });
+      } catch (error) {
+        console.error(error instanceof Error ? error.message : "entitlement_lookup_failed");
+        return json({ error: "entitlement_lookup_failed" }, 500);
+      }
+    }
+
+    if (body.action === "balance") {
+      const wallet = normalize(body.wallet);
+      const nonce = normalize(body.nonce);
+      const signedAt = String(body.signedAt || "");
+      const signature = String(body.signature || "");
+      const signatureMessage = String(body.signatureMessage || "");
+      if (!WALLET_RE.test(wallet)) return json({ error: "invalid_wallet" }, 400);
+      if (!NONCE_RE.test(nonce)) return json({ error: "invalid_nonce" }, 400);
+      if (signature.length < 1 || signature.length > 512 || signatureMessage.length < 1 || signatureMessage.length > 2048) {
+        return json({ error: "invalid_signature_evidence" }, 400);
+      }
+      let origin: string;
+      try { origin = canonicalBrowserOrigin(body.origin); }
+      catch { return json({ error: "invalid_origin" }, 400); }
+      const requestOrigin = String(req.headers.get("origin") || "");
+      if (requestOrigin && requestOrigin !== origin) return json({ error: "origin_mismatch" }, 403);
+      const signedMs = Date.parse(signedAt);
+      if (Number.isNaN(signedMs)) return json({ error: "invalid_signed_at" }, 400);
+      const age = Date.now() - signedMs;
+      if (age > BALANCE_SIGNATURE_MAX_AGE_MS || age < -BALANCE_SIGNATURE_FUTURE_SKEW_MS) {
+        return json({ error: "stale_or_future_signature" }, 409);
+      }
+      const expectedMessage = balanceMessage(wallet, origin, nonce, signedAt);
+      if (signatureMessage !== expectedMessage) return json({ error: "signature_message_mismatch" }, 400);
+      let valid = false;
+      try {
+        valid = await verifyMessage({
+          address: wallet as `0x${string}`,
+          message: expectedMessage,
+          signature: signature as `0x${string}`,
+        });
+      } catch {
+        valid = false;
+      }
+      if (!valid) return json({ error: "invalid_signature" }, 401);
+      try {
+        const entitlement = await readEntitlement(supabase, wallet);
+        return json({
+          ok: true,
+          wallet,
+          ...entitlement,
+          canCreate: entitlement.demoAvailable || entitlement.remainingCredits > 0,
+          privacy: "SIGNED_PRIVATE_BALANCE",
+          proof: "EIP191_PERSONAL_SIGN",
+        });
       } catch (error) {
         console.error(error instanceof Error ? error.message : "entitlement_lookup_failed");
         return json({ error: "entitlement_lookup_failed" }, 500);
@@ -214,27 +290,19 @@ Deno.serve(async (req: Request) => {
         && normalize(existingPayment.merchant_wallet) === MERCHANT;
       if (!storedCanonical) return json({ error: "stored_payment_integrity_error" }, 500);
 
-      try {
-        const entitlement = await readEntitlement(supabase, payer);
-        return json({
-          ok: true,
-          pending: false,
-          applied: false,
-          cached: true,
-          planCode,
-          network: chain.name,
-          chainId: Number(chainIdText),
-          credits: plan.credits,
-          purchasedCredits: entitlement.purchasedCredits,
-          consumedCredits: entitlement.consumedCredits,
-          remainingCredits: entitlement.remainingCredits,
-          transactionHash: txHash,
-          confirmations: Number(existingPayment.confirmations),
-        });
-      } catch (error) {
-        console.error(error instanceof Error ? error.message : "entitlement_lookup_failed");
-        return json({ error: "entitlement_lookup_failed" }, 500);
-      }
+      return json({
+        ok: true,
+        pending: false,
+        applied: false,
+        cached: true,
+        planCode,
+        network: chain.name,
+        chainId: Number(chainIdText),
+        planCredits: plan.credits,
+        transactionHash: txHash,
+        confirmations: Number(existingPayment.confirmations),
+        balancePrivate: true,
+      });
     }
 
     // Durable limits are consumed before any outbound chain RPC. CORS is not an
@@ -315,17 +383,15 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true,
       pending: false,
-      applied: data.applied,
+      applied: Boolean(data.applied),
       cached: false,
       planCode,
       network: chain.name,
       chainId: Number(chainIdText),
-      credits: plan.credits,
-      purchasedCredits: data.purchased_credits,
-      consumedCredits: data.consumed_credits,
-      remainingCredits: data.purchased_credits - data.consumed_credits,
+      planCredits: plan.credits,
       transactionHash: txHash,
       confirmations: Number(confirmations),
+      balancePrivate: true,
     });
   } catch (error) {
     console.error(error instanceof Error ? error.name : "unknown");
