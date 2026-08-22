@@ -2,7 +2,8 @@
 
 (() => {
   const SECURITY_BASELINE = 'EVO-BROWSER-SHIELD-V3.3.1';
-  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.5';
+  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.3';
+  const QR_SUPPLY_CHAIN_VERSION = 'EVO-QR-SUPPLY-CHAIN-V3.3.5';
   const CRITICAL_LOCAL_FILES = new Set(['browser-shield-v332.css', 'styles.css', 'app.js', 'qrcode.min.js']);
   const APPROVED_RUNTIME_HOSTS = new Set(['sdk.depay.com']);
 
@@ -68,6 +69,7 @@
       browserShield: true,
       baseline: SECURITY_BASELINE,
       version: SECURITY_VERSION,
+      qrSupplyChain: QR_SUPPLY_CHAIN_VERSION,
       inlineScriptAttributesAllowed: false,
       inlineStyleElementsAllowed: false,
       publicTelemetryAuthoritative: false,
