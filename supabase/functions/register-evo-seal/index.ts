@@ -1,12 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 const hex64 = /^[0-9a-f]{64}$/;
 const hex32 = /^[0-9a-f]{32}$/;
 const walletRe = /^0x[0-9a-fA-F]{40}$/;
@@ -15,7 +11,6 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      ...cors,
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
@@ -39,8 +34,7 @@ async function issuerIdFor(wallet: string) {
   return `EVO-I-${h.slice(0,8)}-${h.slice(8,16)}-${h.slice(16,24)}`;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+async function handle(req: Request) {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
   try {
     const declaredLength = Number(req.headers.get("content-length") || "0");
@@ -151,9 +145,6 @@ Deno.serve(async (req) => {
     const { error: walletUpsertError } = await supabase.from("evo_wallet_accounts").upsert(walletRow, { onConflict: "issuer_wallet" });
     if (walletUpsertError) { console.error(walletUpsertError); return json({ error: "wallet_account_error" }, 500); }
 
-    // Friendly preflight duplicate check. The atomic RPC repeats this inside its transaction,
-    // so a concurrent request cannot bypass the business rule. An exact same-Seal retry is
-    // allowed through so the RPC can return its original idempotent result without recharging.
     if (metadata.assetHash && metadata.serial) {
       const { data: dup, error: dupError } = await supabase.from("evo_seals")
         .select("seal_id,registered_at,status")
@@ -192,8 +183,6 @@ Deno.serve(async (req) => {
       metadata,
     };
 
-    // Critical economic invariant: credit consumption and Seal insertion happen inside
-    // one SECURITY DEFINER database transaction. Any failure rolls both back.
     const { data: registration, error: registrationError } = await supabase
       .rpc("evo_register_seal_with_credit", { p_row: row })
       .single();
@@ -232,4 +221,12 @@ Deno.serve(async (req) => {
     console.error(err instanceof Error ? err.name : "unknown");
     return json({ error: "internal_error" }, 500);
   }
+}
+
+Deno.serve(async (req: Request) => {
+  const preflight = restrictedPreflight(req);
+  if (preflight) return preflight;
+  const denied = rejectUntrustedBrowserOrigin(req);
+  if (denied) return denied;
+  return withRestrictedCors(req, await handle(req));
 });
