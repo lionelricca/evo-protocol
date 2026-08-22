@@ -61,6 +61,8 @@ jobs:
         run: node --check supabase/functions/evo-passport-transfer/index.ts
       - name: Syntax check Battery Passport
         run: node --check supabase/functions/evo-battery-passport/index.ts
+      - name: Syntax check Document Lifecycle
+        run: node --check supabase/functions/evo-document-lifecycle/index.ts
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -81,16 +83,22 @@ jobs:
         run: node tests/reality-continuity-hardening-v3311.test.js
       - name: Run V3.3.14 Battery Passport hardening checks
         run: node tests/battery-hardening-v3314.test.js
+      - name: Run V3.3.15 Document Lifecycle hardening checks
+        run: node tests/document-lifecycle-hardening-v3315.test.js
+      - name: Run V3.3.16 production migration-history checks
+        run: node tests/migration-history-v3316.test.js
       - name: Guard atomic registration structure
         run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/atomic-seal-fixture-v332.sql
-      - name: Apply proposed atomic registration migration
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821234000_atomic_seal_registration_credit.sql
-      - name: Apply proposed active asset identity guard
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821234200_active_asset_serial_guard.sql
-      - name: Apply proposed checkout verification limits
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821235500_checkout_verification_rate_limit.sql
+      - name: Apply production-aligned atomic registration migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105136_atomic_seal_registration_credit_v332.sql
+      - name: Apply production-aligned active asset identity guard
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105154_active_asset_serial_guard_v332.sql
+      - name: Apply production-aligned checkout verification limits
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105213_checkout_verification_rate_limit_v334.sql
+      - name: Apply production-aligned checkout explicit-deny policies
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105251_checkout_verification_explicit_deny_policies_v334.sql
       - name: Test atomic registration invariants
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/atomic-seal-registration-v332.sql
       - name: Test duplicate asset identity rollback
@@ -101,19 +109,19 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/checkout-rate-limit-v334.sql
       - name: Prepare Asset Authority fixture
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/asset-authority-fixture-v3312.sql
-      - name: Apply Asset Authority Lock migration
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822112500_asset_authority_lock_v3312.sql
+      - name: Apply production-aligned Asset Authority Lock migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822112538_asset_authority_lock_v3312.sql
       - name: Test Asset Authority ownership transition
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/asset-authority-v3312.sql
-      - name: Apply Transfer State Machine migration
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113500_transfer_state_machine_v3313.sql
+      - name: Apply production-aligned Transfer State Machine migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113209_transfer_state_machine_v3313.sql
       - name: Test Transfer State Machine
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/transfer-state-machine-v3313.sql
       - name: Prepare Battery atomic fixture
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-fixture-v3314.sql
-      - name: Apply Battery atomic migration
-        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822115000_battery_atomic_registration_v3314.sql
+      - name: Apply production-aligned Battery atomic migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113955_battery_atomic_registration_v3314.sql
       - name: Test Battery atomic registration
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, atomic Document Lifecycle authority, production migration-history alignment, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
