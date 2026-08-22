@@ -95,7 +95,7 @@ function containsRecoverySecretRequest(text){
   assert(sealRegistration.includes('atomic: true'),'successful registration must explicitly report the atomic path');
   assert(sealRegistration.includes('"X-Content-Type-Options": "nosniff"'),'Seal-registration responses must disable MIME sniffing');
 
-  const atomicMigration=read('supabase/migrations/20260821234000_atomic_seal_registration_credit.sql');
+  const atomicMigration=read('supabase/migrations/20260822105136_atomic_seal_registration_credit_v332.sql');
   assert(atomicMigration.includes('create or replace function public.evo_register_seal_with_credit'),'atomic registration RPC must be migration-controlled');
   assert(atomicMigration.includes("'evo-credit|' || v_wallet"),'credit decisions must use a wallet-wide transaction lock');
   assert(atomicMigration.includes('insert into public.evo_seals as s'),'Seal insert must live inside the database transaction');
@@ -103,7 +103,7 @@ function containsRecoverySecretRequest(text){
   assert(atomicMigration.includes('revoke all on function public.evo_register_seal_with_credit(jsonb) from authenticated'),'browser roles must not execute the atomic SECURITY DEFINER RPC');
   assert(atomicMigration.includes('grant execute on function public.evo_register_seal_with_credit(jsonb) to service_role'),'service role must be the application execution path for the atomic RPC');
 
-  const identityGuard=read('supabase/migrations/20260821234200_active_asset_serial_guard.sql');
+  const identityGuard=read('supabase/migrations/20260822105154_active_asset_serial_guard_v332.sql');
   assert(identityGuard.includes("raise exception 'duplicate_asset_serial'"),'duplicate asset/serial identity must fail closed at the table boundary');
   assert(identityGuard.includes('before insert or update of issuer_wallet, asset_hash, serial, status'),'duplicate guard must protect every relevant write path, not only one Edge Function');
   assert(identityGuard.includes('s.seal_id <> new.seal_id'),'duplicate guard must allow updates to the same Seal while rejecting a second active identity');
@@ -162,5 +162,5 @@ function containsRecoverySecretRequest(text){
     }
   }
 
-  console.log('EVO V3.3.2 security hardening checks passed');
+  console.log('EVO V3.3.16 security hardening checks passed');
 })().catch(error=>{console.error(error);process.exit(1)});
