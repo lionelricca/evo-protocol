@@ -1,18 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
-const cors={
-  "Access-Control-Allow-Origin":"*",
-  "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":"POST, OPTIONS",
-};
 const MAX_BODY_BYTES=4096;
 const walletRe=/^0x[0-9a-fA-F]{40}$/;
 const slugRe=/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const hex64=/^[0-9a-f]{64}$/;
 const hex32=/^[0-9a-f]{32}$/;
-function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
+function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
 function stable(obj:Record<string,unknown>){return JSON.stringify(Object.keys(obj).sort().reduce((a,k)=>(a[k]=typeof obj[k]==="string"?String(obj[k]).trim():obj[k],a),{} as Record<string,unknown>))}
 async function sha256(text:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return [...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 async function issuerIdFor(wallet:string){const h=(await sha256(`EVO-ISSUER-V1|${wallet}`)).toUpperCase();return `EVO-I-${h.slice(0,8)}-${h.slice(8,16)}-${h.slice(16,24)}`}
@@ -38,8 +34,7 @@ async function proveWallet(db:any,issuerWallet:string){
   if(error)throw new Error("wallet_account_error");
 }
 
-Deno.serve(async(req)=>{
-  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+async function handle(req:Request){
   if(req.method!=="POST")return json({error:"method_not_allowed"},405);
   try{
     const declaredLength=Number(req.headers.get("content-length")||"0");
@@ -95,4 +90,12 @@ Deno.serve(async(req)=>{
     }
     return json({ok:true,profile:data,meaning:"WALLET_PROVEN confirms control of this profile by the signing wallet. It does not by itself prove legal ownership of the displayed brand or organization."},200);
   }catch(err){console.error("issuer_registration_internal",err instanceof Error?err.name:"unknown");return json({error:"internal_error"},500)}
+}
+
+Deno.serve(async(req:Request)=>{
+  const preflight=restrictedPreflight(req);
+  if(preflight)return preflight;
+  const denied=rejectUntrustedBrowserOrigin(req);
+  if(denied)return denied;
+  return withRestrictedCors(req,await handle(req));
 });
