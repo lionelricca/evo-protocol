@@ -73,6 +73,8 @@ jobs:
         run: node tests/root-entry-v336.test.js
       - name: Run V3.3.4 checkout hardening checks
         run: node tests/checkout-hardening-v334.test.js
+      - name: Run V3.3.17 checkout privacy checks
+        run: node tests/checkout-privacy-v3317.test.js
       - name: Run V3.3.8 domain verification hardening checks
         run: node tests/domain-hardening-v338.test.js
       - name: Run V3.3.9 wallet and issuer hardening checks
@@ -124,4 +126,4 @@ jobs:
       - name: Test Battery atomic registration
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, atomic Document Lifecycle authority, production migration-history alignment, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls and exact-balance privacy, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, atomic Document Lifecycle authority, production migration-history alignment, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
