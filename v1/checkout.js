@@ -15,7 +15,6 @@ const EVO_PAYMENT_PLANS = {
   PACK_10: { label:'10 EVO Proofs', amountLabel:'US$49', amountUsdc:'49', amountMinor:49000000n }
 };
 const EVO_PENDING_PAYMENT_KEY = 'evo_pending_payment_v1';
-const EVO_CREDIT_BALANCE_KEY = 'evo_credit_balance_v1';
 const EVO_TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 const EVO_DEPAY_SCRIPT = 'https://sdk.depay.com/widgets/v13.0.45.js';
 const EVO_VERIFYING_TXS = new Set();
@@ -34,6 +33,11 @@ function checkoutStatus(message, kind) {
   box.className = kind === 'ok' ? 'passportNotice ok' : 'passportNotice';
   box.textContent = window.evoT ? window.evoT(message) : message;
 }
+function checkoutNonce() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+}
 function ensureProofBalanceUi() {
   if (document.getElementById('proofWalletCard')) return;
   const panel = document.querySelector('.paymentPanel');
@@ -42,8 +46,10 @@ function ensureProofBalanceUi() {
   const card = document.createElement('div');
   card.id = 'proofWalletCard';
   card.className = 'proofWalletCard';
-  card.innerHTML = `<div class="proofWalletHead"><span class="kicker">EVO PROOF WALLET</span><strong id="proofWalletState">NO WALLET</strong></div><div class="proofWalletStats"><div class="proofWalletStat"><span id="proofFreeLabel">Free Proof</span><b id="proofBalanceFree">—</b></div><div class="proofWalletStat"><span id="proofPurchasedLabel">Comprados</span><b id="proofBalancePurchased">—</b></div><div class="proofWalletStat"><span id="proofUsedLabel">Usados</span><b id="proofBalanceUsed">—</b></div><div class="proofWalletStat"><span id="proofAvailableLabel">Disponibles</span><b id="creditBalanceValue">—</b></div></div><p id="creditBalanceDetail" class="proofWalletDetail">Conectá tu wallet para ver tus EVO Proofs.</p>`;
+  card.innerHTML = `<div class="proofWalletHead"><span class="kicker">EVO PROOF WALLET</span><strong id="proofWalletState">NO WALLET</strong></div><div class="proofWalletStats"><div class="proofWalletStat"><span id="proofFreeLabel">Free Proof</span><b id="proofBalanceFree">—</b></div><div class="proofWalletStat"><span id="proofPurchasedLabel">Comprados</span><b id="proofBalancePurchased">—</b></div><div class="proofWalletStat"><span id="proofUsedLabel">Usados</span><b id="proofBalanceUsed">—</b></div><div class="proofWalletStat"><span id="proofAvailableLabel">Disponibles</span><b id="creditBalanceValue">—</b></div></div><p id="creditBalanceDetail" class="proofWalletDetail">Conectá tu wallet para comprobar tu Free Proof.</p><div class="actions"><button id="proofRevealBalanceBtn" class="btn" type="button">Ver saldo privado</button></div>`;
   panel.insertBefore(card, status);
+  const reveal = document.getElementById('proofRevealBalanceBtn');
+  if (reveal) reveal.addEventListener('click', () => revealPrivateEvoBalance().catch(error => checkoutStatus(error && error.message ? error.message : checkoutText('No se pudo leer el saldo privado.', 'Could not read the private balance.'))));
   updateProofBalanceLabels();
 }
 function updateProofBalanceLabels() {
@@ -52,62 +58,96 @@ function updateProofBalanceLabels() {
   const purchased = document.getElementById('proofPurchasedLabel');
   const used = document.getElementById('proofUsedLabel');
   const available = document.getElementById('proofAvailableLabel');
+  const reveal = document.getElementById('proofRevealBalanceBtn');
   if (state && !account) state.textContent = en ? 'NO WALLET' : 'SIN WALLET';
   if (purchased) purchased.textContent = en ? 'Purchased' : 'Comprados';
   if (used) used.textContent = en ? 'Used' : 'Usados';
   if (available) available.textContent = en ? 'Available' : 'Disponibles';
+  if (reveal && window.evoEntitlement?.privacy !== 'SIGNED_PRIVATE_BALANCE') reveal.textContent = en ? 'View private balance' : 'Ver saldo privado';
 }
-function renderProofWalletSummary(data) {
+function clearExactBalanceUi() {
+  const purchased = document.getElementById('proofBalancePurchased');
+  const used = document.getElementById('proofBalanceUsed');
+  const available = document.getElementById('creditBalanceValue');
+  if (purchased) purchased.textContent = checkoutText('PRIVADO', 'PRIVATE');
+  if (used) used.textContent = checkoutText('PRIVADO', 'PRIVATE');
+  if (available) available.textContent = checkoutText('PRIVADO', 'PRIVATE');
+}
+function renderPlanEntitlement(data) {
+  const status = document.getElementById('demoPlanStatus');
+  const value = document.getElementById('demoPlanValue');
+  const action = document.getElementById('demoPlanAction');
+  if (!status || !value || !action) return;
+  if (data.demoAvailable) {
+    value.textContent = checkoutText('Gratis disponible', 'Free available');
+    status.className = 'passportNotice ok';
+    status.textContent = checkoutText('Esta wallet todavía tiene su único Free Proof.', 'This wallet still has its one Free Proof.');
+    action.textContent = checkoutText('Crear mi Passport gratis', 'Create my free Passport');
+    action.href = '#seal';
+    return;
+  }
+  value.textContent = checkoutText('Gratis ya usado', 'Free already used');
+  status.className = 'passportNotice';
+  if (data.canCreate) {
+    status.textContent = checkoutText('Esta wallet puede crear otro Passport. La cantidad exacta de EVO Proofs es privada.', 'This wallet can create another Passport. The exact EVO Proof balance is private.');
+    action.textContent = checkoutText('Usar mi Proof', 'Use my Proof');
+    action.href = '#seal';
+  } else {
+    status.textContent = checkoutText('Para crear otro Passport necesitás 1 EVO Proof.', 'To create another Passport you need 1 EVO Proof.');
+    action.textContent = checkoutText('Comprar Proof', 'Buy Proof');
+    action.href = '#pricing';
+  }
+}
+function renderPublicEntitlement(data) {
   ensureProofBalanceUi();
+  renderPlanEntitlement(data);
+  const free = document.getElementById('proofBalanceFree');
+  const state = document.getElementById('proofWalletState');
+  const detail = document.getElementById('creditBalanceDetail');
+  const reveal = document.getElementById('proofRevealBalanceBtn');
+  if (free) free.textContent = data.demoAvailable ? checkoutText('Disponible', 'Available') : checkoutText('Usado', 'Used');
+  clearExactBalanceUi();
+  if (state) state.textContent = checkoutText('RESUMEN PÚBLICO', 'PUBLIC SUMMARY');
+  if (detail) detail.textContent = data.demoAvailable
+    ? checkoutText('Tu Free Proof está disponible. El saldo comprado/usado es privado y requiere una firma de lectura.', 'Your Free Proof is available. Purchased/used balance is private and requires a read signature.')
+    : data.canCreate
+      ? checkoutText('Podés crear otro Passport. La cantidad exacta de EVO Proofs sólo se muestra después de firmar una solicitud de lectura.', 'You can create another Passport. The exact EVO Proof balance is shown only after signing a read request.')
+      : checkoutText('No hay un Proof disponible para crear otro Passport. Los contadores exactos siguen siendo privados.', 'No Proof is available to create another Passport. Exact counters remain private.');
+  if (reveal) {
+    reveal.disabled = false;
+    reveal.textContent = checkoutText('Ver saldo privado', 'View private balance');
+  }
+  window.evoEntitlement = data;
+  if (typeof window.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
+  return data;
+}
+function renderPrivateEvoBalance(data) {
+  ensureProofBalanceUi();
+  renderPlanEntitlement(data);
   const free = document.getElementById('proofBalanceFree');
   const purchased = document.getElementById('proofBalancePurchased');
   const used = document.getElementById('proofBalanceUsed');
   const available = document.getElementById('creditBalanceValue');
   const state = document.getElementById('proofWalletState');
   const detail = document.getElementById('creditBalanceDetail');
+  const reveal = document.getElementById('proofRevealBalanceBtn');
   if (free) free.textContent = data.demoAvailable ? checkoutText('Disponible', 'Available') : checkoutText('Usado', 'Used');
   if (purchased) purchased.textContent = String(Number(data.purchasedCredits || 0));
   if (used) used.textContent = String(Number(data.consumedCredits || 0));
   if (available) available.textContent = String(Number(data.remainingCredits || 0));
-  if (state) state.textContent = checkoutText('SALDO VERIFICADO', 'VERIFIED BALANCE');
+  if (state) state.textContent = checkoutText('SALDO PRIVADO VERIFICADO', 'VERIFIED PRIVATE BALANCE');
   if (detail) detail.textContent = Number(data.remainingCredits || 0) > 0
-    ? checkoutText(`${proofQuantity(data.remainingCredits)} listo(s) para crear nuevos Passports.`, `${proofQuantity(data.remainingCredits)} ready to create new Passports.`)
+    ? checkoutText(`${proofQuantity(data.remainingCredits)} listo(s) para crear nuevos Passports. La lectura fue autorizada por tu firma.`, `${proofQuantity(data.remainingCredits)} ready to create new Passports. This read was authorized by your signature.`)
     : data.demoAvailable
-      ? checkoutText('Tu Free Proof sigue disponible.', 'Your Free Proof is still available.')
-      : checkoutText('No tenés EVO Proofs disponibles. Podés comprar uno cuando lo necesites.', 'You have no EVO Proofs available. You can buy one whenever you need it.');
-}
-function saveCreditBalance(wallet, credits) {
-  const normalizedWallet = String(wallet || '').toLowerCase();
-  const normalizedCredits = Number(credits);
-  if (!/^0x[0-9a-f]{40}$/.test(normalizedWallet) || !Number.isFinite(normalizedCredits)) return;
-  try { localStorage.setItem(EVO_CREDIT_BALANCE_KEY + ':' + normalizedWallet, JSON.stringify({ credits:normalizedCredits, updatedAt:new Date().toISOString() })); } catch {}
-  renderCreditBalance(normalizedWallet, normalizedCredits, true);
-}
-function readCreditBalance(wallet) {
-  try {
-    const saved = JSON.parse(localStorage.getItem(EVO_CREDIT_BALANCE_KEY + ':' + String(wallet || '').toLowerCase()) || 'null');
-    return saved && Number.isFinite(Number(saved.credits)) ? Number(saved.credits) : null;
-  } catch { return null; }
-}
-function renderCreditBalance(wallet, credits, verified) {
-  ensureProofBalanceUi();
-  const value = document.getElementById('creditBalanceValue');
-  const detail = document.getElementById('creditBalanceDetail');
-  const state = document.getElementById('proofWalletState');
-  if (!value || !detail) return;
-  const normalizedWallet = String(wallet || '').toLowerCase();
-  const balance = credits === undefined ? readCreditBalance(normalizedWallet) : Number(credits);
-  if (!normalizedWallet) {
-    value.textContent = '—';
-    detail.textContent = checkoutText('Conectá tu wallet para ver y usar tus EVO Proofs.', 'Connect your wallet to view and use your EVO Proofs.');
-    if (state) state.textContent = checkoutText('SIN WALLET', 'NO WALLET');
-    return;
+      ? checkoutText('Tu Free Proof sigue disponible. La lectura exacta fue autorizada por tu firma.', 'Your Free Proof is still available. The exact read was authorized by your signature.')
+      : checkoutText('No tenés EVO Proofs disponibles. La lectura exacta fue autorizada por tu firma.', 'You have no EVO Proofs available. The exact read was authorized by your signature.');
+  if (reveal) {
+    reveal.disabled = false;
+    reveal.textContent = checkoutText('Actualizar saldo privado', 'Refresh private balance');
   }
-  value.textContent = balance === null || !Number.isFinite(balance) ? '0' : String(balance);
-  detail.textContent = verified
-    ? checkoutText('Saldo verificado. Tus EVO Proofs se usan automáticamente al crear el próximo Passport.', 'Verified balance. Your EVO Proofs are used automatically when you create the next Passport.')
-    : checkoutText('Último saldo verificado para ', 'Last verified balance for ') + normalizedWallet.slice(0,6) + '…' + normalizedWallet.slice(-4) + '.';
-  if (state) state.textContent = verified ? checkoutText('SALDO VERIFICADO', 'VERIFIED BALANCE') : checkoutText('SALDO GUARDADO', 'SAVED BALANCE');
+  window.evoEntitlement = data;
+  if (typeof window.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
+  return data;
 }
 async function fetchEvoEntitlement(wallet) {
   const normalizedWallet = String(wallet || '').toLowerCase();
@@ -121,38 +161,52 @@ async function fetchEvoEntitlement(wallet) {
   if (!response.ok) throw new Error(data.error || checkoutText('No se pudo consultar el beneficio.', 'Could not check the entitlement.'));
   return data;
 }
-function renderEvoEntitlement(data) {
-  const status = document.getElementById('demoPlanStatus');
-  const value = document.getElementById('demoPlanValue');
-  const action = document.getElementById('demoPlanAction');
-  if (status && value && action) {
-    if (data.demoAvailable) {
-      value.textContent = checkoutText('Gratis disponible', 'Free available');
-      status.className = 'passportNotice ok';
-      status.textContent = checkoutText('Esta wallet todavía tiene su único Free Proof.', 'This wallet still has its one Free Proof.');
-      action.textContent = checkoutText('Crear mi Passport gratis', 'Create my free Passport');
-      action.href = '#seal';
-    } else {
-      value.textContent = checkoutText('Gratis ya usado', 'Free already used');
-      status.className = 'passportNotice';
-      status.textContent = data.remainingCredits > 0
-        ? checkoutText(`Tenés ${proofQuantity(data.remainingCredits)} disponible(s).`, `You have ${proofQuantity(data.remainingCredits)} available.`)
-        : checkoutText('Para crear otro Passport necesitás 1 EVO Proof.', 'To create another Passport you need 1 EVO Proof.');
-      action.textContent = data.remainingCredits > 0 ? checkoutText('Usar mi Proof', 'Use my Proof') : checkoutText('Comprar Proof', 'Buy Proof');
-      action.href = data.remainingCredits > 0 ? '#seal' : '#pricing';
-    }
-  }
-  saveCreditBalance(data.wallet, data.remainingCredits);
-  renderProofWalletSummary(data);
-  window.evoEntitlement = data;
-  if (typeof window.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') window.dispatchEvent(new CustomEvent('evo:entitlement-updated', { detail:data }));
+async function fetchPrivateEvoBalance(wallet) {
+  if (!account || !walletProvider) await connectWallet();
+  const normalizedWallet = String(wallet || account || '').toLowerCase();
+  const connectedWallet = String(account || '').toLowerCase();
+  if (!/^0x[0-9a-f]{40}$/.test(normalizedWallet) || normalizedWallet !== connectedWallet) throw new Error(checkoutText('Conectá la misma wallet cuyo saldo querés consultar.', 'Connect the same wallet whose balance you want to read.'));
+  const origin = location.origin;
+  if (!/^https:\/\//i.test(origin) && !/^http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/i.test(origin)) throw new Error(checkoutText('El saldo privado requiere un origen web seguro.', 'Private balance requires a secure web origin.'));
+  const nonce = checkoutNonce();
+  const signedAt = new Date().toISOString();
+  const signatureMessage = `EVO CHECKOUT BALANCE V1\nWallet: ${normalizedWallet}\nOrigin: ${origin}\nNonce: ${nonce}\nSigned: ${signedAt}`;
+  toast(checkoutText('Firmá para ver tu saldo exacto. No es una transacción y no mueve fondos.', 'Sign to view your exact balance. This is not a transaction and moves no funds.'));
+  const signature = await walletProvider.request({ method:'personal_sign', params:[signatureMessage, account] });
+  const response = await fetch(EVO_CHECKOUT_URL, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ action:'balance', wallet:normalizedWallet, origin, nonce, signedAt, signature, signatureMessage })
+  });
+  let data = {};
+  try { data = await response.json(); } catch {}
+  if (!response.ok) throw new Error(data.error || checkoutText('No se pudo leer el saldo privado.', 'Could not read the private balance.'));
   return data;
 }
 async function refreshEvoEntitlement(wallet) {
   const data = await fetchEvoEntitlement(wallet || account || '');
-  return renderEvoEntitlement(data);
+  return renderPublicEntitlement(data);
+}
+async function revealPrivateEvoBalance(wallet) {
+  ensureProofBalanceUi();
+  const reveal = document.getElementById('proofRevealBalanceBtn');
+  if (reveal) {
+    reveal.disabled = true;
+    reveal.textContent = checkoutText('Esperando firma…', 'Waiting for signature…');
+  }
+  try {
+    const data = await fetchPrivateEvoBalance(wallet || account || '');
+    checkoutStatus(checkoutText('Saldo exacto verificado mediante firma de tu wallet.', 'Exact balance verified with your wallet signature.'), 'ok');
+    return renderPrivateEvoBalance(data);
+  } finally {
+    if (reveal && window.evoEntitlement?.privacy !== 'SIGNED_PRIVATE_BALANCE') {
+      reveal.disabled = false;
+      reveal.textContent = checkoutText('Ver saldo privado', 'View private balance');
+    }
+  }
 }
 window.evoRefreshEntitlement = refreshEvoEntitlement;
+window.evoRefreshPrivateBalance = revealPrivateEvoBalance;
+
 function savePendingPayment(payment) {
   try { localStorage.setItem(EVO_PENDING_PAYMENT_KEY, JSON.stringify(payment)); } catch {}
 }
@@ -243,11 +297,11 @@ async function processSmartPayment(transaction, planCode, verifyNow) {
     checkoutStatus(checkoutText('Pago confirmado por la wallet. EVO está verificando la liquidación en USDC.', 'Payment confirmed by the wallet. EVO is verifying the USDC settlement.'));
     const result = await verifyCheckout(payment.txHash, planCode, payment.payerWallet, payment.chainId);
     clearPendingPayment(payment.txHash);
-    checkoutStatus(checkoutText('Pago verificado. Tenés ', 'Payment verified. You have ') + proofQuantity(result.remainingCredits) + checkoutText(' disponible(s) para crear Passports.', ' available to create Passports.'), 'ok');
-    saveCreditBalance(payment.payerWallet, result.remainingCredits);
-    const summary = { ...(window.evoEntitlement || {}), wallet:payment.payerWallet, purchasedCredits:result.purchasedCredits, consumedCredits:result.consumedCredits, remainingCredits:result.remainingCredits };
-    renderProofWalletSummary(summary);
-    window.evoEntitlement = summary;
+    const message = result.applied
+      ? checkoutText(`Pago verificado. Se acreditó el plan de ${proofQuantity(result.planCredits)}. Tu saldo exacto sigue privado.`, `Payment verified. The ${proofQuantity(result.planCredits)} plan was credited. Your exact balance remains private.`)
+      : checkoutText(`Pago ya verificado. El plan de ${proofQuantity(result.planCredits)} ya estaba acreditado.`, `Payment already verified. The ${proofQuantity(result.planCredits)} plan was already credited.`);
+    checkoutStatus(message, 'ok');
+    await refreshEvoEntitlement(payment.payerWallet);
   } finally {
     EVO_VERIFYING_TXS.delete(payment.txHash);
   }
@@ -292,13 +346,12 @@ async function recoverEvoPayment() {
   recoveryStatus(checkoutText('Verificando el pago en la red seleccionada…', 'Verifying the payment on the selected network…'));
   const result = await verifyCheckout(txHash, planCode, payerWallet, chainId);
   clearPendingPayment(txHash);
-  const message = checkoutText('Pago recuperado. Tenés ', 'Payment recovered. You have ') + proofQuantity(result.remainingCredits) + checkoutText(' disponible(s).', ' available.');
+  const message = result.applied
+    ? checkoutText(`Pago recuperado. Se acreditó el plan de ${proofQuantity(result.planCredits)}.`, `Payment recovered. The ${proofQuantity(result.planCredits)} plan was credited.`)
+    : checkoutText(`Pago recuperado. El plan de ${proofQuantity(result.planCredits)} ya estaba acreditado.`, `Payment recovered. The ${proofQuantity(result.planCredits)} plan was already credited.`);
   recoveryStatus(message, 'ok');
-  checkoutStatus(message, 'ok');
-  saveCreditBalance(payerWallet, result.remainingCredits);
-  const summary = { ...(window.evoEntitlement || {}), wallet:payerWallet, purchasedCredits:result.purchasedCredits, consumedCredits:result.consumedCredits, remainingCredits:result.remainingCredits };
-  renderProofWalletSummary(summary);
-  window.evoEntitlement = summary;
+  checkoutStatus(message + checkoutText(' Firmá “Ver saldo privado” si querés consultar los contadores exactos.', ' Sign “View private balance” if you want to read the exact counters.'), 'ok');
+  await refreshEvoEntitlement(payerWallet);
 }
 function restorePendingPaymentForm() {
   const payment = readPendingPayment();
@@ -309,7 +362,7 @@ function restorePendingPaymentForm() {
   if (txInput) txInput.value = payment.txHash;
   if (planInput) planInput.value = payment.planCode;
   if (networkInput) networkInput.value = String(payment.chainId);
-  recoveryStatus(checkoutText('Encontramos un pago pendiente guardado en este navegador. Conectá la wallet que realizó el pago y recuperalo.', 'We found a pending payment saved in this browser. Connect the wallet that made the payment and recover it.'));
+  recoveryStatus(checkoutText('Encontramos un pago pendiente guardado en este navegador. Conectá la wallet que realizó el pago y recuperalo.', 'We found a pending payment saved in this browser. Connect the wallet that made it to recover it.'));
 }
 async function resumePendingPayment() {
   const payment = readPendingPayment();
@@ -333,7 +386,7 @@ function rewriteLegacyCreditText(text) {
     ['1 EVO Passport · US$9.90', '1 EVO Proof · US$9.90'],
     ['Pack de 10 · US$49', '10 EVO Proofs · US$49'],
     ['Pack of 10 · US$49', '10 EVO Proofs · US$49'],
-    ['Esta wallet ya usó su Passport gratuito y no tiene créditos disponibles. Comprá un crédito antes de continuar.', en ? 'This wallet already used its free Passport and has no EVO Proofs available. Buy 1 EVO Proof to continue.' : 'Esta wallet ya usó su Passport gratuito y no tiene EVO Proofs disponibles. Comprá 1 EVO Proof antes de continuar.'],
+    ['Esta wallet ya usó su Passport gratuito y no tiene créditos disponibles. Comprá un crédito antes de continuar.', en ? 'This wallet already used its free Passport and has no EVO Proof available. Buy 1 EVO Proof to continue.' : 'Esta wallet ya usó su Passport gratuito y no tiene EVO Proof disponible. Comprá 1 EVO Proof antes de continuar.'],
     ['Firma tu Passport. Se usará 1 crédito; no es una transacción blockchain.', en ? 'Sign your Passport. 1 EVO Proof will be used; this is not a blockchain transaction.' : 'Firmá tu Passport. Se usará 1 EVO Proof; no es una transacción blockchain.']
   ]);
   return exact.get(text) || text;
@@ -372,8 +425,25 @@ function initProofPresentationObserver() {
   if (language) language.addEventListener('change', () => setTimeout(() => {
     updateProofBalanceLabels();
     rewriteLegacyCreditNodes(document.body);
-    if (window.evoEntitlement) renderProofWalletSummary(window.evoEntitlement);
+    if (window.evoEntitlement?.privacy === 'SIGNED_PRIVATE_BALANCE') renderPrivateEvoBalance(window.evoEntitlement);
+    else if (window.evoEntitlement) renderPublicEntitlement(window.evoEntitlement);
   }, 0));
+}
+function resetProofWalletUi() {
+  ensureProofBalanceUi();
+  const state = document.getElementById('proofWalletState');
+  const detail = document.getElementById('creditBalanceDetail');
+  const free = document.getElementById('proofBalanceFree');
+  const reveal = document.getElementById('proofRevealBalanceBtn');
+  if (state) state.textContent = checkoutText('SIN WALLET', 'NO WALLET');
+  if (detail) detail.textContent = checkoutText('Conectá tu wallet para comprobar tu Free Proof.', 'Connect your wallet to check your Free Proof.');
+  if (free) free.textContent = '—';
+  ['proofBalancePurchased','proofBalanceUsed','creditBalanceValue'].forEach(id => { const node = document.getElementById(id); if (node) node.textContent = '—'; });
+  if (reveal) {
+    reveal.disabled = false;
+    reveal.textContent = checkoutText('Ver saldo privado', 'View private balance');
+  }
+  window.evoEntitlement = null;
 }
 function initEvoCheckout() {
   ensureProofBalanceUi();
@@ -407,18 +477,14 @@ function initEvoCheckout() {
   restorePendingPaymentForm();
   window.evoWalletConnected = wallet => {
     const connectedWallet = wallet || account || '';
-    renderCreditBalance(connectedWallet);
+    window.evoEntitlement = null;
     refreshEvoEntitlement(connectedWallet).catch(error => checkoutStatus(error && error.message ? error.message : checkoutText('No se pudo comprobar el beneficio gratuito.', 'Could not check the free entitlement.')));
     resumePendingPayment().catch(error => recoveryStatus(error && error.message ? error.message : checkoutText('El pago sigue pendiente de verificación.', 'The payment is still pending verification.')));
   };
   if (typeof window.addEventListener === 'function') {
     window.addEventListener('evo:wallet-connected', event => window.evoWalletConnected(event.detail && event.detail.account));
-    window.addEventListener('evo:wallet-disconnected', () => {
-      renderCreditBalance('');
-      const ids = ['proofBalanceFree','proofBalancePurchased','proofBalanceUsed'];
-      ids.forEach(id => { const node = document.getElementById(id); if (node) node.textContent = '—'; });
-    });
+    window.addEventListener('evo:wallet-disconnected', resetProofWalletUi);
   }
-  renderCreditBalance(account || '');
+  if (account) window.evoWalletConnected(account); else resetProofWalletUi();
 }
 initEvoCheckout();
