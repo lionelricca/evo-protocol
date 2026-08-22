@@ -57,6 +57,8 @@ jobs:
         run: node --check supabase/functions/evo-reality-continuity/index.ts
       - name: Syntax check Passport owner event
         run: node --check supabase/functions/register-evo-passport-event/index.ts
+      - name: Syntax check Passport transfer
+        run: node --check supabase/functions/evo-passport-transfer/index.ts
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -99,5 +101,9 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822112500_asset_authority_lock_v3312.sql
       - name: Test Asset Authority ownership transition
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/asset-authority-v3312.sql
+      - name: Apply Transfer State Machine migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113500_transfer_state_machine_v3313.sql
+      - name: Test Transfer State Machine
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/transfer-state-machine-v3313.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
