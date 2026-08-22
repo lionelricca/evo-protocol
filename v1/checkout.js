@@ -39,12 +39,6 @@ function ensureProofBalanceUi() {
   const panel = document.querySelector('.paymentPanel');
   const status = document.getElementById('checkoutStatus');
   if (!panel || !status) return;
-  if (!document.getElementById('evoProofWalletStyle')) {
-    const style = document.createElement('style');
-    style.id = 'evoProofWalletStyle';
-    style.textContent = `.proofWalletCard{margin:20px 0 16px;padding:18px;border:1px solid rgba(102,227,255,.18);border-radius:18px;background:linear-gradient(135deg,rgba(102,227,255,.075),rgba(167,123,255,.045));box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}.proofWalletHead{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.proofWalletHead strong{font-size:12px;color:#c9f6ff;letter-spacing:.08em}.proofWalletStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}.proofWalletStat{padding:13px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(2,6,13,.38)}.proofWalletStat span{display:block;color:#8e9aad;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.proofWalletStat b{display:block;margin-top:5px;font-size:20px;color:#f3f8ff}.proofWalletCard .proofWalletDetail{margin:0;color:#9aa6bb;font-size:13px}@media(max-width:720px){.proofWalletStats{grid-template-columns:repeat(2,minmax(0,1fr))}}`;
-    document.head.appendChild(style);
-  }
   const card = document.createElement('div');
   card.id = 'proofWalletCard';
   card.className = 'proofWalletCard';
