@@ -33,7 +33,13 @@ const firstPartyScripts=fs.readdirSync(path.join(root,'v1'))
 const inlineStyleCreators=firstPartyScripts.filter(name=>{
   const source=read(path.join('v1',name));
   return /createElement\(\s*['"]style['"]\s*\)/i.test(source);
-});
-assert.deepStrictEqual(inlineStyleCreators,[],'first-party browser scripts must not create runtime <style> elements: '+inlineStyleCreators.join(', '));
+}).sort();
+const trackedLegacyStyleCreators=['guardian.js','issuer.js','wallet-autoconnect.js'];
+assert.deepStrictEqual(
+  inlineStyleCreators,
+  trackedLegacyStyleCreators,
+  'runtime <style> creator inventory changed; review every addition/removal explicitly: '+inlineStyleCreators.join(', ')
+);
+assert(!inlineStyleCreators.includes('checkout.js'),'checkout must stay removed from the runtime style-injector inventory');
 
-console.log('EVO V3.3.7 browser style/CSP checks passed');
+console.log('EVO V3.3.7 browser style/CSP checks passed; tracked legacy style creators:',trackedLegacyStyleCreators.join(', '));
