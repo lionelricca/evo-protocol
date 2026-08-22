@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 const src=fs.readFileSync('supabase/functions/evo-battery-passport/index.ts','utf8');
-const migration=fs.readFileSync('supabase/migrations/20260822115000_battery_atomic_registration_v3314.sql','utf8');
+const migration=fs.readFileSync('supabase/migrations/20260822113955_battery_atomic_registration_v3314.sql','utf8');
 
 function requireText(text,label){if(!src.includes(text))throw new Error(`missing_${label}`)}
 function requireMigration(text,label){if(!migration.includes(text))throw new Error(`missing_migration_${label}`)}
