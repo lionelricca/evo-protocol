@@ -71,9 +71,9 @@ The Security Gate caught two test-harness issues during this change and both wer
 
 The final regression suite now distinguishes shared modules from `index.ts` HTTP entrypoints while continuing to require body limits on every actual Edge Function.
 
-The V3.3.18 implementation was functionally verified on `f2855c374d5a05c50d53f02d0aefc9c174ec42e3`; the subsequent documentation-only commit `1eafe073ae5d9062c2a3ec88f67e339086f6b552` also passed the full suite.
+The implementation and the subsequent documentation-only commits passed the complete regression suite. Latest fully verified branch head before this documentation sync: `6ce3641fd13b54f46e5fedfee982a318858255d0`.
 
-Passing checks on the final branch head:
+Passing checks:
 
 - EVO Security Gate
 - EVO Document Proof checks
