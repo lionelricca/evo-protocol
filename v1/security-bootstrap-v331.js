@@ -2,9 +2,9 @@
 
 (() => {
   const SECURITY_BASELINE = 'EVO-BROWSER-SHIELD-V3.3.1';
-  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.3';
-  const CRITICAL_LOCAL_FILES = new Set(['browser-shield-v332.css', 'styles.css', 'app.js']);
-  const APPROVED_RUNTIME_HOSTS = new Set(['cdn.jsdelivr.net', 'sdk.depay.com']);
+  const SECURITY_VERSION = 'EVO-BROWSER-SHIELD-V3.3.5';
+  const CRITICAL_LOCAL_FILES = new Set(['browser-shield-v332.css', 'styles.css', 'app.js', 'qrcode.min.js']);
+  const APPROVED_RUNTIME_HOSTS = new Set(['sdk.depay.com']);
 
   function applyFallback(message) {
     const render = () => {
@@ -43,8 +43,7 @@
     const resource = classifyResource(event.target);
     if (!resource) return;
     const criticalLocal = resource.local && CRITICAL_LOCAL_FILES.has(resource.file);
-    const criticalQr = resource.file === 'qrcode.min.js' && resource.approvedRuntimeHost;
-    if (criticalLocal || criticalQr) {
+    if (criticalLocal) {
       applyFallback('Un componente seguro de EVO no pudo cargarse. Recargá la página antes de continuar.');
     }
   }, true);
