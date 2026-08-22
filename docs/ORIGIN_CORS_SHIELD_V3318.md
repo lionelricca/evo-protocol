@@ -64,16 +64,14 @@ Origin hardening does not replace or weaken:
 
 ## CI findings during implementation
 
-The Security Gate caught two test-harness issues during this change and both were corrected before the final green run:
+The Security Gate caught two test-harness issues during this change and both were corrected:
 
 - the first syntax check treated a typed shared module as plain JavaScript;
 - the generic Edge body-limit regression test treated `_shared/evo-cors.ts` as if it were an HTTP function entrypoint.
 
-The final regression suite now distinguishes shared modules from `index.ts` HTTP entrypoints while continuing to require body limits on every actual Edge Function.
+The regression suite now distinguishes shared modules from `index.ts` HTTP entrypoints while continuing to require body limits on every actual Edge Function.
 
-The implementation and the subsequent documentation-only commits passed the complete regression suite. Latest fully verified branch head before this documentation sync: `6ce3641fd13b54f46e5fedfee982a318858255d0`.
-
-Passing checks:
+The completed V3.3.18 implementation passed:
 
 - EVO Security Gate
 - EVO Document Proof checks
