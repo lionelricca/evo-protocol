@@ -69,9 +69,6 @@
 
   function ensurePicker(){
     let dlg=document.getElementById('evoWalletPicker');if(dlg)return dlg;
-    const style=document.createElement('style');
-    style.textContent=`#evoWalletPicker{border:1px solid #ffffff22;border-radius:18px;background:#0b0915;color:#fff;padding:0;max-width:460px;width:calc(100% - 32px);box-shadow:0 25px 80px #000b}#evoWalletPicker::backdrop{background:#000a}.evoWalletPickerInner{padding:20px}.evoWalletPickerHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.evoWalletPickerHead h3{margin:0 0 6px}.evoWalletPickerHead p{margin:0;color:#aaa4bd;font-size:13px}.evoWalletClose{background:none;border:0;color:#fff;font-size:24px;cursor:pointer}.evoWalletList{display:grid;gap:9px;margin-top:18px}.evoWalletChoice{width:100%;text-align:left;padding:13px 14px;border:1px solid #ffffff18;border-radius:13px;background:#ffffff08;color:#fff;cursor:pointer}.evoWalletChoice:hover{border-color:#f4ca7560;background:#ffffff0d}.evoWalletChoice b{display:block}.evoWalletChoice small{display:block;color:#8f899f;margin-top:3px;word-break:break-all}.evoWalletSafety{margin-top:14px;padding:11px;border:1px solid #f4ca7530;border-radius:12px;color:#c8c1d6;font-size:12px}`;
-    document.head.appendChild(style);
     dlg=document.createElement('dialog');dlg.id='evoWalletPicker';
     dlg.innerHTML=`<div class="evoWalletPickerInner"><div class="evoWalletPickerHead"><div><h3>Elegí tu wallet</h3><p>EVO sólo solicitará permiso para ver la cuenta pública.</p></div><button class="evoWalletClose" type="button" aria-label="Cerrar">×</button></div><div id="evoWalletList" class="evoWalletList"></div><div class="evoWalletSafety">Conectar una wallet no firma mensajes, no aprueba tokens y no mueve EVO, POL ni otros fondos.</div></div>`;
     document.body.appendChild(dlg);dlg.querySelector('.evoWalletClose').onclick=()=>dlg.close('cancel');return dlg;
