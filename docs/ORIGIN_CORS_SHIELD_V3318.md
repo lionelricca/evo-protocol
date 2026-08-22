@@ -62,6 +62,25 @@ Origin hardening does not replace or weaken:
 - signed domain ownership requests and bounded DNS checks;
 - organization submission signature verification and one-PENDING concurrency guard.
 
+## CI findings during implementation
+
+The Security Gate caught two test-harness issues during this change and both were corrected before the final green run:
+
+- the first syntax check treated a typed shared module as plain JavaScript;
+- the generic Edge body-limit regression test treated `_shared/evo-cors.ts` as if it were an HTTP function entrypoint.
+
+The final regression suite now distinguishes shared modules from `index.ts` HTTP entrypoints while continuing to require body limits on every actual Edge Function.
+
+Final verified head for this phase: `f2855c374d5a05c50d53f02d0aefc9c174ec42e3`.
+
+Passing checks on that head:
+
+- EVO Security Gate
+- EVO Document Proof checks
+- EVO Service Proof checks
+- EVO navigation checks
+- EVO navigation V2.7.3 checks
+
 ## Remaining rollout
 
 The shared policy should next be applied, after compatibility review, to the remaining browser mutation/authority endpoints such as Passport Event, Passport Transfer, Service Proof, Reality Continuity, Battery Passport and Document Lifecycle.
@@ -78,3 +97,5 @@ V3.3.18 is branch-only until explicitly approved for production. Before deployme
 4. deploy the shared helper together with each dependent Edge Function;
 5. smoke-test preflight, normal POST, wallet signing, checkout verification and Seal creation from the official frontend;
 6. verify that an unrelated web Origin receives HTTP 403 and no permissive CORS header.
+
+No production deployment, migration, record mutation or deletion is part of the branch-only V3.3.18 implementation.
