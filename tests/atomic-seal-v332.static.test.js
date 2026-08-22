@@ -4,8 +4,8 @@ const fs=require('fs');
 const path=require('path');
 
 const root=path.resolve(__dirname,'..');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260821234000_atomic_seal_registration_credit.sql'),'utf8');
-const identityGuard=fs.readFileSync(path.join(root,'supabase/migrations/20260821234200_active_asset_serial_guard.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260822105136_atomic_seal_registration_credit_v332.sql'),'utf8');
+const identityGuard=fs.readFileSync(path.join(root,'supabase/migrations/20260822105154_active_asset_serial_guard_v332.sql'),'utf8');
 const edge=fs.readFileSync(path.join(root,'supabase/functions/register-evo-seal/index.ts'),'utf8');
 
 assert(migration.includes('evo_register_seal_with_credit'),'atomic registration RPC must remain versioned');
