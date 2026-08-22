@@ -65,6 +65,8 @@ jobs:
         run: node tests/checkout-hardening-v334.test.js
       - name: Run V3.3.8 domain verification hardening checks
         run: node tests/domain-hardening-v338.test.js
+      - name: Run V3.3.9 wallet and issuer hardening checks
+        run: node tests/identity-hardening-v339.test.js
       - name: Guard atomic registration structure
         run: node tests/atomic-seal-v332.static.test.js
       - name: Prepare isolated PostgreSQL fixture
@@ -84,4 +86,4 @@ jobs:
       - name: Test checkout verification rate limits
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/checkout-rate-limit-v334.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
+        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls, domain verification abuse bounds, proof-gated wallet persistence, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and concurrent entitlement safety"
