@@ -5,7 +5,7 @@ const path=require('path');
 
 const root=path.resolve(__dirname,'..');
 const edge=fs.readFileSync(path.join(root,'supabase/functions/evo-checkout/index.ts'),'utf8');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260821235500_checkout_verification_rate_limit.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260822105213_checkout_verification_rate_limit_v334.sql'),'utf8');
 const workflow=fs.readFileSync(path.join(root,'.github/workflows/evo-security-gate.yml'),'utf8');
 
 assert(edge.includes('const MAX_BODY_BYTES = 4096'),'checkout must define a strict request-size ceiling');
