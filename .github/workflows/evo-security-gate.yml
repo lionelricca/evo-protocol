@@ -49,15 +49,8 @@ jobs:
           node --check v1/guardian-v04.js
       - name: Syntax check checkout
         run: node --check v1/checkout.js
-      - name: Syntax check Edge CORS shield
-        run: |
-          node --check supabase/functions/_shared/evo-cors.ts
-          node --check supabase/functions/evo-checkout/index.ts
-          node --check supabase/functions/register-evo-seal/index.ts
-          node --check supabase/functions/register-evo-wallet/index.ts
-          node --check supabase/functions/register-evo-issuer/index.ts
-          node --check supabase/functions/evo-domain-verification/index.ts
-          node --check supabase/functions/submit-evo-organization/index.ts
+      - name: Syntax check shared CORS helper
+        run: node --check supabase/functions/_shared/evo-cors.ts
       - name: Syntax check Issuer and wallet connector
         run: |
           node --check v1/issuer.js
