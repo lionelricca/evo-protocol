@@ -1,0 +1,23 @@
+{
+  "projectRef": "njvyrvmyhtplprdumzri",
+  "capturedAt": "2026-08-22",
+  "scope": "EVO V3.3 production hardening migrations",
+  "migrations": [
+    { "version": "20260822105136", "name": "atomic_seal_registration_credit_v332" },
+    { "version": "20260822105154", "name": "active_asset_serial_guard_v332" },
+    { "version": "20260822105213", "name": "checkout_verification_rate_limit_v334" },
+    { "version": "20260822105251", "name": "checkout_verification_explicit_deny_policies_v334" },
+    { "version": "20260822110530", "name": "domain_check_slot_v338" },
+    { "version": "20260822111047", "name": "organization_single_pending_guard_v3310" },
+    { "version": "20260822111258", "name": "atomic_seal_registration_credit" },
+    { "version": "20260822111307", "name": "active_asset_serial_guard" },
+    { "version": "20260822111320", "name": "checkout_verification_rate_limit" },
+    { "version": "20260822112538", "name": "asset_authority_lock_v3312" },
+    { "version": "20260822113209", "name": "transfer_state_machine_v3313" },
+    { "version": "20260822113955", "name": "battery_atomic_registration_v3314" }
+  ],
+  "notes": [
+    "The 20260822111258/111307/111320 versions are production-history alignment entries for operational reapplications; canonical schema intent is carried by the earlier suffixed V3.3 migrations.",
+    "Document Lifecycle V3.3.15 is versioned in Git but was not present in the production migration history at capture time."
+  ]
+}

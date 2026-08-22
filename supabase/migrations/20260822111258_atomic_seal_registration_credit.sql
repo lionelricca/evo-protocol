@@ -1,0 +1,5 @@
+-- Production migration-history alignment marker.
+-- Supabase production recorded a second operational application of the atomic
+-- Seal registration migration under version 20260822111258. The canonical
+-- schema change is already represented by 20260822105136_atomic_seal_registration_credit_v332.sql.
+-- No additional schema delta is required on fresh environments.

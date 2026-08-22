@@ -1,0 +1,5 @@
+-- Production migration-history alignment marker.
+-- Supabase production recorded a second operational application of the ACTIVE
+-- asset identity guard under version 20260822111307. The canonical schema
+-- change is already represented by 20260822105154_active_asset_serial_guard_v332.sql.
+-- No additional schema delta is required on fresh environments.
