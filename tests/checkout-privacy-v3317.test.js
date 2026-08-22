@@ -4,6 +4,7 @@ const fs=require('fs');
 
 const edge=fs.readFileSync('supabase/functions/evo-checkout/index.ts','utf8');
 const ui=fs.readFileSync('v1/checkout.js','utf8');
+const app=fs.readFileSync('v1/app.js','utf8');
 
 assert(edge.includes('npm:viem@2.21.54'),'exact-balance proof must use pinned signature verification');
 assert(edge.includes('EVO CHECKOUT BALANCE V1'),'balance read must have a domain-specific signature message');
@@ -21,9 +22,10 @@ const verifyBlock=edge.slice(verifyStart);
 assert(publicBlock.includes('privacy: "PUBLIC_SUMMARY"'),'public wallet lookup must be clearly redacted');
 assert(publicBlock.includes('balanceRedacted: true'),'public summary must declare redaction');
 assert(publicBlock.includes('exactBalanceRequiresWalletSignature: true'),'public summary must direct exact reads to wallet proof');
+assert(publicBlock.includes('canCreate:'),'public summary may expose only a capability decision needed by Seal UX');
 assert(!publicBlock.includes('purchasedCredits:'),'public summary must not disclose purchased-credit count');
 assert(!publicBlock.includes('consumedCredits:'),'public summary must not disclose consumed-credit count');
-assert(publicBlock.includes('remainingCredits: paidCapability ? 1 : 0'),'legacy Seal UX may receive only a 0/1 capability sentinel, never an exact paid balance');
+assert(!publicBlock.includes('remainingCredits:'),'public summary must not disclose or approximate remaining-credit count');
 assert(!verifyBlock.includes('purchasedCredits:'),'public payment verification must not disclose purchased-credit count');
 assert(!verifyBlock.includes('consumedCredits:'),'public payment verification must not disclose consumed-credit count');
 assert(!verifyBlock.includes('remainingCredits:'),'public payment verification must not disclose exact remaining-credit count');
@@ -38,5 +40,8 @@ assert(ui.includes("'RESUMEN PÚBLICO', 'PUBLIC SUMMARY'"),'connected-wallet def
 assert(ui.includes("'SALDO PRIVADO VERIFICADO', 'VERIFIED PRIVATE BALANCE'"),'signed exact read must be visibly distinguished');
 assert(!ui.includes('EVO_CREDIT_BALANCE_KEY'),'exact balance must not be persisted in browser localStorage');
 assert(!ui.includes('proofQuantity(result.remainingCredits)'),'payment verification result must not rely on exact balance disclosure');
+
+assert(app.includes('!entitlement.canCreate'),'Seal creation must rely on a redacted capability decision, not an exact balance');
+assert(!app.includes('Number(entitlement.remainingCredits'),'Seal UX must not depend on exact remaining-credit data');
 
 console.log('EVO V3.3.17 Checkout Privacy Shield checks passed');
