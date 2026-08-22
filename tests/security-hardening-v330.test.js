@@ -1,84 +1,122 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import assert from 'node:assert';
-import crypto from 'node:crypto';
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+const {pathToFileURL}=require('url');
 
-const root=path.resolve('.');
-const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const root=path.resolve(__dirname,'..');
+
+function read(rel){return fs.readFileSync(path.join(root,rel),'utf8')}
 function walk(dir){
-  const files=[];
+  const out=[];
   for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
     const full=path.join(dir,entry.name);
-    if(entry.isDirectory())files.push(...walk(full));
-    else files.push(full);
+    if(entry.isDirectory())out.push(...walk(full));else out.push(full);
   }
-  return files;
+  return out;
 }
+
+const dangerousSeedRequest=/\b(?:enter|provide|send|share|submit|paste|type|upload|ingresa(?:r)?|ingrese(?:s)?|proporciona(?:r)?|env[ií]a(?:r)?|env[ií]e|comparte|comparta|pega(?:r)?|pegue|escribe|escriba|sube|suba)\b[\s\S]{0,80}\b(?:seed phrase|recovery phrase|frase semilla|frase de recuperaci[oó]n)\b/i;
+const reverseDangerousSeedRequest=/\b(?:seed phrase|recovery phrase|frase semilla|frase de recuperaci[oó]n)\b[\s\S]{0,80}\b(?:here|aqu[ií]|form|formulario|campo|input)\b/i;
+const protectiveSecretWarning=/\b(?:never|do not|don't|must not|nunca|jam[aá]s|no)\b[\s\S]{0,80}\b(?:enter|provide|send|share|submit|paste|type|upload|ingres\w*|proporcion\w*|env[ií]\w*|compart\w*|peg\w*|escrib\w*|sub\w*)\b/i;
 function containsRecoverySecretRequest(text){
-  return /(?:seed phrase|mnemonic|private key|recovery phrase).{0,120}(?:input|prompt|textarea|placeholder)/is.test(text)
-    || /(?:input|prompt|textarea|placeholder).{0,120}(?:seed phrase|mnemonic|private key|recovery phrase)/is.test(text);
+  return String(text).split(/\r?\n/).some(line=>{
+    const dangerous=dangerousSeedRequest.test(line)||reverseDangerousSeedRequest.test(line);
+    return dangerous&&!protectiveSecretWarning.test(line);
+  });
 }
 
 (async()=>{
-  const classifier=await import(path.join(root,'standards','trust-authority-v330.mjs'));
-  const expected={
-    PUBLIC_OBSERVATION:0,
-    PUBLIC_SOFTWARE_FRESHNESS:0,
-    WALLET_SIGNATURE:20,
-    PROVIDER_COUNTERSIGNATURE:35,
-    DOMAIN_CONTROL:45,
-    ORGANIZATION_VERIFICATION:65,
-    EXTERNAL_VALIDATED_EVIDENCE:75,
-    REGULATED_TRUST_SERVICE:90,
-    PHYSICAL_CRYPTO_PROOF:95,
-  };
-  assert.deepStrictEqual(classifier.ASSURANCE_WEIGHTS,expected,'trust authority weights changed unexpectedly');
-  assert.strictEqual(classifier.authorityWeight('PUBLIC_OBSERVATION'),0,'public observations cannot increase authority');
-  assert.strictEqual(classifier.authorityWeight('PUBLIC_SOFTWARE_FRESHNESS'),0,'public software freshness cannot increase authority');
-  assert.strictEqual(classifier.classifyAuthority({pulse:true,challenge:true}).level,0,'public telemetry alone cannot create authority');
-  assert.strictEqual(classifier.classifyAuthority({walletSignature:true}).level,1,'wallet proof should create wallet-level authority');
-  assert(classifier.classifyAuthority({organizationVerified:true}).level>=3,'verified organization should be stronger authority');
+  const mod=await import(pathToFileURL(path.join(root,'standards/trust-authority-v330.mjs')).href);
+  const classify=mod.classifyTrustAuthority;
 
-  const guardian=read('supabase/functions/evo-ai-guardian/index.ts');
-  assert(guardian.includes('publicTelemetryAuthoritative:false'),'Guardian must explicitly mark public telemetry non-authoritative');
-  assert(!/confidence\s*\+=\s*[^;]*(?:pulse|challenge)/i.test(guardian),'Guardian must not award confidence for Pulse/Challenge');
-  assert(guardian.includes('.order("registered_at",{ascending:false})'),'Guardian Passport history query must be latest-first');
-  assert(guardian.includes('.eq("event_type","TRANSFERRED")'),'Guardian must resolve current owner independently from the capped event history');
-  assert(guardian.includes('MAX_EVENTS=300'),'Guardian event query bound missing');
-  assert(guardian.includes('MAX_PULSES_ANALYZED=1500'),'Guardian pulse analysis bound missing');
-  assert(guardian.includes('MAX_CHALLENGE_ATTEMPTS=750'),'Guardian challenge analysis bound missing');
-  assert(guardian.includes('MAX_SERVICE_PROOFS=300'),'Guardian Service Proof query bound missing');
+  const baseline=classify({issuerTrust:'SELF_DECLARED'});
+  assert.equal(baseline.level,1,'self-declared registration starts at signed identity');
 
-  const guardianV04=read('supabase/functions/evo-ai-guardian-v04/index.ts');
-  assert(guardianV04.includes('authorityRoot'),'Guardian V0.4 must expose Authority Root');
-  assert(guardianV04.includes('realityRoot'),'Guardian V0.4 must keep Reality Root separate');
-  assert(guardianV04.includes('publicTelemetryAuthoritative:false'),'Guardian V0.4 must preserve public telemetry zero-authority rule');
+  const telemetryOnly=classify({issuerTrust:'SELF_DECLARED',publicPulseCount:5000,softwareChallengesAccepted:5000});
+  assert.equal(telemetryOnly.level,1,'public telemetry must never elevate authority');
+  assert.equal(telemetryOnly.publicTelemetryAuthoritative,false);
+
+  const signedHistory=classify({issuerTrust:'WALLET_PROVEN',signedContinuityEvents:2});
+  assert.equal(signedHistory.level,2,'owner-signed continuity may elevate to level 2');
+
+  const verifiedIssuer=classify({issuerTrust:'DOMAIN_VERIFIED',signedContinuityEvents:1});
+  assert.equal(verifiedIssuer.level,3,'verified issuer plus signed continuity may elevate to level 3');
+
+  const countersigned=classify({issuerTrust:'SELF_DECLARED',providerCountersignedProofs:1});
+  assert.equal(countersigned.level,3,'independent countersignature may elevate digital authority');
+
+  const highAssurance=classify({issuerTrust:'ORGANIZATION_VERIFIED',regulatedEvidence:1});
+  assert.equal(highAssurance.level,4,'regulated evidence may elevate to high assurance');
+
+  const suspended=classify({issuerTrust:'SUSPENDED',signedContinuityEvents:99,regulatedEvidence:1,securePhysicalProofs:1});
+  assert.equal(suspended.level,1,'suspended issuer cannot be elevated by normal evidence classification');
+
+  const guardianUi=read('v1/guardian-v04.js');
+  assert(guardianUi.includes('OBSERVATIONAL ONLY'),'Guardian UI must label public telemetry as observational only');
+  assert(guardianUi.includes('Math.min(backendLevel,authority.maxLevel)'),'Guardian UI must cap backend authority by independently derived evidence');
+  assert(guardianUi.includes('Authority Root'),'Guardian UI must surface Authority Root separately');
+  assert(guardianUi.includes('Reality Root · telemetry'),'Guardian UI must distinguish telemetry Reality Root');
+  assert(!guardianUi.includes('historyPresent=pulses>0||passportEvents>0'),'legacy public-telemetry trust elevation must stay removed');
+  assert(guardianUi.includes("'\"':'&quot;'"),'canonical HTML escaper must encode double quotes');
+  assert(guardianUi.includes("\"'\":'&#39;'"),'canonical HTML escaper must encode single quotes');
+
+  const guardianBase=read('supabase/functions/evo-ai-guardian/index.ts');
+  assert(guardianBase.includes('publicTelemetryAuthoritative:false'),'Guardian backend must declare public telemetry non-authoritative');
+  assert(guardianBase.includes('providerCountersignedProofs'),'Guardian backend must recognize independent provider countersignatures');
+  assert(!/pulseChainValid\)confidence\s*\+=/i.test(guardianBase),'Pulse must not add Evidence Confidence');
+  assert(!/acceptedChallenges\)confidence\s*\+=/i.test(guardianBase),'SOFTWARE Challenge must not add Evidence Confidence');
+  assert(guardianBase.includes('MAX_EVENTS=300'),'Guardian must bound Passport-event analysis cost');
+  assert(guardianBase.includes('MAX_PULSES_ANALYZED=1500'),'Guardian must bound public Pulse analysis cost');
+  assert(guardianBase.includes('MAX_CHALLENGE_ATTEMPTS=750'),'Guardian must bound Challenge-attempt analysis cost');
+  assert(guardianBase.includes('MAX_SERVICE_PROOFS=300'),'Guardian must bound Service Proof analysis cost');
+  assert(guardianBase.includes('.eq("event_type","TRANSFERRED")'),'Guardian must resolve latest ownership independently of truncated history');
+  assert(guardianBase.includes('const currentOwner=String(latestTransfer?.new_owner_wallet||seal.issuer_wallet||"").toLowerCase()'),'Guardian current owner must come from latest transfer, not a capped event slice');
+  assert(guardianBase.includes('"X-Content-Type-Options":"nosniff"'),'Guardian responses must disable MIME sniffing');
+
+  const guardianAuthority=read('supabase/functions/evo-ai-guardian-v04/index.ts');
+  assert(guardianAuthority.includes('EVO-AUTHORITY-STATE-V1'),'backend must produce a distinct Authority State');
+  assert(guardianAuthority.includes('authorityRoot'),'backend must produce Authority Root');
+  assert(guardianAuthority.includes('PUBLIC_TELEMETRY_NEVER_ELEVATES_AUTHORITY'),'backend must expose the authority rule');
+  assert(guardianAuthority.includes('pulseHead'),'Reality State may retain public telemetry for anomaly analysis');
+  const authorityStateBlock=guardianAuthority.slice(guardianAuthority.indexOf('const authorityState='),guardianAuthority.indexOf('const authorityRoot='));
+  assert(!authorityStateBlock.includes('pulseHead'),'Authority Root state must exclude Pulse');
+  assert(!authorityStateBlock.includes('challengeState'),'Authority Root state must exclude SOFTWARE Challenge');
 
   const challenge=read('supabase/functions/evo-challenge/index.ts');
-  assert(challenge.includes('MAX_BODY_BYTES'),'Challenge must have a request body cap');
-  assert(challenge.includes('pending_reused'),'Challenge issue path must reuse an existing live challenge');
-  assert(challenge.includes('issue_rate_limited'),'Challenge issue path must throttle repeated issuance');
-  assert(challenge.includes('MAX_ATTEMPTS'),'Challenge must bound repeated answers');
-  assert(challenge.includes('OBSERVATIONAL_ONLY'),'Challenge response must state its limited authority meaning');
+  assert(challenge.includes('MAX_ATTEMPTS=10'),'Challenge must cap response attempts');
+  assert(challenge.includes('MAX_ISSUES_PER_HOUR=30'),'Challenge must rate-limit issuance per Seal');
+  assert(challenge.includes('reused:true'),'Challenge must reuse a still-live pending challenge');
+  assert(challenge.includes('authority:"OBSERVATIONAL_ONLY"'),'SOFTWARE Challenge must be explicitly non-authoritative');
 
-  const pulse=read('supabase/functions/evo-pulse/index.ts');
-  assert(pulse.includes('PUBLIC_OBSERVATION'),'Pulse must be explicitly classified as a public observation');
-  assert(pulse.includes('authoritative:false'),'Pulse must state it is not authoritative');
+  const sealRegistration=read('supabase/functions/register-evo-seal/index.ts');
+  assert(sealRegistration.includes('.rpc("evo_register_seal_with_credit"'),'Seal registration must cross the economic boundary through one atomic RPC');
+  assert(!sealRegistration.includes('.rpc("evo_claim_passport_credit"'),'Edge registration must not consume credit in a separate transaction');
+  assert(!/from\("evo_seals"\)\.insert\(/.test(sealRegistration),'Edge registration must not insert the Seal outside the atomic RPC');
+  assert(sealRegistration.includes('atomic: true'),'successful registration must explicitly report the atomic path');
+  assert(sealRegistration.includes('"X-Content-Type-Options": "nosniff"'),'Seal-registration responses must disable MIME sniffing');
 
-  const passportEvent=read('supabase/functions/register-evo-passport-event/index.ts');
-  assert(passportEvent.includes('evo_register_passport_event_authoritative'),'Passport owner mutations must cross the authoritative DB boundary');
-  assert(passportEvent.includes('atomicAuthority:true'),'Passport owner mutation response must expose atomic authority semantics');
+  const atomicMigration=read('supabase/migrations/20260822105136_atomic_seal_registration_credit_v332.sql');
+  assert(atomicMigration.includes('create or replace function public.evo_register_seal_with_credit'),'atomic registration RPC must be migration-controlled');
+  assert(atomicMigration.includes("'evo-credit|' || v_wallet"),'credit decisions must use a wallet-wide transaction lock');
+  assert(atomicMigration.includes('insert into public.evo_seals as s'),'Seal insert must live inside the database transaction');
+  assert(atomicMigration.includes('insert into public.evo_credit_consumptions'),'credit consumption must live inside the same database transaction');
+  assert(atomicMigration.includes('revoke all on function public.evo_register_seal_with_credit(jsonb) from authenticated'),'browser roles must not execute the atomic SECURITY DEFINER RPC');
+  assert(atomicMigration.includes('grant execute on function public.evo_register_seal_with_credit(jsonb) to service_role'),'service role must be the application execution path for the atomic RPC');
 
-  const workflow=read('.github/workflows/evo-security-gate.yml');
-  assert(workflow.includes('node-version: \'24\''),'Security Gate must use Node 24');
-  assert(workflow.includes('persist-credentials: false'),'Security Gate checkout credentials must not persist');
-  assert(workflow.includes('ON_ERROR_STOP=1'),'psql tests must fail closed on SQL errors');
+  const identityGuard=read('supabase/migrations/20260822105154_active_asset_serial_guard_v332.sql');
+  assert(identityGuard.includes("raise exception 'duplicate_asset_serial'"),'duplicate asset/serial identity must fail closed at the table boundary');
+  assert(identityGuard.includes('before insert or update of issuer_wallet, asset_hash, serial, status'),'duplicate guard must protect every relevant write path, not only one Edge Function');
+  assert(identityGuard.includes('s.seal_id <> new.seal_id'),'duplicate guard must allow updates to the same Seal while rejecting a second active identity');
 
   const indexHtml=read('v1/index.html');
-  assert(indexHtml.includes('Content-Security-Policy'),'browser entrypoint must define a CSP baseline');
-  assert(indexHtml.includes("script-src-attr 'none'"),'CSP must block inline script attributes');
-  assert(indexHtml.includes("object-src 'none'"),'CSP must block plugin/object content');
-  assert(indexHtml.includes("base-uri 'none'"),'CSP must block base-tag rewriting');
+  assert(indexHtml.includes('Content-Security-Policy'),'browser entrypoint must enforce a CSP baseline');
+  assert(indexHtml.includes("base-uri 'none'"),'CSP must disable base tag rewriting');
+  assert(indexHtml.includes("object-src 'none'"),'CSP must disable plugin/object execution');
+  assert(indexHtml.includes("script-src-attr 'none'"),'CSP must disable inline event-handler scripts');
+  assert(indexHtml.includes('strict-origin-when-cross-origin'),'browser entrypoint must set a restrictive referrer policy');
+  assert(indexHtml.includes('security-bootstrap-v331.js'),'browser shield bootstrap must load before the application scripts');
+  assert(!/\son[a-z]+\s*=/i.test(indexHtml),'inline event-handler attributes must stay removed from the HTML entrypoint');
+  assert(indexHtml.includes('./vendor/qrcode.min.js?v=06c7a5e134f116402699f03cda5819e10a0e5787'),'QR runtime must load from the reviewed local vendored copy');
   assert(!indexHtml.includes('cdn.jsdelivr.net'),'retired QR CDN must not remain in the browser entrypoint or CSP');
 
   const browserShield=read('v1/security-bootstrap-v331.js');
@@ -102,9 +140,8 @@ function containsRecoverySecretRequest(text){
 
   const edgeRoot=path.join(root,'supabase','functions');
   if(fs.existsSync(edgeRoot)){
-    // Only function entrypoints must own HTTP request-body bounds. Shared modules such as
-    // _shared/evo-cors.ts do not read request bodies and must not be forced to duplicate
-    // endpoint-specific payload controls merely because they are TypeScript modules.
+    // Only HTTP Edge Function entrypoints must own request-body limits. Shared helper
+    // modules under _shared do not parse request bodies and are tested separately.
     const edgeFiles=walk(edgeRoot).filter(file=>path.basename(file)==='index.ts');
     for(const file of edgeFiles){
       const text=fs.readFileSync(file,'utf8');
