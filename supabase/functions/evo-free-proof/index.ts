@@ -13,9 +13,15 @@ function requestIp(req:Request){
   const forwarded=String(req.headers.get("x-forwarded-for")||"").split(",")[0].trim();
   return String(req.headers.get("cf-connecting-ip")||req.headers.get("x-real-ip")||forwarded||"").trim().slice(0,128);
 }
+function serverPepper(){
+  const dedicated=String(Deno.env.get("EVO_TRIAL_PEPPER")||"");
+  if(dedicated.length>=32)return dedicated;
+  const serviceRole=String(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"");
+  if(serviceRole.length>=32)return `EVO-FREE-V400|FALLBACK|${serviceRole}`;
+  throw new Error("trial_guard_not_configured");
+}
 async function signalHashes(req:Request,clientId:string){
-  const pepper=String(Deno.env.get("EVO_TRIAL_PEPPER")||"");
-  if(pepper.length<32)throw new Error("trial_guard_not_configured");
+  const pepper=serverPepper();
   const ip=requestIp(req);if(!ip)throw new Error("trial_network_signal_unavailable");
   return {
     clientHash:await sha256(`EVO-FREE-V400|CLIENT|${pepper}|${clientId}`),
