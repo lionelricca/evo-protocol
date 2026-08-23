@@ -16,7 +16,7 @@ The baseline commit passed:
 - EVO navigation checks;
 - EVO navigation V2.7.3 checks.
 
-A green branch is **not** the same as a complete production rollout. Some security controls still require explicit deployment, infrastructure configuration or independent verification. See `docs/RELEASE_READINESS_V400.md` and `docs/SECURITY.md` before promoting the RC.
+A green branch is **not** the same as a complete production rollout. Some security controls still require explicit deployment, infrastructure configuration or independent verification. See `docs/RELEASE_READINESS_V400.md`, `docs/PRODUCTION_DEPLOYMENT_V400.md` and `docs/SECURITY.md` before promoting the RC.
 
 ## Product model
 
@@ -124,30 +124,35 @@ Current code includes, among other controls:
 - atomic economic/ownership state transitions;
 - local vendored QR dependency;
 - browser CSP baseline;
-- exact-origin CORS policy on the first set of privileged browser endpoints;
+- exact-origin CORS policy on critical browser-write endpoints;
 - explicit separation between observational and authoritative trust.
 
-Important remaining release gates include branch protection, production-edge security headers, additional CORS rollout review, CSP reduction after browser/network inventory, a real production atomic-Seal E2E test, auditable cleanup of historical test state, rollback/key-rotation procedures and independent penetration/security review.
+Important remaining release gates include branch protection, production-edge security headers, Battery Passport CORS review, CSP reduction after browser/network inventory, a real production atomic-Seal E2E test, auditable cleanup of historical test state, rollback/key-rotation procedures and independent penetration/security review.
 
 EVO must not be described as “unhackable”, “hacker-proof” or “100% secure”.
 
 ## Repository map
 
-- `index.html` — hardened root launcher into the current application.
-- `v1/` — current static browser application.
-- `supabase/functions/` — Edge Functions and shared browser-origin policy.
-- `supabase/migrations/` — PostgreSQL/RLS/atomic authority migrations.
-- `tests/` — JavaScript regression checks and SQL/concurrency tests.
-- `security/` — threat model and production-alignment audit material.
-- `standards/` — trust/authority and interoperability building blocks.
-- `schemas/` — portable schemas.
-- `docs/` — architecture, verticals, ISMS preparation and release/security documentation.
-- `DEVELOPMENT.md` — reproducible local-development workflow.
-- `docs/RELEASE_READINESS_V400.md` — current RC audit, blockers and promotion sequence.
+- `index.html` — root launcher into the current web application;
+- `v1/` — current static EVO browser application;
+- `supabase/functions/` — server authority/payment/lifecycle Edge Functions;
+- `supabase/migrations/` — PostgreSQL/RLS/RPC migration history;
+- `tests/` — JavaScript and SQL regression/security checks;
+- `DEVELOPMENT.md` — reproducible development, testing and release workflow;
+- `docs/RELEASE_READINESS_V400.md` — RC security/release audit and remaining gates;
+- `docs/PRODUCTION_DEPLOYMENT_V400.md` — production Edge Function/migration inventory and code-vs-deployment drift boundary;
+- `docs/ARCHITECTURE.md` — architecture and roadmap;
+- `docs/REALITY_GRAPH.md` — evolving proof graph and EVO Reality Levels;
+- `docs/ISSUER_TRUST.md` — issuer evidence model;
+- `docs/NFC_ARCHITECTURE.md` — secure physical-proof architecture;
+- `docs/ORGANIZATION_EVIDENCE.md` — organization evidence model;
+- `docs/SECURITY.md` — security rules and release gates;
+- `security/THREAT_MODEL.md` — threat model;
+- `contracts/` — smart-contract experiments; no new production contract should be promoted without separate testing/review.
 
-## Local development
+## Development
 
-The frontend has no required JavaScript build step. Node is used to standardize regression commands.
+The frontend is intentionally build-light. Node is used to standardize regression tests, not to ship a large runtime dependency tree.
 
 ```bash
 npm test
@@ -158,34 +163,18 @@ npm run test:navigation
 npm run test:release
 ```
 
-For complete setup, Supabase local development, migrations and security rules, use `DEVELOPMENT.md`.
+Run the static app locally with any HTTP server, for example:
 
-## Release discipline
+```bash
+python3 -m http.server 8000
+```
 
-1. Work on a branch, never directly on `main`.
-2. Keep code state and production-deployment state separate.
-3. Add regression coverage for every bug/security change.
-4. Never commit privileged secrets.
-5. Preserve signed/history records; use auditable lifecycle actions instead of silent deletion.
-6. Keep economic and ownership transitions atomic and idempotent.
-7. Do not weaken CORS/CSP/RLS to make local development easier.
-8. Promote an RC only after the gates in `docs/SECURITY.md` and `docs/RELEASE_READINESS_V400.md` are satisfied.
+Then open `http://localhost:8000/v1/`.
 
-## Development roadmap
+Read `DEVELOPMENT.md` before changing Supabase functions, migrations, CORS, payment logic or deployment state.
 
-Immediate sequence for the RC:
+## Release rule
 
-1. production deployment inventory;
-2. real browser-to-production atomic Seal E2E validation;
-3. remaining privileged endpoint CORS rollout with compatibility tests;
-4. browser network inventory and CSP narrowing;
-5. production-edge headers and protected `main`;
-6. rollback/incident/key-rotation drill;
-7. independent security review;
-8. production release decision.
+Do not treat a passing GitHub branch as evidence that production has been updated. Before release, reconcile the exact deployed frontend commit, Edge Function versions, applied migrations, trusted origins and rollback plan against `docs/PRODUCTION_DEPLOYMENT_V400.md`.
 
-After the security/release baseline is complete, product expansion can continue around Document Provenance/EVO Origin, stronger issuer authority, standards interoperability and secure physical binding where there is a validated market need.
-
-## Important
-
-EVO is evidence infrastructure. Its assurance level comes from the quality and independence of the evidence attached to a record—not from the existence of a QR code alone.
+Do not promote new economic, ownership, lifecycle or high-assurance behavior directly to `main` without tests and review.
