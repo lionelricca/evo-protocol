@@ -16,40 +16,36 @@ A checked item means evidence exists for the exact release candidate being shipp
 ## B. Code consolidation
 
 - [x] V3.3 security-hardening foundation carried into V4.0 RC.
-- [x] EVO Origin provenance profile carried forward.
-- [x] Local exact-file verifier carried forward.
-- [x] Origin issuer-authority UI carried forward.
-- [x] Production-addressable JSON schema IDs replace placeholder EVO domains.
-- [x] V4 homepage/product positioning audited and bilingual mappings added for the new Origin-first copy.
-- [x] Service Proof ownership-sensitive creation now shares the per-Seal Asset Authority lock; provider countersigning is serialized and retry-safe.
-- [x] Exact-origin browser CORS extended to Passport Event, Service Proof, Reality Continuity and Document Lifecycle in addition to checkout/Seal/wallet/issuer/domain/organization.
-- [ ] Complete compatibility decision for the two remaining mixed-action endpoints: **Passport Transfer** and **Battery Passport**. Both combine read/discovery/export behavior with signed mutations, so they must not be mechanically restricted until their public-integration path is separated or explicitly accepted.
+- [x] EVO Origin provenance profile, exact-file verifier and issuer-authority UI carried forward.
+- [x] Production-addressable JSON-LD/schema identifiers replace placeholder EVO domains.
+- [x] V4 homepage/product positioning audited and bilingual mappings added for the Origin-first copy.
+- [x] Service Proof creation shares the per-Seal Asset Authority lock; provider countersigning is serialized and retry-safe.
+- [x] Reality Continuity checkpoint commit now shares the per-Seal Asset Authority lock and revalidates live evidence/current owner/chain parent inside the database transaction.
+- [x] Exact-origin browser CORS covers Passport Event, Service Proof, Reality Continuity and Document Lifecycle in addition to checkout/Seal/wallet/issuer/domain/organization.
+- [ ] Complete compatibility decision for the two remaining mixed-action endpoints: **Passport Transfer** and **Battery Passport**.
 - [ ] Dead/legacy product copy and unreachable code audited after final UI smoke test.
 
 ## C. Automated verification
 
-Fully green V4.0 RC baseline confirmed on commit `6cb3854f8d56adcb620bc8cd4d7350827671dd30` after the Service Proof authority and expanded CORS rollout:
+Fully green V4.0 RC baseline confirmed on commit `b8c4312934a8c2c490084fefc3b22e7f4ea80f67`:
 
 - [x] EVO Security Gate.
+- [x] EVO Release Readiness checks.
+- [x] EVO Release Bundle.
 - [x] EVO Document Proof checks.
 - [x] EVO Service Proof checks.
 - [x] EVO navigation checks.
 - [x] EVO navigation V2.7.3 checks.
-- [x] EVO Origin provenance test.
-- [x] EVO Origin exact-file verifier test.
-- [x] EVO Origin issuer-authority test.
-- [x] V4.0 project-truth/release-contract test.
-- [x] W3C VC Data Model unsecured-export boundary test.
-- [x] V4 Service Proof Authority static checks.
-- [x] V4 Service Proof Authority PostgreSQL runtime suite.
-- [x] Expanded CORS rollout regression test.
-- [x] PostgreSQL 17 atomic/concurrency suite.
+- [x] EVO Origin provenance / exact-file / issuer-authority tests.
+- [x] V4 project-truth and W3C VC unsecured-export tests.
+- [x] V4 Service Proof Authority static + PostgreSQL runtime tests.
+- [x] V4 Reality Continuity Authority static + PostgreSQL runtime tests.
+- [x] Expanded CORS regression test.
+- [x] PostgreSQL 17 atomic/concurrency suites.
 
 Any commit after this baseline must pass the same full gate again before release.
 
 ## D. Real browser smoke test
-
-Run from the actual official frontend, not only CI:
 
 - [ ] Open EVO from a clean browser session.
 - [ ] Connect MetaMask/wallet successfully.
@@ -57,25 +53,24 @@ Run from the actual official frontend, not only CI:
 - [ ] Confirm Free Proof availability for an eligible first-use wallet.
 - [ ] Create one real EVO Proof through the atomic registration path.
 - [ ] Verify the generated public QR/link.
-- [ ] For a document, drop the exact local file and receive exact-match status.
-- [ ] Modify one byte / use a different file and receive mismatch status.
+- [ ] For a document, verify exact-file match and modified-file mismatch.
 - [ ] Confirm revoked/superseded version messaging where test data exists.
-- [ ] Confirm issuer name is labelled declared unless organization evidence is active.
-- [ ] Confirm English/Spanish switch preserves all critical product/security wording.
-- [ ] Test paid checkout/recovery with a deliberately small controlled transaction only when production deployment is authorized.
+- [ ] Confirm declared issuer naming vs active organization verification.
+- [ ] Confirm ES/EN critical wording.
+- [ ] Test paid checkout/recovery only with a controlled transaction and explicit production authorization.
 
 ## E. Backend production gate — explicit approval required
 
-Before deployment, compare Git migration history with the observed production migration history.
+Read-only inventory is documented in `docs/PRODUCTION_INVENTORY_V400.md`.
 
-- [ ] Review which V3.3.x/V4 migrations and functions are already deployed versus branch-only.
-- [ ] Deploy any required database migration before the Edge Function that depends on it.
-- [ ] Deploy V4 Service Proof Authority migration before the matching `evo-service-proof` Edge Function.
-- [ ] Deploy V3.3.15 Document Lifecycle only after explicit approval.
-- [ ] Deploy V3.3.17 Checkout Privacy only after explicit approval.
-- [ ] Deploy Origin/CORS-dependent functions together with the shared helper only after official origins are confirmed.
+- [x] Production migration/function inventory reviewed read-only.
+- [x] Production drift identified: Service Proof authoritative RPCs are not deployed; production Service Proof still uses a direct write path.
+- [x] Production drift identified: Reality Continuity production v4 still directly inserts checkpoints after Edge-side checks.
+- [ ] Deploy V4 Service Proof Authority migration before matching `evo-service-proof` Edge Function.
+- [ ] Deploy V4 Reality Continuity Authority migration before matching `evo-reality-continuity` Edge Function.
+- [ ] Confirm/deploy any remaining branch-only Checkout Privacy / CORS / lifecycle function changes in dependency order.
 - [ ] Run post-deployment read-only RLS/RPC/security audit.
-- [ ] Confirm no orphan credit consumption and no paid-credit counter mismatch.
+- [ ] Confirm zero orphan credit consumption and paid-credit counter consistency.
 - [ ] After a successful real atomic Seal creation, retire the legacy service-role credit RPC if compatibility permits.
 
 ## F. Repository/release integrity
@@ -84,7 +79,7 @@ Before deployment, compare Git migration history with the observed production mi
 - [ ] Require Security Gate and critical functional checks before merge.
 - [x] GitHub Actions remain pinned to immutable commit SHAs under the Security Gate.
 - [ ] Decide repository licensing/copyright policy explicitly; do not infer an open-source license.
-- [x] Stale stacked PRs #33, #43, #44, #45 and #46 were closed unmerged after their useful/corrected content was consolidated into PR #49.
+- [x] Stale stacked PRs #33, #43, #44, #45 and #46 were closed unmerged after consolidation into PR #49.
 - [ ] Create final release/tag only after merge and production smoke verification.
 
 ## G. Historical production data
@@ -92,18 +87,18 @@ Before deployment, compare Git migration history with the observed production mi
 - [ ] Resolve historical duplicate test identity `V1-TEST-001` using an auditable lifecycle action.
 - [x] No historical production record was silently deleted or mutated during RC consolidation.
 
-## H. High-assurance/enterprise claims
+## H. High-assurance / enterprise claims
 
-These are **not blockers for the first commercial pilot**, but they are blockers for stronger security/certification claims:
+These are not blockers for the first commercial pilot, but are blockers for stronger assurance claims:
 
 - [ ] Header-capable production edge provides response CSP, HSTS, `frame-ancestors`, `X-Content-Type-Options` and reviewed Permissions-Policy.
-- [ ] Remaining CSP `connect-src`, `frame-src` and style-attribute allowances are narrowed after wallet/payment compatibility inventory.
-- [ ] Independent penetration test completed and findings remediated.
+- [ ] Narrow remaining CSP `connect-src`, `frame-src` and style-attribute allowances after compatibility inventory.
+- [ ] Independent penetration/security review completed and findings remediated.
 - [ ] Formal ISO/IEC 27001 scope/gap assessment started if commercially justified.
-- [ ] Any accredited/qualified trust-service integration is validated before corresponding claims appear in UI.
+- [ ] Accredited/qualified trust-service integrations validated before corresponding claims appear in UI.
 
 ## Release decision
 
-V4.0 can be called **commercial pilot ready** when sections A–G that apply to the pilot are complete and the owner explicitly authorizes the production deployment/merge.
+V4.0 can be called **commercial pilot ready** when applicable sections A–G are complete and the owner explicitly authorizes production deployment/merge.
 
 It must not be called “unhackable”, “100% secure”, “legally original”, “W3C certified”, “ISO certified” or “qualified” without independent evidence supporting that exact statement.
