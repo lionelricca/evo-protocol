@@ -84,6 +84,8 @@ jobs:
         run: node tests/vc-dm-export-v400.test.mjs
       - name: Run V4.0 Service Proof authority checks
         run: node tests/service-proof-authority-v400.test.js
+      - name: Run V4.0 expanded CORS rollout checks
+        run: node tests/cors-rollout-v400.test.js
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -157,4 +159,4 @@ jobs:
       - name: Test Battery atomic registration
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, exact-origin CORS on guarded browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Service Proof ownership/countersign authority, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, expanded exact-origin CORS on guarded browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Service Proof ownership/countersign authority, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
