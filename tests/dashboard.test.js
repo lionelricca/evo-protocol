@@ -42,8 +42,8 @@ test('V2.5.2 uses one filtered EVO asset library',()=>{
   assert.doesNotMatch(code,/myEvoColumns/);
 });
 
-test('V2.5.2 loader pins current dashboard assets',()=>{
+test('V4 RC loader pins current dashboard assets',()=>{
   const code=loader();
   assert.match(code,/dashboard-v252\.css\?v=20260821-v252-library/);
-  assert.match(code,/dashboard\.js\?v=20260821-v252-library/);
+  assert.match(code,/dashboard\.js\?v=20260823-v400-wallet-switch/);
 });
