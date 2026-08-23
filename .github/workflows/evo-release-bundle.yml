@@ -1,0 +1,37 @@
+name: EVO Release Bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/evo-v401-release-readiness
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Build source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          zip -qr EVO_Protocol_V4_RC1.zip . \
+            -x '.git/*' \
+               'EVO_Protocol_V4_RC1.zip'
+          sha256sum EVO_Protocol_V4_RC1.zip > EVO_Protocol_V4_RC1.zip.sha256
+      - name: Upload source ZIP
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evo-protocol-v4-rc1-source
+          path: |
+            EVO_Protocol_V4_RC1.zip
+            EVO_Protocol_V4_RC1.zip.sha256
+          retention-days: 14
+          if-no-files-found: error
