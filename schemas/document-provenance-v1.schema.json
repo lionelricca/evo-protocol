@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lionelricca.github.io/evo-protocol/schemas/document-provenance-v1.schema.json",
+  "title": "EVO Document Provenance Record v1",
+  "type": "object",
+  "required": ["profile", "id", "sealId", "createdAt", "integrity", "issuer", "provenance", "verificationUrl", "evidence", "semantics"],
+  "properties": {
+    "profile": {"const": "EVO-DOCUMENT-PROVENANCE-V1"},
+    "id": {"type": "string", "minLength": 12},
+    "sealId": {"type": "string", "minLength": 8},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "subject": {
+      "type": "object",
+      "properties": {
+        "filename": {"type": "string"},
+        "mimeType": {"type": "string"},
+        "reference": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["algorithm", "digest"],
+      "properties": {
+        "algorithm": {"const": "SHA-256"},
+        "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "issuer": {
+      "type": "object",
+      "required": ["wallet", "domain", "domainBindingStatus"],
+      "properties": {
+        "wallet": {"type": "string"},
+        "domain": {"type": "string"},
+        "domainBindingStatus": {"enum": ["UNVERIFIED", "EVO_VERIFIED"]}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["relationship", "parentDigest"],
+      "properties": {
+        "relationship": {"enum": ["ORIGIN_DECLARED", "DERIVED_FROM"]},
+        "parentDigest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "verificationUrl": {"type": "string", "format": "uri"},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["type", "validationStatus"],
+        "properties": {
+          "type": {"enum": ["EVO_FILE_HASH", "RFC3161_TIMESTAMP", "PADES_SIGNATURE", "C2PA_CONTENT_CREDENTIAL", "W3C_VERIFIABLE_CREDENTIAL", "QUALIFIED_TRUST_SERVICE"]},
+          "validationStatus": {"enum": ["VALIDATED", "UNVERIFIED"]},
+          "authority": {"type": "string"},
+          "reference": {"type": "string"},
+          "validator": {"type": "string"},
+          "validatedAt": {"type": ["string", "null"], "format": "date-time"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "required": ["provesExactFileMatch", "provesIssuerDeclaration", "provesContentTruth", "provesLegalOriginality"],
+      "properties": {
+        "provesExactFileMatch": {"const": true},
+        "provesIssuerDeclaration": {"const": true},
+        "provesContentTruth": {"const": false},
+        "provesLegalOriginality": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
