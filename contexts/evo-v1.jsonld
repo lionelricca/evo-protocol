@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "EvoProofCredential": "https://lionelricca.github.io/evo-protocol/vocab#EvoProofCredential",
+    "evoId": "https://lionelricca.github.io/evo-protocol/vocab#evoId",
+    "proofType": "https://lionelricca.github.io/evo-protocol/vocab#proofType",
+    "subjectType": "https://lionelricca.github.io/evo-protocol/vocab#subjectType",
+    "reference": "https://lionelricca.github.io/evo-protocol/vocab#reference",
+    "digestAlgorithm": "https://lionelricca.github.io/evo-protocol/vocab#digestAlgorithm",
+    "digest": "https://lionelricca.github.io/evo-protocol/vocab#digest",
+    "verificationUrl": {
+      "@id": "https://lionelricca.github.io/evo-protocol/vocab#verificationUrl",
+      "@type": "@id"
+    },
+    "evidenceLevel": "https://lionelricca.github.io/evo-protocol/vocab#evidenceLevel"
+  }
+}
