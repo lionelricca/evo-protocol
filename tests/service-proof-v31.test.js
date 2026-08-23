@@ -6,6 +6,7 @@ const client=fs.readFileSync('v1/service-proof-v31.js','utf8');
 const css=fs.readFileSync('v1/service-proof-v31.css','utf8');
 const index=fs.readFileSync('v1/index.html','utf8');
 const migration=fs.readFileSync('supabase/migrations/20260821204500_add_service_proofs.sql','utf8');
+const authorityMigration=fs.readFileSync('supabase/migrations/20260823180000_service_proof_authority_v400.sql','utf8');
 const edge=fs.readFileSync('supabase/functions/evo-service-proof/index.ts','utf8');
 const schema=fs.readFileSync('schemas/service-proof-v1.schema.json','utf8');
 
@@ -30,8 +31,16 @@ assert(edge.includes('verifyMessage'),'Backend must cryptographically verify sig
 assert(edge.includes('MAX_BODY_BYTES'),'Backend must cap payload size');
 assert(edge.includes('actor_is_not_current_owner'),'Only the current owner may create a Service Proof');
 assert(edge.includes('only_designated_provider_can_countersign'),'Only the designated provider may countersign');
-assert(edge.includes('countersign_conflict'),'Countersign races must fail closed');
+assert(edge.includes('evo_register_service_proof_authoritative'),'Service Proof creation must use the authoritative atomic RPC');
+assert(edge.includes('evo_countersign_service_proof_authoritative'),'Service Proof countersign must use the authoritative atomic RPC');
+assert(edge.includes('already_countersigned'),'Conflicting countersign attempts must fail closed');
 assert(edge.includes('canonical(value:unknown)'),'Service digest must use canonical structured data');
 assert(schema.includes('PROVIDER_COUNTERSIGNED'),'Schema must expose the countersigned evidence level');
 
-console.log('EVO V3.1 Service Proof checks passed');
+assert(authorityMigration.includes("pg_advisory_xact_lock(pg_catalog.hashtextextended('evo-asset-authority|' || v_seal_id, 0))"),'Service Proof creation must serialize against ownership changes for the same Seal');
+assert(authorityMigration.includes('for update;'),'Countersign races must serialize on the Service Proof row');
+assert(authorityMigration.includes("raise exception 'already_countersigned'"),'A second different countersignature must fail closed');
+assert(authorityMigration.includes('revoke all on function public.evo_register_service_proof_authoritative(jsonb) from anon'),'Atomic creation RPC must not be callable directly by anonymous browsers');
+assert(authorityMigration.includes('revoke all on function public.evo_countersign_service_proof_authoritative(jsonb) from authenticated'),'Atomic countersign RPC must not be callable directly by authenticated browsers');
+
+console.log('EVO V4.0 Service Proof authority checks passed');
