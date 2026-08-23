@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const MAX_BODY_BYTES=32768;
 const walletRe=/^0x[0-9a-f]{40}$/;
 const hex64=/^[0-9a-f]{64}$/;
@@ -12,7 +12,7 @@ const sealRe=/^EVO-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/;
 const allowed=new Set(["INSPECTED","SERVICED","REPAIRED","COMMISSIONED","WARRANTY","COMPONENT_REPLACED","METER_READING","NOTE"]);
 const meterKinds=new Set(["HOURS","ODOMETER_KM","CYCLES","OTHER"]);
 
-function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json"}})}
+function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
 function canonical(value:unknown):string{
   if(Array.isArray(value))return `[${value.map(canonical).join(",")}]`;
   if(value&&typeof value==="object"){
@@ -24,8 +24,7 @@ function canonical(value:unknown):string{
 async function sha256(text:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("")}
 function cleanText(value:unknown,max:number){return String(value||"").trim().slice(0,max)}
 
-Deno.serve(async(req)=>{
-  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+async function handle(req:Request){
   if(req.method!=="POST")return json({error:"method_not_allowed"},405);
   try{
     const raw=await req.text();
@@ -139,4 +138,12 @@ Deno.serve(async(req)=>{
 
     return json({error:"invalid_action"},400);
   }catch(err){console.error(err);return json({error:err instanceof Error?err.message:"internal_error"},500)}
+}
+
+Deno.serve(async(req:Request)=>{
+  const preflight=restrictedPreflight(req);
+  if(preflight)return preflight;
+  const denied=rejectUntrustedBrowserOrigin(req);
+  if(denied)return denied;
+  return withRestrictedCors(req,await handle(req));
 });
