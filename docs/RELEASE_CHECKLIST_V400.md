@@ -23,11 +23,13 @@ A checked item means evidence exists for the exact release candidate state noted
 - [x] Reality Continuity checkpoint commit shares the per-Seal Asset Authority lock and revalidates live evidence/current owner/chain parent inside the database transaction.
 - [x] Exact-origin browser CORS covers checkout, Seal, wallet, issuer, domain, organization, Passport Event, Service Proof, Reality Continuity and Document Lifecycle.
 - [x] Passport Transfer and Battery Passport CORS classification completed: wildcard browser CORS is intentional for their mixed public/integration surfaces; signed/authoritative mutation controls remain the security boundary. See `docs/CORS_POLICY_V400.md`.
-- [ ] Dead/legacy product copy and unreachable code audited after the final real-browser smoke test.
+- [x] Default commercial entrypoint reduced to Origin / Proof / Passport / Verify; dormant Guardian, Pulse and Battery DPP runtime loaders removed from the default page.
+- [x] Unreachable `organization-sync.js` removed after repository-wide load/reference audit.
+- [ ] Final dead/legacy copy and unreachable-code pass after the real-browser smoke test.
 
 ## C. Automated verification
 
-Exact green RC1 code baseline: `3d8ea14394c17054717b5fb4d06ed490c00231a4`.
+Exact green RC1 code baseline: `9d0512fe4b6ee50fd84f3b329fcf02afeb2a58bd`.
 
 All workflows completed successfully on that exact head:
 
@@ -44,11 +46,12 @@ All workflows completed successfully on that exact head:
 - [x] V4 Reality Continuity Authority static + PostgreSQL runtime tests.
 - [x] Final browser CORS classification regression test.
 - [x] PostgreSQL 17 atomic/concurrency suites.
+- [x] Full source-bundle Node suite: 55/55 passing.
 
 RC1 source artifact generated from that head:
 
 - artifact: `evo-protocol-v4-rc1-source`;
-- SHA-256: `4218c256d0440dd913a2ebd6ef417f596780a32b69069b28bbdddd4c89e7bddf`.
+- GitHub artifact SHA-256: `53aca3251b3b15ee7820890ac6b31c7bfaabf6230d3c06ca7ad20bf3b180ece9`.
 
 Documentation-only commits after this baseline must still complete CI before final promotion.
 
