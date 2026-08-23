@@ -39,6 +39,8 @@
     const status=document.getElementById('demoPlanStatus');
     const value=document.getElementById('demoPlanValue');
     const action=document.getElementById('demoPlanAction');
+    const scope=document.querySelector('#demoPlanCard .sub');
+    if(scope)scope.textContent=text('1 por usuario elegible','1 per eligible user');
     if(!status||!value||!action)return;
     if(!data.freeProofGuardReady){
       value.textContent=text('Protección activándose','Security upgrade pending');
@@ -49,7 +51,7 @@
       return;
     }
     if(data.demoAvailable){
-      status.textContent=text('Tu primer Free Proof está disponible después de validar elegibilidad antifraude. No depende sólo de crear una wallet nueva.','Your first Free Proof is available after anti-fraud eligibility checks. Creating a new wallet alone is not enough.');
+      status.textContent=text('Tu primer Free Proof está disponible después de validar elegibilidad antifraude. Crear otra wallet no reinicia el beneficio.','Your first Free Proof is available after anti-fraud eligibility checks. Creating another wallet does not reset the benefit.');
       return;
     }
     if(!data.paidCapability){
@@ -104,5 +106,6 @@
     const wallet=event.detail?.account;if(!walletRe.test(String(wallet||'')))return;
     setTimeout(()=>{try{window.evoRefreshEntitlement?.(wallet)}catch{}},60);
   });
+  applyCopy({freeProofGuardReady:false});
   console.info('EVO Free Proof',{policy:POLICY,mode:'WALLET + CLIENT + ANONYMIZED NETWORK / FAIL CLOSED'});
 })();
