@@ -64,16 +64,24 @@ assert(i18n.includes("'Verificá documentos. Conservá evidencia.':'Verify docum
 assert(truth.includes('EVO Pulse and the public SOFTWARE Challenge are observational'),'project truth must preserve telemetry authority rule');
 assert(checklist.includes('Protect `main`'),'release checklist must keep branch protection as a gate');
 
-const scanRoots=['README.md','docs','v1','standards','schemas'];
-const forbidden=[/Alexis Paredes/i,/evoprotocol\.io/i];
 function walk(target){
   const absolute=path.join(root,target);
   const stat=fs.statSync(absolute);
   if(stat.isFile())return [absolute];
   return fs.readdirSync(absolute,{withFileTypes:true}).flatMap(entry=>walk(path.join(target,entry.name)));
 }
+
+const browserFiles=walk('v1').filter(file=>/\.(?:html|js|css)$/i.test(file));
+for(const file of browserFiles){
+  const text=fs.readFileSync(file,'utf8');
+  assert(!text.includes('0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f'),`legacy EVO token contract found in browser code: ${path.relative(root,file)}`);
+  assert(!/US\$\s*39(?:[,.]00)?(?:\s*\/\s*mes|\s*\/\s*month|\s+monthly)?/i.test(text),`inactive US$39 company plan found in browser code: ${path.relative(root,file)}`);
+}
+
+const scanRoots=['README.md','docs','v1','standards','schemas','contexts'];
+const forbidden=[/Alexis Paredes/i,/evoprotocol\.io/i];
 for(const file of scanRoots.flatMap(walk)){
-  if(!/\.(?:md|html|js|mjs|json|css)$/i.test(file))continue;
+  if(!/\.(?:md|html|js|mjs|json|css|jsonld)$/i.test(file))continue;
   const text=fs.readFileSync(file,'utf8');
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
