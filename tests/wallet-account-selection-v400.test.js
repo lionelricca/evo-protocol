@@ -9,19 +9,21 @@ const session=fs.readFileSync(path.join(__dirname,'..','v1','wallet-session-v277
 
 assert.match(connector,/function chooseAccount\(entry,accounts\)/,'explicit connect must choose an account inside a multi-account provider');
 assert.match(connector,/MetaMask autorizó más de una cuenta/,'multi-account ambiguity must be visible to the user');
-assert.match(connector,/explicitPreferenceKey='evo-wallet-explicit-v400'/,'connector must keep explicit account choice separate from generic restore state');
-assert.match(connector,/rememberExplicitPreference\(entry,normalized\)/,'explicit account choice must become authoritative for startup');
-assert.match(connector,/wallet_revokePermissions/,'re-selecting an already connected account must be able to revoke the stale account permission');
+assert.match(connector,/explicitPreferenceKey='evo-wallet-explicit-v400'/,'connector must keep explicit account choice separate from generic preference state');
+assert.match(connector,/rememberExplicitPreference\(entry,normalized\)/,'explicit account choice may be remembered for the next chooser');
+assert.match(connector,/wallet_revokePermissions/,'re-selecting an already connected account must be able to revoke stale account permission');
 assert.match(connector,/requestAccounts\(selected\.provider,\{forceReselect\}\)/,'explicit re-selection must request a fresh provider account decision');
-assert.match(connector,/eth_requestAccounts/,'fresh re-selection must reopen the wallet account chooser');
+assert.match(connector,/eth_requestAccounts/,'wallet access must happen only after explicit user connect/re-select action');
 assert.match(connector,/evoConnectWallet\(\{forceReselect:connected\}\)/,'the connected-wallet button must enter account re-selection instead of silently reusing the old account');
 assert.doesNotMatch(connector,/accounts\?\.\[0\]/,'connector must never select the first account implicitly');
 
-assert.match(session,/explicitPreferenceKey='evo-wallet-explicit-v400'/,'silent restore must know the explicit account key');
-assert.match(session,/const startupPreference=\(\)=>readExplicitPreference\(\)\|\|readPreference\(\)/,'explicit account choice must outrank generic restore state');
-assert.match(session,/const silentCandidate=\(accounts,pref\)=>/,'silent restore must resolve the preferred account explicitly');
-assert.match(session,/if\(preferred&&valid\.includes\(preferred\)\)return preferred/,'silent restore must prefer the last explicitly selected EVO account');
-assert.match(session,/if\(preferred\)return null/,'silent restore must fail closed instead of falling back to another account');
-assert.doesNotMatch(session,/accounts\.find\(value=>walletRe\.test/,'silent restore must not silently choose the first authorized account');
+assert.match(session,/Explicit wallet connection policy/,'startup policy must explicitly require user wallet action');
+assert.match(session,/button\.textContent='Conectar wallet'/,'every fresh page load must show Conectar wallet');
+assert.match(session,/disconnectForStartup\(\)/,'startup must clear any in-memory wallet state');
+assert.match(session,/evoRestoreWalletSession=async\(\)=>\{\s*disconnectForStartup\(\);\s*return false;/s,'legacy restore API must fail closed instead of reconnecting');
+assert.doesNotMatch(session,/eth_accounts/,'startup/session module must never read injected wallet accounts automatically');
+assert.doesNotMatch(session,/eth_requestAccounts/,'startup/session module must never request wallet accounts automatically');
+assert.doesNotMatch(session,/SESSION_RESTORE/,'silent session restoration must remain disabled');
+assert.doesNotMatch(session,/\brestore\(\);/,'startup must never call a restore routine automatically');
 
-console.log('EVO V4 explicit wallet startup preference regression checks passed');
+console.log('EVO V4 explicit wallet connection on every load regression checks passed');
