@@ -115,6 +115,28 @@
   };
   ensureMyEvoReturn();
 
+  const ensureOriginDocumentModules=()=>{
+    const styles=[
+      ['./document-proof-v30.css?v=20260823-v400-origin','evoDocumentProofV400Style'],
+      ['./document-lifecycle-v30.css?v=20260823-v400-origin','evoDocumentLifecycleV400Style'],
+      ['./document-management-v30.css?v=20260823-v400-origin','evoDocumentManagementV400Style']
+    ];
+    for(const [href,key] of styles){
+      if(document.querySelector(`link[data-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}]`))continue;
+      const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.dataset[key]='true';document.head.appendChild(link);
+    }
+    const scripts=[
+      ['./document-proof-v30.js?v=20260823-v400-origin','evoDocumentProofV400'],
+      ['./document-lifecycle-v30.js?v=20260823-v400-origin','evoDocumentLifecycleV400'],
+      ['./document-management-v30.js?v=20260823-v400-origin','evoDocumentManagementV400']
+    ];
+    for(const [src,key] of scripts){
+      if(document.querySelector(`script[data-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}]`))continue;
+      const script=document.createElement('script');script.src=src;script.async=false;script.dataset[key]='true';document.head.appendChild(script);
+    }
+  };
+  ensureOriginDocumentModules();
+
   const selector=document.getElementById('languageSelect');
   if(!selector)return;
 
