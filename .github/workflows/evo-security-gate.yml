@@ -55,6 +55,11 @@ jobs:
         run: |
           node --check v1/issuer.js
           node --check v1/wallet-autoconnect.js
+      - name: Syntax check Origin browser modules
+        run: |
+          node --check v1/document-proof-v30.js
+          node --check v1/origin-verifier-v322.js
+          node --check v1/origin-authority-v323.js
       - name: Syntax check Reality Continuity
         run: node --check supabase/functions/evo-reality-continuity/index.ts
       - name: Syntax check Passport owner event
@@ -65,6 +70,16 @@ jobs:
         run: node --check supabase/functions/evo-battery-passport/index.ts
       - name: Syntax check Document Lifecycle
         run: node --check supabase/functions/evo-document-lifecycle/index.ts
+      - name: Run V4.0 release-candidate truth checks
+        run: node tests/release-candidate-v400.test.js
+      - name: Run V4.0 Origin provenance checks
+        run: node tests/document-provenance-v321.test.mjs
+      - name: Run V4.0 Origin exact-file verifier checks
+        run: node tests/origin-verifier-v322.test.js
+      - name: Run V4.0 Origin issuer-authority checks
+        run: node tests/origin-authority-v323.test.js
+      - name: Run V4.0 VC Data Model export checks
+        run: node tests/vc-dm-export-v400.test.mjs
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -130,4 +145,4 @@ jobs:
       - name: Test Battery atomic registration
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "Trust authority, local QR supply-chain integrity, root-entry CSP, zero first-party runtime style creators, browser-module syntax, checkout cost controls and exact-balance privacy, exact-origin CORS on checkout/Seal/wallet/issuer/domain/organization browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer offer/accept/cancel state machine, atomic Battery Passport plus initial audit version, atomic Document Lifecycle authority, production migration-history alignment, DPP export claim guards, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, exact-origin CORS on checkout/Seal/wallet/issuer/domain/organization browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
