@@ -3,6 +3,7 @@
 (()=>{
   const walletRe=/^0x[0-9a-fA-F]{40}$/;
   const preferenceKey='evo-wallet-preference-v277';
+  const explicitPreferenceKey='evo-wallet-explicit-v400';
   const announced=[];
   const bound=new WeakSet();
 
@@ -15,7 +16,10 @@
     if(provider?.isUniswapWallet||provider?.isUniswap)return 'Uniswap Wallet';
     return 'Wallet EVM';
   };
-  const readPreference=()=>{try{return JSON.parse(localStorage.getItem(preferenceKey)||'null')}catch{return null}};
+  const readJson=key=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
+  const readPreference=()=>readJson(preferenceKey);
+  const readExplicitPreference=()=>readJson(explicitPreferenceKey);
+  const startupPreference=()=>readExplicitPreference()||readPreference();
   const remember=(entry,accountValue)=>{try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:entry?.info?.rdns||'',name:entry?.info?.name||providerName(entry?.provider),account:String(accountValue||'').toLowerCase()}))}catch{}};
   const normalizeAccounts=accounts=>[...new Set((Array.isArray(accounts)?accounts:[]).map(value=>String(value||'').toLowerCase()).filter(value=>walletRe.test(value)))];
   const clearAccount=()=>{
@@ -40,7 +44,7 @@
     const injected=Array.isArray(window.ethereum?.providers)?window.ethereum.providers:[];
     injected.forEach(provider=>{if(provider?.request&&!list.some(item=>item.provider===provider))list.push({provider,info:{name:providerName(provider),rdns:'legacy-injected'}})});
     if(window.ethereum?.request&&!list.some(item=>item.provider===window.ethereum))list.push({provider:window.ethereum,info:{name:providerName(window.ethereum),rdns:'legacy-window.ethereum'}});
-    const pref=readPreference();
+    const pref=startupPreference();
     if(pref){
       list.sort((a,b)=>{
         const score=item=>(pref.rdns&&item.info?.rdns===pref.rdns?3:0)+(pref.name&&item.info?.name===pref.name?2:0)+(item.info?.name==='MetaMask'?1:0);
@@ -80,9 +84,9 @@
     provider.on('accountsChanged',accounts=>{
       const valid=normalizeAccounts(accounts);
       if(!valid.length){clearAccount();return;}
-      const pref=readPreference();const preferred=String(pref?.account||'').toLowerCase();
+      const pref=startupPreference();const preferred=String(pref?.account||'').toLowerCase();
       let current='';try{current=String(typeof account!=='undefined'?account:'').toLowerCase()}catch{}
-      const next=(preferred&&valid.includes(preferred))?preferred:(valid.length===1?valid[0]:(current&&valid.includes(current)?current:null));
+      const next=(preferred&&valid.includes(preferred))?preferred:(preferred?null:(valid.length===1?valid[0]:(current&&valid.includes(current)?current:null)));
       if(!next){clearAccount();return;}
       updateUi(entry,next);
     });
@@ -90,7 +94,7 @@
   };
 
   const restore=async()=>{
-    const pref=readPreference();
+    const pref=startupPreference();
     try{
       const existing=String(typeof account!=='undefined'?account:'').toLowerCase();
       const preferred=String(pref?.account||'').toLowerCase();
@@ -111,6 +115,7 @@
         return true;
       }catch{}
     }
+    clearAccount();
     return false;
   };
 
