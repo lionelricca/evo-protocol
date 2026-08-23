@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {
   EVO_VC_DM_EXPORT_PROFILE,
   W3C_VC_CONTEXT,
+  EVO_VC_CONTEXT,
   EVO_VC_SCHEMA_URL,
   buildEvoVcDataModelExport,
   assertSecuredCredential
@@ -23,13 +24,18 @@ const record=buildEvoVcDataModelExport({
 assert.equal(record.profile,EVO_VC_DM_EXPORT_PROFILE);
 assert.equal(record.security.secured,false);
 assert.equal(record.security.status,'UNSECURED_EXPORT');
-assert.equal(record.credential['@context'][0],W3C_VC_CONTEXT);
+assert.deepEqual(record.credential['@context'],[W3C_VC_CONTEXT,EVO_VC_CONTEXT]);
 assert(record.credential.type.includes('VerifiableCredential'));
+assert(record.credential.type.includes('EvoProofCredential'));
 assert.equal(record.credential.credentialSchema.id,EVO_VC_SCHEMA_URL);
+assert.equal(record.credential.credentialSchema.type,'JsonSchema');
+assert(EVO_VC_SCHEMA_URL.endsWith('/schemas/evo-proof-credential-v400.schema.json'),'credentialSchema must identify the credential schema, not the export envelope');
 assert.equal(record.credential.credentialSubject.digest,digest);
 assert(!('proof' in record.credential),'unsecured export must not invent a W3C proof');
 assert(!('credentialStatus' in record.credential),'unimplemented status method must not be invented');
 assert.throws(()=>assertSecuredCredential(record),/credential_not_cryptographically_secured/);
+assert.throws(()=>buildEvoVcDataModelExport({sealId:'EVO-AAAAAAAA-BBBBBBBB-CCCCCCCC',asset_hash:digest},{issuer:'not a URI',verificationUrl:'https://example.com'}),/invalid_issuer/);
+assert.throws(()=>buildEvoVcDataModelExport({sealId:'EVO-AAAAAAAA-BBBBBBBB-CCCCCCCC',asset_hash:digest},{issuer:'urn:evo:issuer:test',verificationUrl:'not a URL'}),/invalid_verification_url/);
 assert(!JSON.stringify(record).includes('evo.example'),'release output must contain no placeholder EVO domain');
 
 console.log('EVO V4.0 VC Data Model export checks passed');
