@@ -13,7 +13,6 @@
 <link id="evoProofWalletStyle" rel="stylesheet" href="./browser-shield-v332.css?v=20260821-v332-csp-styles">
 <link rel="stylesheet" href="./styles.css?v=20260821-v20-smart-checkout">
 <link rel="stylesheet" href="./passport.css?v=20260821-v16-premium">
-<link rel="stylesheet" href="./guardian.css?v=20260821-v16-premium">
 <link rel="stylesheet" href="./back-to-top.css?v=20260821-v277-myevo">
 <link rel="stylesheet" href="./service-proof-v31.css?v=20260821-v31-service-proof">
 </head>
@@ -63,14 +62,6 @@
 <section id="verify" class="wrap block"><h2>Verificar un registro EVO</h2><p class="sub">La consulta pública es gratuita. Ingresá un EVO Seal ID o escaneá el QR. Si es un documento, también podés seleccionar el archivo recibido: su SHA-256 se calcula localmente y EVO distingue coincidencia exacta, otra versión conocida o archivo diferente.</p>
 <div class="grid"><div class="panel form"><label>Seal ID<input id="verifyId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><label class="file">Archivo a comparar<input id="verifyFile" type="file"><span>Opcional. El hash se calcula localmente y se compara con el registro público.</span></label><button id="verifyBtn" class="btn primary">Verificar</button></div><div class="panel"><h3>Estado</h3><div id="verifyResult" class="empty">Ingresá un Seal ID.</div></div></div></section>
 
-<section id="guardian" class="wrap block clientAdvanced" aria-hidden="true"><h2>EVO AI Guardian</h2><p class="sub">Guardian V0.4 analiza Seal, Issuer Trust, Passport, EVO Pulse y auditoría Challenge para detectar señales anómalas. Es un motor de riesgo explicable: no reemplaza una prueba física ni afirma autenticidad por sí solo.</p>
-<div class="guardianIntro">
-  <div class="panel form guardianPanel"><span class="kicker">PROOF OF REALITY · V0.4</span><h3>Analizar identidad digital</h3><label>Seal ID<input id="guardianSealId" placeholder="EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX"></label><button id="guardianBtn" class="btn primary" type="button">Analizar con AI Guardian</button><div class="passportNotice">Guardian busca duplicados, transferencias anómalas, eventos incompletos, replays, integridad EVO Pulse y distingue emisor auto-declarado de perfiles con evidencia verificable. Dominio y organización son señales opcionales; ninguna es obligatoria para usar EVO.</div></div>
-  <div class="panel guardianBrain"><strong>EVO AI</strong><small>GUARDIAN · EXPLAINABLE RISK ENGINE</small></div>
-</div>
-<div class="panel guardianPanel evoPanelGap16"><h3>Resultado Guardian</h3><div id="guardianResult" class="empty">Ingresá un Seal ID o verificá un sello para iniciar el análisis.</div></div>
-</section>
-
 <section id="passport" class="wrap block"><h2>EVO Passport</h2><p class="sub">El Passport conserva el historial público del activo. Cada evento requiere la firma del propietario actual y toda transferencia debe ser aceptada por la nueva wallet.</p>
 <div class="grid">
   <form id="passportEventForm" class="panel form">
@@ -109,10 +100,7 @@
 <script src="./organization.js?v=20260821-v14"></script>
 <script src="./organization-simple.js?v=20260821-v277-loader"></script>
 <script src="./myevo-nav-v277.js?v=20260821-v277-nav"></script>
-<script src="./pulse.js?v=20260821-v14"></script>
 <script src="./passport.js?v=20260821-v14"></script>
 <script src="./service-proof-v31.js?v=20260821-v31-service-proof"></script>
 <script src="./transfer.js?v=20260821-v14"></script>
-<script src="./guardian.js?v=20260821-v14"></script>
-<script src="./guardian-v04.js?v=20260821-v14"></script>
 </body></html>
