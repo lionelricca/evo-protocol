@@ -13,6 +13,7 @@ const guardedFiles={
   'evo-document-lifecycle':fs.readFileSync('supabase/functions/evo-document-lifecycle/index.ts','utf8'),
   'register-evo-passport-event':fs.readFileSync('supabase/functions/register-evo-passport-event/index.ts','utf8'),
   'evo-passport-transfer':fs.readFileSync('supabase/functions/evo-passport-transfer/index.ts','utf8'),
+  'evo-service-proof':fs.readFileSync('supabase/functions/evo-service-proof/index.ts','utf8'),
 };
 
 assert(helper.includes('https://lionelricca.github.io'),'current GitHub Pages origin must be explicitly allowlisted');
@@ -35,6 +36,7 @@ for(const [name,src] of Object.entries(guardedFiles)){
 const checkout=guardedFiles.checkout;
 const seal=guardedFiles['register-evo-seal'];
 const transfer=guardedFiles['evo-passport-transfer'];
+const service=guardedFiles['evo-service-proof'];
 assert(checkout.includes('canonicalAllowedBrowserOrigin'),'signed private balance origin must itself be an allowed EVO origin');
 assert(checkout.includes('requestOrigin && requestOrigin !== origin'),'signed private balance must still bind the request Origin to the signed Origin');
 assert(seal.includes('evo_register_seal_with_credit'),'CORS hardening must not replace the atomic Seal economic boundary');
@@ -47,5 +49,8 @@ assert(transfer.includes('requestOrigin&&requestOrigin!==origin'),'Transfer Inbo
 assert(transfer.includes('evo_create_passport_transfer_offer_authoritative'),'origin shielding must preserve atomic transfer offer authority');
 assert(transfer.includes('evo_accept_passport_transfer_authoritative'),'origin shielding must preserve atomic transfer acceptance authority');
 assert(transfer.includes('evo_cancel_passport_transfer_authoritative'),'origin shielding must preserve atomic transfer cancellation authority');
+assert(service.includes('provider_must_differ_from_owner'),'origin shielding must preserve distinct provider trust semantics');
+assert(service.includes('only_designated_provider_can_countersign'),'origin shielding must preserve provider countersign authorization');
+assert(service.includes('countersign_conflict'),'origin shielding must preserve countersign concurrency handling');
 
 console.log('EVO V3.3.18 Origin & CORS Shield checks passed');
