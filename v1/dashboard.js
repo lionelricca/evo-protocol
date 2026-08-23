@@ -6,6 +6,7 @@
   const walletRe=/^0x[0-9a-f]{40}$/;
   let currentWallet='';
   let loading=false;
+  let loadGeneration=0;
 
   const shortWallet=value=>{const wallet=String(value||'');return wallet.length>18?`${wallet.slice(0,8)}…${wallet.slice(-6)}`:(wallet||'—')};
   const dateText=value=>{if(!value)return '—';try{return new Intl.DateTimeFormat(document.documentElement.lang==='en'?'en-US':'es-CL',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value)}};
@@ -209,7 +210,13 @@
   }
 
   async function load(wallet,force=false){
-    const normalized=String(wallet||account||'').toLowerCase();if(!walletRe.test(normalized)){renderDisconnected();return;}if(loading&&!force)return;loading=true;currentWallet=normalized;
+    const normalized=String(wallet||account||'').toLowerCase();
+    if(!walletRe.test(normalized)){renderDisconnected();return;}
+    const switchingWallet=Boolean(currentWallet&&currentWallet!==normalized);
+    if(loading&&!force&&!switchingWallet)return;
+    currentWallet=normalized;
+    const generation=++loadGeneration;
+    loading=true;
     const section=ensureDashboard();section.className='wrap block myEvo loading';section.textContent='';section.append(el('div','myEvoLoading',t('Construyendo tu panel EVO…','Building your EVO dashboard…')));
     try{
       const [createdResult,relatedResult,entitlementResult]=await Promise.allSettled([
@@ -225,14 +232,19 @@
       const sealMap=new Map([...created,...extraSeals].map(seal=>[seal.seal_id,seal]));
       const owned=[...sealMap.values()].map(seal=>({seal,owner:ownerFor(seal,transferEvents)})).filter(item=>item.owner===normalized).sort((a,b)=>new Date(b.seal.registered_at||b.seal.created_at||0)-new Date(a.seal.registered_at||a.seal.created_at||0));
       const activity=[...related].sort((a,b)=>new Date(b.registered_at||b.created_at||0)-new Date(a.registered_at||a.created_at||0));
-      if(currentWallet!==normalized)return;
+      if(generation!==loadGeneration||currentWallet!==normalized)return;
       renderDashboard(normalized,{created,owned,activity,entitlement,transferEvents});
-    }catch(error){section.className='wrap block myEvo ready';section.textContent='';const box=el('div','panel myEvoError');box.append(el('b','',t('No se pudo cargar My EVO','Could not load My EVO')),el('p','',error?.message||String(error)));const retry=el('button','btn',t('Reintentar','Retry'));retry.type='button';retry.onclick=()=>load(normalized,true);box.append(retry);section.append(box);}finally{loading=false;}
+    }catch(error){
+      if(generation!==loadGeneration||currentWallet!==normalized)return;
+      section.className='wrap block myEvo ready';section.textContent='';const box=el('div','panel myEvoError');box.append(el('b','',t('No se pudo cargar My EVO','Could not load My EVO')),el('p','',error?.message||String(error)));const retry=el('button','btn',t('Reintentar','Retry'));retry.type='button';retry.onclick=()=>load(normalized,true);box.append(retry);section.append(box);
+    }finally{
+      if(generation===loadGeneration)loading=false;
+    }
   }
 
   window.evoLoadDashboard=load;
   window.addEventListener('evo:wallet-connected',event=>load(event.detail?.account||account||''));
-  window.addEventListener('evo:wallet-disconnected',()=>{currentWallet='';renderDisconnected();});
+  window.addEventListener('evo:wallet-disconnected',()=>{loadGeneration++;currentWallet='';loading=false;renderDisconnected();});
   window.addEventListener('evo:entitlement-updated',event=>{if(currentWallet&&String(event.detail?.wallet||'').toLowerCase()===currentWallet&&!loading)setTimeout(()=>load(currentWallet,true),50);});
   ensureDashboard();
   if(typeof account!=='undefined'&&walletRe.test(String(account||'').toLowerCase()))load(account);else renderDisconnected();
