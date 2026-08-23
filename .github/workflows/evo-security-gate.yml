@@ -66,6 +66,8 @@ jobs:
         run: node --check supabase/functions/register-evo-passport-event/index.ts
       - name: Syntax check Passport transfer
         run: node --check supabase/functions/evo-passport-transfer/index.ts
+      - name: Syntax check Service Proof
+        run: node --check supabase/functions/evo-service-proof/index.ts
       - name: Syntax check Battery Passport
         run: node --check supabase/functions/evo-battery-passport/index.ts
       - name: Syntax check Document Lifecycle
@@ -80,6 +82,8 @@ jobs:
         run: node tests/origin-authority-v323.test.js
       - name: Run V4.0 VC Data Model export checks
         run: node tests/vc-dm-export-v400.test.mjs
+      - name: Run V4.0 Service Proof authority checks
+        run: node tests/service-proof-authority-v400.test.js
       - name: Run V3.3.2 security regression checks
         run: node tests/security-hardening-v330.test.js
       - name: Run V3.3.7 browser style CSP checks
@@ -138,6 +142,14 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113209_transfer_state_machine_v3313.sql
       - name: Test Transfer State Machine
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/transfer-state-machine-v3313.sql
+      - name: Apply Service Proof base schema
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821204500_add_service_proofs.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821223000_service_provider_distinct_wallet.sql
+      - name: Apply V4.0 Service Proof Authority migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260823180000_service_proof_authority_v400.sql
+      - name: Test V4.0 Service Proof Authority
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/service-proof-authority-v400.sql
       - name: Prepare Battery atomic fixture
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-fixture-v3314.sql
       - name: Apply production-aligned Battery atomic migration
@@ -145,4 +157,4 @@ jobs:
       - name: Test Battery atomic registration
         run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
       - name: Security gate scope
-        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, exact-origin CORS on checkout/Seal/wallet/issuer/domain/organization browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
+        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, exact-origin CORS on guarded browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, Reality Continuity hardening, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Service Proof ownership/countersign authority, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"
