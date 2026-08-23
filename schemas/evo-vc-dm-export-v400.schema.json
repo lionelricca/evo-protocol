@@ -21,25 +21,38 @@
       "type": "object",
       "required": ["@context", "id", "type", "issuer", "validFrom", "credentialSubject", "credentialSchema"],
       "properties": {
-        "@context": {"type": "array", "contains": {"const": "https://www.w3.org/ns/credentials/v2"}},
-        "id": {"type": "string"},
-        "type": {"type": "array", "contains": {"const": "VerifiableCredential"}},
-        "issuer": {"type": "string"},
+        "@context": {
+          "type": "array",
+          "minItems": 2,
+          "allOf": [
+            {"contains": {"const": "https://www.w3.org/ns/credentials/v2"}},
+            {"contains": {"const": "https://lionelricca.github.io/evo-protocol/contexts/evo-v1.jsonld"}}
+          ]
+        },
+        "id": {"type": "string", "format": "uri"},
+        "type": {
+          "type": "array",
+          "allOf": [
+            {"contains": {"const": "VerifiableCredential"}},
+            {"contains": {"const": "EvoProofCredential"}}
+          ]
+        },
+        "issuer": {"type": "string", "format": "uri"},
         "validFrom": {"type": "string", "format": "date-time"},
         "credentialSubject": {
           "type": "object",
-          "required": ["id", "evoId", "proofType", "digestAlgorithm", "digest", "verificationUrl", "evidenceLevel"],
+          "required": ["id", "evoId", "proofType", "subjectType", "title", "reference", "digestAlgorithm", "digest", "verificationUrl", "evidenceLevel"],
           "properties": {
-            "id": {"type": "string"},
-            "evoId": {"type": "string"},
-            "proofType": {"type": "string"},
-            "subjectType": {"type": "string"},
+            "id": {"type": "string", "format": "uri"},
+            "evoId": {"type": "string", "minLength": 8},
+            "proofType": {"type": "string", "minLength": 1},
+            "subjectType": {"type": "string", "minLength": 1},
             "title": {"type": "string"},
             "reference": {"type": "string"},
             "digestAlgorithm": {"const": "SHA-256"},
             "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
             "verificationUrl": {"type": "string", "format": "uri"},
-            "evidenceLevel": {"type": "string"}
+            "evidenceLevel": {"type": "string", "minLength": 1}
           },
           "additionalProperties": false
         },
@@ -47,7 +60,7 @@
           "type": "object",
           "required": ["id", "type"],
           "properties": {
-            "id": {"const": "https://lionelricca.github.io/evo-protocol/schemas/evo-vc-dm-export-v400.schema.json"},
+            "id": {"const": "https://lionelricca.github.io/evo-protocol/schemas/evo-proof-credential-v400.schema.json"},
             "type": {"const": "JsonSchema"}
           },
           "additionalProperties": false
