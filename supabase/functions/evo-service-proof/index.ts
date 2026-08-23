@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
-const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const MAX_BODY_BYTES=32768;
 const walletRe=/^0x[0-9a-f]{40}$/;
 const hex64=/^[0-9a-f]{64}$/;
@@ -12,7 +12,7 @@ const sealRe=/^EVO-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/;
 const allowed=new Set(["INSPECTED","SERVICED","REPAIRED","COMMISSIONED","WARRANTY","COMPONENT_REPLACED","METER_READING","NOTE"]);
 const meterKinds=new Set(["HOURS","ODOMETER_KM","CYCLES","OTHER"]);
 
-function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...cors,"Content-Type":"application/json"}})}
+function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}})}
 function canonical(value:unknown):string{
   if(Array.isArray(value))return `[${value.map(canonical).join(",")}]`;
   if(value&&typeof value==="object"){
@@ -24,25 +24,18 @@ function canonical(value:unknown):string{
 async function sha256(text:string){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("")}
 function cleanText(value:unknown,max:number){return String(value||"").trim().slice(0,max)}
 
-Deno.serve(async(req)=>{
-  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+async function handle(req:Request){
   if(req.method!=="POST")return json({error:"method_not_allowed"},405);
   try{
+    const declaredLength=Number(req.headers.get("content-length")||"0");
+    if(declaredLength>MAX_BODY_BYTES)return json({error:"payload_too_large"},413);
     const raw=await req.text();
     if(new TextEncoder().encode(raw).byteLength>MAX_BODY_BYTES)return json({error:"payload_too_large"},413);
     let body:Record<string,unknown>;try{body=JSON.parse(raw)}catch{return json({error:"invalid_json"},400)}
     const action=String(body?.action||"");
     const p=body?.payload as Record<string,unknown>;
-    if(!p||typeof p!=="object")return json({error:"invalid_payload"},400);
+    if(!p||typeof p!=="object"||Array.isArray(p))return json({error:"invalid_payload"},400);
     const supabase=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false}});
-
-    async function currentOwner(sealId:string){
-      const {data:seal,error}=await supabase.from("evo_seals").select("seal_id,issuer_wallet,status").eq("seal_id",sealId).eq("status","ACTIVE").single();
-      if(error||!seal)throw new Error("seal_not_found");
-      const {data:events,error:eventError}=await supabase.from("evo_passport_events").select("new_owner_wallet,registered_at").eq("seal_id",sealId).eq("event_type","TRANSFERRED").eq("status","ACTIVE").order("registered_at",{ascending:false}).limit(1);
-      if(eventError)throw new Error("database_error");
-      return String(events?.[0]?.new_owner_wallet||seal.issuer_wallet).toLowerCase();
-    }
 
     if(action==="lookup"){
       const proofId=String(p.proofId||"").toUpperCase();
@@ -73,7 +66,6 @@ Deno.serve(async(req)=>{
       const created=new Date(createdAt),performed=new Date(performedAt);
       if(Number.isNaN(created.getTime())||Number.isNaN(performed.getTime()))return json({error:"invalid_time"},400);
       if(Math.abs(Date.now()-created.getTime())>10*60*1000)return json({error:"stale_or_future_timestamp"},400);
-      const actualOwner=await currentOwner(sealId);if(actualOwner!==owner)return json({error:"actor_is_not_current_owner",currentOwner:actualOwner},403);
 
       const meter=p.meter&&typeof p.meter==="object"&&!Array.isArray(p.meter)?p.meter as Record<string,unknown>:{};
       if(Object.keys(meter).length){
@@ -102,13 +94,35 @@ Deno.serve(async(req)=>{
       if(expectedId!==proofId)return json({error:"proof_id_mismatch"},400);
       const expectedMessage=`EVO SERVICE PROOF V1\nProof ID: ${proofId}\nSeal ID: ${sealId}\nType: ${serviceType}\nOwner: ${owner}\nProvider: ${provider||"N/A"}\nDigest: ${serviceDigest}\nCreated: ${createdAt}`;
       if(p.ownerMessage!==expectedMessage)return json({error:"signature_message_mismatch"},400);
-      const valid=await verifyMessage({address:owner as `0x${string}`,message:expectedMessage,signature:p.ownerSignature as `0x${string}`});
+      const ownerSignature=String(p.ownerSignature||"");
+      if(ownerSignature.length<1||ownerSignature.length>512||expectedMessage.length>2048)return json({error:"invalid_signature_evidence"},400);
+      const valid=await verifyMessage({address:owner as `0x${string}`,message:expectedMessage,signature:ownerSignature as `0x${string}`});
       if(!valid)return json({error:"invalid_signature"},401);
 
-      const row={proof_id:proofId,seal_id:sealId,version:p.version,service_type:serviceType,owner_wallet:owner,provider_wallet:provider,provider_label:providerLabel,technician_label:technicianLabel,performed_at:performedAt,summary,meter,parts,next_service:nextService,evidence_digests:evidenceDigests,service_digest:serviceDigest,owner_nonce:ownerNonce,owner_signature:p.ownerSignature,owner_message:p.ownerMessage,created_at:createdAt,evidence_level:"OWNER_DECLARED",status:"ACTIVE"};
-      const {data,error}=await supabase.from("evo_service_proofs").insert(row).select("proof_id,seal_id,service_type,provider_wallet,evidence_level,registered_at,status").single();
-      if(error){if(error.code==="23505")return json({error:"proof_already_exists"},409);console.error(error);return json({error:"database_error"},500)}
-      return json({ok:true,proof:data},201);
+      const row={
+        proof_id:proofId,seal_id:sealId,version:"EVO-SERVICE-PROOF-V1",service_type:serviceType,
+        owner_wallet:owner,provider_wallet:provider,provider_label:providerLabel,technician_label:technicianLabel,
+        performed_at:performedAt,summary,meter,parts,next_service:nextService,evidence_digests:evidenceDigests,
+        service_digest:serviceDigest,owner_nonce:ownerNonce,owner_signature:ownerSignature,owner_message:expectedMessage,
+        created_at:createdAt
+      };
+      const {data,error}=await supabase.rpc("evo_register_service_proof_authoritative",{p_row:row}).single();
+      if(error){
+        const message=String(error.message||"");
+        if(message.includes("actor_is_not_current_owner"))return json({error:"actor_is_not_current_owner"},403);
+        if(message.includes("seal_not_found"))return json({error:"seal_not_found"},404);
+        if(message.includes("proof_id_conflict"))return json({error:"proof_id_conflict"},409);
+        if(message.includes("provider_must_differ_from_owner"))return json({error:"provider_must_differ_from_owner"},409);
+        if(String(error.code||"")==="23505")return json({error:"proof_already_exists"},409);
+        console.error(error.code||"service_proof_rpc_error");return json({error:"database_error"},500);
+      }
+      return json({
+        ok:true,
+        proof:{proof_id:data.proof_id,seal_id:data.seal_id,evidence_level:data.evidence_level,registered_at:data.registered_at,status:data.status},
+        currentOwner:data.current_owner,
+        idempotent:Boolean(data.idempotent),
+        atomicAuthority:true
+      },data.idempotent?200:201);
     }
 
     if(action==="countersign"){
@@ -118,7 +132,6 @@ Deno.serve(async(req)=>{
       if(!proofRe.test(proofId)||!walletRe.test(actor)||!hex32.test(String(p.nonce))||!hex64.test(String(p.providerDigest)))return json({error:"invalid_countersignature"},400);
       const {data:proof,error:proofError}=await supabase.from("evo_service_proofs").select("*").eq("proof_id",proofId).eq("status","ACTIVE").single();
       if(proofError||!proof)return json({error:"proof_not_found"},404);
-      if(proof.evidence_level!=="OWNER_DECLARED")return json({error:"already_countersigned"},409);
       if(!proof.provider_wallet)return json({error:"provider_not_designated"},409);
       if(String(proof.provider_wallet).toLowerCase()===String(proof.owner_wallet).toLowerCase())return json({error:"invalid_provider_relation"},409);
       if(actor!==String(proof.provider_wallet).toLowerCase())return json({error:"only_designated_provider_can_countersign"},403);
@@ -129,14 +142,33 @@ Deno.serve(async(req)=>{
       if(expectedDigest!==providerDigest)return json({error:"provider_digest_mismatch"},400);
       const expectedMessage=`EVO SERVICE PROOF COUNTERSIGN V1\nProof ID: ${proof.proof_id}\nSeal ID: ${proof.seal_id}\nOwner: ${proof.owner_wallet}\nProvider: ${proof.provider_wallet}\nService digest: ${proof.service_digest}\nProvider digest: ${providerDigest}\nCountersigned: ${createdAt}`;
       if(p.signatureMessage!==expectedMessage)return json({error:"signature_message_mismatch"},400);
-      const valid=await verifyMessage({address:actor as `0x${string}`,message:expectedMessage,signature:p.signature as `0x${string}`});
+      const signature=String(p.signature||"");
+      if(signature.length<1||signature.length>512||expectedMessage.length>2048)return json({error:"invalid_signature_evidence"},400);
+      const valid=await verifyMessage({address:actor as `0x${string}`,message:expectedMessage,signature:signature as `0x${string}`});
       if(!valid)return json({error:"invalid_signature"},401);
-      const {data,error}=await supabase.from("evo_service_proofs").update({provider_digest:providerDigest,provider_nonce:p.nonce,provider_signature:p.signature,provider_message:p.signatureMessage,countersigned_at:createdAt,evidence_level:"PROVIDER_COUNTERSIGNED"}).eq("proof_id",proof.proof_id).eq("evidence_level","OWNER_DECLARED").select("proof_id,seal_id,evidence_level,countersigned_at").maybeSingle();
-      if(error){console.error(error);return json({error:"database_error"},500)}
-      if(!data)return json({error:"countersign_conflict"},409);
-      return json({ok:true,proof:data},200);
+
+      const row={proof_id:proof.proof_id,actor_wallet:actor,provider_digest:providerDigest,provider_nonce:String(p.nonce).toLowerCase(),provider_signature:signature,provider_message:expectedMessage,countersigned_at:createdAt};
+      const {data,error}=await supabase.rpc("evo_countersign_service_proof_authoritative",{p_row:row}).single();
+      if(error){
+        const message=String(error.message||"");
+        if(message.includes("proof_not_found"))return json({error:"proof_not_found"},404);
+        if(message.includes("provider_not_designated"))return json({error:"provider_not_designated"},409);
+        if(message.includes("invalid_provider_relation"))return json({error:"invalid_provider_relation"},409);
+        if(message.includes("only_designated_provider_can_countersign"))return json({error:"only_designated_provider_can_countersign"},403);
+        if(message.includes("already_countersigned"))return json({error:"already_countersigned"},409);
+        console.error(error.code||"service_countersign_rpc_error");return json({error:"database_error"},500);
+      }
+      return json({ok:true,proof:{proof_id:data.proof_id,seal_id:data.seal_id,evidence_level:data.evidence_level,countersigned_at:data.countersigned_at},idempotent:Boolean(data.idempotent),atomicAuthority:true},200);
     }
 
     return json({error:"invalid_action"},400);
-  }catch(err){console.error(err);return json({error:err instanceof Error?err.message:"internal_error"},500)}
+  }catch(err){console.error(err instanceof Error?err.name:"unknown");return json({error:"internal_error"},500)}
+}
+
+Deno.serve(async(req:Request)=>{
+  const preflight=restrictedPreflight(req);
+  if(preflight)return preflight;
+  const denied=rejectUntrustedBrowserOrigin(req);
+  if(denied)return denied;
+  return withRestrictedCors(req,await handle(req));
 });
