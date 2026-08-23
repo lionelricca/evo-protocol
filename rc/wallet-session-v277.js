@@ -130,3 +130,12 @@
   restore();
   window.addEventListener('load',()=>setTimeout(()=>{try{if(typeof account==='undefined'||!walletRe.test(String(account||'')))restore();}catch{restore();}},250),{once:true});
 })();
+
+window.addEventListener('load',()=>{
+  if(document.querySelector('script[data-evo-free-proof-v400]'))return;
+  const script=document.createElement('script');
+  script.src='./free-proof-antisybil-v400.js?v=20260823-v400-antisybil';
+  script.dataset.evoFreeProofV400='1';
+  script.onload=()=>{try{if(typeof account!=='undefined'&&/^0x[0-9a-fA-F]{40}$/.test(String(account||'')))window.evoRefreshEntitlement?.(String(account).toLowerCase())}catch{}};
+  document.body.appendChild(script);
+},{once:true});
