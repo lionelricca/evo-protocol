@@ -28,10 +28,7 @@ begin
 end;
 $$;
 
-truncate table public.evo_service_proofs;
-truncate table public.evo_passport_events;
-truncate table public.evo_passport_transfers;
-truncate table public.evo_seals;
+truncate table public.evo_service_proofs, public.evo_passport_events, public.evo_passport_transfers, public.evo_seals;
 
 insert into public.evo_seals(seal_id,issuer_wallet,status)
 values ('EVO-11111111-22222222-33333333','0x1111111111111111111111111111111111111111','ACTIVE');
