@@ -17,10 +17,12 @@
   };
   const readPreference=()=>{try{return JSON.parse(localStorage.getItem(preferenceKey)||'null')}catch{return null}};
   const remember=(entry,accountValue)=>{try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:entry?.info?.rdns||'',name:entry?.info?.name||providerName(entry?.provider),account:String(accountValue||'').toLowerCase()}))}catch{}};
+  const normalizeAccounts=accounts=>[...new Set((Array.isArray(accounts)?accounts:[]).map(value=>String(value||'').toLowerCase()).filter(value=>walletRe.test(value)))];
   const clearAccount=()=>{
     try{if(typeof account!=='undefined')account='';}catch{}
     try{if(typeof walletProvider!=='undefined')walletProvider=null;}catch{}
     try{if(typeof walletInfo!=='undefined')walletInfo=null;}catch{}
+    window.evoRestoredWallet=null;
     window.dispatchEvent(new CustomEvent('evo:wallet-disconnected'));
   };
 
@@ -59,7 +61,16 @@
     const button=document.getElementById('walletBtn');
     if(button)button.textContent=`${safe(entry.info?.name||providerName(entry.provider),24)} ${normalized.slice(0,6)}…${normalized.slice(-4)}`;
     remember(entry,normalized);
-    window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:normalized,wallet:entry.info?.name||providerName(entry.provider),source:'SESSION_RESTORE',restored:true}}));
+    window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:normalized,wallet:entry.info?.name||providerName(entry.provider),rdns:entry.info?.rdns||'',source:'SESSION_RESTORE',restored:true}}));
+  };
+
+  const silentCandidate=(accounts,pref)=>{
+    const valid=normalizeAccounts(accounts);
+    if(!valid.length)return null;
+    const preferred=String(pref?.account||'').toLowerCase();
+    if(preferred&&valid.includes(preferred))return preferred;
+    if(preferred)return null;
+    return valid.length===1?valid[0]:null;
   };
 
   const bind=entry=>{
@@ -67,32 +78,34 @@
     if(bound.has(provider)||typeof provider?.on!=='function')return;
     bound.add(provider);
     provider.on('accountsChanged',accounts=>{
-      const next=accounts?.[0];
-      if(!walletRe.test(String(next||''))){clearAccount();return;}
+      const valid=normalizeAccounts(accounts);
+      if(!valid.length){clearAccount();return;}
+      const pref=readPreference();const preferred=String(pref?.account||'').toLowerCase();
+      let current='';try{current=String(typeof account!=='undefined'?account:'').toLowerCase()}catch{}
+      const next=(preferred&&valid.includes(preferred))?preferred:(valid.length===1?valid[0]:(current&&valid.includes(current)?current:null));
+      if(!next){clearAccount();return;}
       updateUi(entry,next);
     });
     provider.on('disconnect',()=>clearAccount());
   };
 
   const restore=async()=>{
+    const pref=readPreference();
     try{
-      if(typeof account!=='undefined'&&walletRe.test(String(account||''))){
-        window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:String(account).toLowerCase(),wallet:'Wallet EVM',source:'ALREADY_CONNECTED',restored:true}}));
+      const existing=String(typeof account!=='undefined'?account:'').toLowerCase();
+      const preferred=String(pref?.account||'').toLowerCase();
+      if(walletRe.test(existing)&&(!preferred||existing===preferred)){
+        window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:existing,wallet:'Wallet EVM',source:'ALREADY_CONNECTED',restored:true}}));
         return true;
       }
     }catch{}
 
     const providers=await discover();
-    const pref=readPreference();
     for(const entry of providers){
       try{
         const accounts=await entry.provider.request({method:'eth_accounts'});
-        const candidate=Array.isArray(accounts)?accounts.find(value=>walletRe.test(String(value||''))):null;
+        const candidate=silentCandidate(accounts,pref);
         if(!candidate)continue;
-        if(pref?.account&&providers.length>1&&String(candidate).toLowerCase()!==String(pref.account).toLowerCase()){
-          const preferredExists=providers.some(item=>item!==entry&&(item.info?.rdns===pref.rdns||item.info?.name===pref.name));
-          if(preferredExists)continue;
-        }
         bind(entry);
         updateUi(entry,candidate);
         return true;
@@ -105,7 +118,7 @@
     if(event.detail?.source==='SESSION_RESTORE')return;
     const value=event.detail?.account;
     if(!walletRe.test(String(value||'')))return;
-    try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:'',name:event.detail?.wallet||'',account:String(value).toLowerCase()}))}catch{}
+    try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:event.detail?.rdns||'',name:event.detail?.wallet||'',account:String(value).toLowerCase()}))}catch{}
   });
 
   window.evoRestoreWalletSession=restore;
