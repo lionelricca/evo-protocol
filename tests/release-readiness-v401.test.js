@@ -17,6 +17,7 @@ assert.match(readme, /Current code status — V4\.0\.0 RC1/, 'README must expose
 assert.doesNotMatch(readme, /Current stage:\s*V1\.5 Commercial Pilot/i, 'README must not regress to the obsolete V1.5 status');
 assert.match(readme, /DEVELOPMENT\.md/, 'README must point developers to the reproducible setup guide');
 assert.match(readme, /RELEASE_READINESS_V400\.md/, 'README must point to the release-readiness audit');
+assert.match(readme, /PRODUCTION_DEPLOYMENT_V400\.md/, 'README must point to the production deployment inventory');
 
 const launcher = read('index.html');
 assert.match(launcher, /20260823-v400-rc1/, 'root launcher must use the V4 RC cache key');
