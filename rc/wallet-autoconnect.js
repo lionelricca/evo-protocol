@@ -3,7 +3,7 @@
 // - EIP-6963 discovery first
 // - User chooses the provider when multiple wallets are installed
 // - User chooses the account when one provider exposes multiple accounts
-// - Connection requests account permission only
+// - Re-selecting a connected wallet requests a fresh account permission
 // - Address + chain are resolved ephemerally on simple connect
 // - Persistent EVO identity requires a signed/proven EVO action
 // - NO personal_sign, NO transaction, NO token approval during connect
@@ -120,15 +120,37 @@
     });
   }
 
-  async function requestAccounts(provider){
+  function unsupportedMethod(error){
+    if(error?.code===-32601||String(error?.code)==='-32601')return true;
+    const msg=String(error?.message||'').toLowerCase();
+    return msg.includes('unsupported')||msg.includes('not supported')||msg.includes('method not found');
+  }
+
+  async function revokeAccountPermission(provider){
+    try{
+      await provider.request({method:'wallet_revokePermissions',params:[{eth_accounts:{}}]});
+      return true;
+    }catch(error){
+      if(unsupportedMethod(error))return false;
+      console.warn('EVO could not revoke account permission before re-selection',error);
+      return false;
+    }
+  }
+
+  async function requestAccounts(provider,{forceReselect=false}={}){
+    if(forceReselect){
+      await revokeAccountPermission(provider);
+      const fresh=normalizeAccounts(await provider.request({method:'eth_requestAccounts'}));
+      if(fresh.length)return fresh;
+    }
     try{
       await provider.request({method:'wallet_requestPermissions',params:[{eth_accounts:{}}]});
-      const granted=await provider.request({method:'eth_accounts'});if(granted?.length)return granted;
+      const granted=normalizeAccounts(await provider.request({method:'eth_accounts'}));if(granted.length)return granted;
     }catch(e){
       if(e?.code===4001||String(e?.code)==='4001')throw new Error('Autorización cancelada en la wallet.');
-      if(!(e?.code===-32601||String(e?.code)==='-32601')){const msg=String(e?.message||'').toLowerCase();if(!msg.includes('unsupported')&&!msg.includes('not supported')&&!msg.includes('method not found'))throw e}
+      if(!unsupportedMethod(e))throw e;
     }
-    return await provider.request({method:'eth_requestAccounts'});
+    return normalizeAccounts(await provider.request({method:'eth_requestAccounts'}));
   }
 
   function setActiveAccount(entry,accountValue,detail={}){
@@ -147,7 +169,7 @@
     boundProvider=provider;
     provider.on('accountsChanged',accounts=>{
       const valid=normalizeAccounts(accounts);
-      if(!valid.length){resetWalletUi();toast('La wallet se desconectó.');return}
+      if(!valid.length){resetWalletUi();return}
       const pref=readPreference();const preferred=String(pref?.account||'').toLowerCase();const current=String(account||'').toLowerCase();
       let next='';
       if(preferred&&valid.includes(preferred))next=preferred;
@@ -161,11 +183,16 @@
     provider.on('disconnect',()=>{resetWalletUi();toast('Wallet desconectada.')});
   }
 
-  window.evoConnectWallet=async function(){
+  window.evoConnectWallet=async function(options={}){
+    const forceReselect=Boolean(options?.forceReselect);
     const wallets=await discoverWallets();if(!wallets.length)throw new Error('No se detectó ninguna wallet EVM compatible.');
-    const selected=await chooseWallet(wallets),accounts=await requestAccounts(selected.provider),chosen=await chooseAccount(selected,accounts);
+    let selected=null;
+    if(forceReselect&&walletProvider){selected=wallets.find(item=>item.provider===walletProvider)||null;}
+    if(!selected)selected=await chooseWallet(wallets);
+    const accounts=await requestAccounts(selected.provider,{forceReselect});
+    const chosen=await chooseAccount(selected,accounts);
     bindProvider(selected);
-    const active=setActiveAccount(selected,chosen,{source:selected.source,explicit:true});
+    const active=setActiveAccount(selected,chosen,{source:forceReselect?'ACCOUNT_RESELECT':selected.source,explicit:true});
     await registerWalletAccountSafely(selected.provider,selected.info.name);
     return active;
   };
@@ -174,9 +201,11 @@
 
   connectWallet=window.evoConnectWallet;
   const btn=document.getElementById('walletBtn');if(btn)btn.onclick=async()=>{try{
-    await window.evoConnectWallet();
+    const connected=walletRe.test(String(account||''));
+    if(connected)toast('Elegí nuevamente la cuenta que querés usar en MetaMask.');
+    await window.evoConnectWallet({forceReselect:connected});
     const a=window.evoWalletAccount;
     toast(a?.persisted?`Identidad EVO confirmada · ${a.issuer_id||''}`:'Wallet conectada · la identidad persistente se crea sólo con una prueba EVO firmada.');
   }catch(e){toast(e?.message||'Conexión cancelada')}};
-  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'PROVIDER + ACCOUNT USER CONTROLLED',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
+  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'PROVIDER + ACCOUNT USER CONTROLLED',reselection:'EXPLICIT PERMISSION REFRESH',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
 })();
