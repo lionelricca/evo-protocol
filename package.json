@@ -1,0 +1,17 @@
+{
+  "name": "evo-protocol",
+  "version": "4.0.0-rc.1",
+  "private": true,
+  "description": "EVO Protocol V4 release candidate: Origin, Proofs, Passports and verifiable lifecycle evidence.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:security": "node tests/release-candidate-v400.test.js && node tests/security-hardening-v330.test.js && node tests/browser-shield-v333.test.js && node tests/qrcode-vendor-v335.test.js && node tests/root-entry-v336.test.js && node tests/checkout-hardening-v334.test.js && node tests/checkout-privacy-v3317.test.js && node tests/origin-cors-shield-v3318.test.js && node tests/cors-rollout-v400.test.js && node tests/domain-hardening-v338.test.js && node tests/identity-hardening-v339.test.js && node tests/organization-hardening-v3310.test.js && node tests/reality-continuity-hardening-v3311.test.js && node tests/battery-hardening-v3314.test.js && node tests/document-lifecycle-hardening-v3315.test.js && node tests/migration-history-v3316.test.js && node tests/atomic-seal-v332.static.test.js",
+    "test:document": "node tests/document-proof-v30.test.js && node tests/document-lifecycle-v30.test.js && node tests/document-lifecycle-hardening-v3315.test.js && node tests/document-provenance-v321.test.mjs && node tests/origin-verifier-v322.test.js && node tests/origin-authority-v323.test.js",
+    "test:service": "node tests/service-proof-v31.test.js && node tests/service-proof-history-v311.test.js && node tests/service-proof-trust-v312.test.js && node tests/service-provider-inbox-v313.test.js && node tests/service-proof-authority-v400.test.js",
+    "test:navigation": "node tests/back-to-top.test.js && node tests/dashboard-v27.test.js && node tests/i18n-v275.test.js && node tests/myevo-return-v276.test.js && node tests/v277-session.test.js",
+    "test:release": "node tests/release-candidate-v400.test.js && node tests/release-readiness-v401.test.js && node tests/vc-dm-export-v400.test.mjs"
+  }
+}
