@@ -19,8 +19,8 @@ test('V2.5.3 adds searchable asset library without wallet writes',()=>{
   assert.doesNotMatch(code,/evo_passport_transfers/);
 });
 
-test('V2.5.3 loader pins premium assets',()=>{
+test('V2.7 loader keeps premium dashboard assets on the current chain',()=>{
   const code=loader();
   assert.match(code,/dashboard-v253\.css\?v=20260821-v253-premium/);
-  assert.match(code,/dashboard-v253\.js\?v=20260821-v253-premium/);
+  assert.match(code,/dashboard-v253\.js\?v=20260821-v27-actions-loader/);
 });
