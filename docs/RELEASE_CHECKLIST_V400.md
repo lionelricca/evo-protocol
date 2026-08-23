@@ -21,14 +21,15 @@ A checked item means evidence exists for the exact release candidate being shipp
 - [x] Origin issuer-authority UI carried forward.
 - [x] Production-addressable JSON schema IDs replace placeholder EVO domains.
 - [x] V4 homepage/product positioning audited and bilingual mappings added for the new Origin-first copy.
-- [ ] Remaining authority/mutation endpoints classified for CORS compatibility.
+- [x] Exact-origin browser CORS extended to Passport Event, Service Proof, Reality Continuity and Document Lifecycle in addition to checkout/Seal/wallet/issuer/domain/organization.
+- [ ] Complete compatibility decision for the two remaining mixed-action endpoints: **Passport Transfer** and **Battery Passport**. Both combine read/discovery/export behavior with signed mutations, so they must not be mechanically restricted until their public-integration path is separated or explicitly accepted.
 - [ ] Dead/legacy product copy and unreachable code audited after final UI smoke test.
 
 ## C. Automated verification
 
-Verified green on V4.0 RC head `630ffb4c2bc816abe5d87c711de97e2f4d75005e`:
+Last fully green consolidation baseline: V4.0 RC head `630ffb4c2bc816abe5d87c711de97e2f4d75005e`.
 
-- [x] EVO Security Gate.
+- [x] EVO Security Gate on the last green baseline.
 - [x] EVO Document Proof checks.
 - [x] EVO Service Proof checks.
 - [x] EVO navigation checks.
@@ -38,7 +39,10 @@ Verified green on V4.0 RC head `630ffb4c2bc816abe5d87c711de97e2f4d75005e`:
 - [x] EVO Origin issuer-authority test.
 - [x] V4.0 project-truth/release-contract test.
 - [x] W3C VC Data Model unsecured-export boundary test.
-- [x] PostgreSQL 17 atomic/concurrency suite.
+- [x] PostgreSQL 17 atomic/concurrency suite on the last green baseline.
+- [ ] Reconfirm all checks on the current head after the V4 Service Proof authority/CORS rollout.
+- [ ] V4 Service Proof Authority runtime SQL suite green on the current head.
+- [ ] Expanded CORS rollout regression test green on the current head.
 
 ## D. Real browser smoke test
 
@@ -63,9 +67,10 @@ Before deployment, compare Git migration history with the observed production mi
 
 - [ ] Review which V3.3.x migrations/functions are already deployed versus branch-only.
 - [ ] Deploy any required database migration before the Edge Function that depends on it.
+- [ ] Deploy V4 Service Proof Authority migration before the matching `evo-service-proof` Edge Function.
 - [ ] Deploy V3.3.15 Document Lifecycle only after explicit approval.
 - [ ] Deploy V3.3.17 Checkout Privacy only after explicit approval.
-- [ ] Deploy V3.3.18 Origin/CORS-dependent functions together with the shared helper only after official origins are confirmed.
+- [ ] Deploy Origin/CORS-dependent functions together with the shared helper only after official origins are confirmed.
 - [ ] Run post-deployment read-only RLS/RPC/security audit.
 - [ ] Confirm no orphan credit consumption and no paid-credit counter mismatch.
 - [ ] After a successful real atomic Seal creation, retire the legacy service-role credit RPC if compatibility permits.
