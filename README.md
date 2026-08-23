@@ -1,136 +1,191 @@
-# EVO Passport
+# EVO Trust Layer
 
-**Identity, history and traceability for every asset.**
+**Proofs, Passports and verifiable lifecycle evidence for assets and documents.**
 
-EVO Passport is an independent product created by Lionel Ricca. It gives physical and digital assets a wallet-signed identity, a public QR verification record, lifecycle history and controlled ownership transfer, supported by the EVO ecosystem on Polygon.
+EVO is an independent trust-layer project for creating wallet-signed digital records, public verification pages and portable lifecycle evidence. The product combines asset passports, document integrity, service evidence, controlled ownership transfer and issuer evidence without claiming that a QR, blockchain record or self-declaration alone proves physical authenticity or legal truth.
 
-## Current stage: V1.5 Commercial Pilot
+## Current code status — V4.0.0 RC1
 
-The current commercial pilot is non-custodial and conservative. A payment moves USDC only after explicit confirmation in MetaMask; EVO never stores private keys and does **not** claim that a physical object is authentic merely because a digital record exists.
+V4.0.0 RC1 is a release-readiness checkpoint built on the V3.3.18 security-hardening line. At the start of this release review, `codex/evo-v400-release-candidate` and `codex/evo-v330-security-hardening` pointed to the same audited commit (`c1be49a627e877879645275f525152226388ddce`).
 
-The working stack has evolved beyond a static seal:
+The baseline commit passed:
 
-`SEAL → ISSUER TRUST → PASSPORT → TRANSFER → PULSE → CHALLENGE → AI GUARDIAN`
+- EVO Security Gate;
+- EVO Document Proof checks;
+- EVO Service Proof checks;
+- EVO navigation checks;
+- EVO navigation V2.7.3 checks.
 
-The next layer is the **EVO Reality Graph**: one continuously evolving trust state for every Seal, designed so that copying a QR or public URL is not enough to reproduce the complete evidence history.
+A green branch is **not** the same as a complete production rollout. Some security controls still require explicit deployment, infrastructure configuration or independent verification. See `docs/RELEASE_READINESS_V400.md` and `docs/SECURITY.md` before promoting the RC.
 
-## Core principles
+## Product model
 
-- **Creating trust may consume EVO; public verification should remain free.**
-- **Never store private keys.** Wallets remain under user control.
-- **Evidence levels, not unsupported authenticity claims.**
-- **A blockchain record proves registration/integrity, not physical authenticity by itself.**
-- **QR is discovery, not high-assurance proof.** Secure NFC is the planned physical binding layer.
-- **Security before mainnet.** New value-moving contracts require tests and independent review.
-- **Privacy by default.** Public observation features should minimize personal data.
-- **Standards before lock-in.** Future work should remain compatible where useful with GS1 Digital Link, C2PA and W3C Verifiable Credentials.
+EVO separates evidence into explicit layers rather than using an unsupported binary “authentic/not authentic” claim.
 
-## Commercial model
+Core flow:
 
-- One free demonstration passport per wallet.
-- Individual: **US$9.90** for one additional passport.
-- Pack: **US$49** for ten passports.
-- Company reference: **US$39/month** for up to 100 passports; commercial activation pending.
-- Public verification remains free and does not require a wallet.
-- MetaMask checkout settles only verified, Circle-issued USDC on Ethereum, Polygon, Base, Arbitrum, Optimism or Avalanche C-Chain.
-- Checkout accepts any customer EVM wallet connected through MetaMask; the payer is verified against the onchain transaction.
-- Customers may use MetaMask Buy or Swap before checkout when they hold another supported asset.
-- Every payment requires explicit wallet confirmation and is credited only after independent onchain verification.
-- All payments settle to the merchant wallet `0xDC6740245e026A19ea9EE2B62968ea8aeFFEAb16`.
-- The EVO token is not used for EVO Passport purchases at this stage.
+`PROOF → PASSPORT → LIFECYCLE → AUTHORITY → VERIFY`
 
-## EVO token
+Supporting evidence includes:
 
-- Network: Polygon
-- Symbol: EVO
-- Contract: `0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f`
-- Decimals: 18
+- wallet signatures;
+- local SHA-256 file hashing;
+- issuer wallet/domain/organization evidence;
+- owner/provider countersignatures;
+- ownership transitions;
+- lifecycle events;
+- optional observation/risk signals;
+- future stronger physical or regulated evidence.
+
+Public telemetry such as QR scans, EVO Pulse or software-only Challenge signals is observational and cannot elevate authoritative trust by itself.
 
 ## Current capabilities
 
-### EVO Seal
+### EVO Proof / Seal
 
+- one free demonstration Proof per eligible wallet;
+- wallet-signed creation;
 - local SHA-256 hashing;
-- wallet-signed identity;
-- public registry and verification;
-- QR verification links;
-- duplicate hash + serial protection.
-
-### Issuer Trust
-
-- wallet-proven issuer profiles;
-- optional domain evidence;
-- optional organization evidence;
-- explicit trust states rather than binary identity claims.
+- public verification record and QR;
+- atomic entitlement consumption/registration path;
+- active duplicate asset identity protection.
 
 ### EVO Passport
 
-- signed lifecycle events;
 - current-owner model;
-- two-signature ownership transfers.
+- signed lifecycle events;
+- public history;
+- two-party ownership transfer;
+- per-Seal authority serialization and atomic transfer state machine.
 
-### EVO Pulse
+### Document Proof
 
-- chained public observations;
-- integrity checking;
-- intentionally no IP/location/fingerprint collection in V0.
+- exact file fingerprint calculated in the browser;
+- original file does not need to be uploaded to EVO;
+- issuer/reference metadata;
+- public hash comparison;
+- signed revoke/supersede lifecycle;
+- historical records remain auditable.
 
-### EVO Challenge
+Document Proof demonstrates EVO registration, signature, file-fingerprint integrity and lifecycle state. It does not by itself establish truth of content, legal originality or accredited-authority status.
 
-- short-lived server challenge;
-- one-time response;
-- expiration and anti-replay audit;
-- persistent live countdown in the UI.
+### Service Proof
 
-### EVO AI Guardian
+- signed maintenance/service evidence tied to an EVO asset;
+- optional designated provider wallet;
+- provider wallet must differ from owner wallet;
+- explicit `OWNER_DECLARED`, provider-pending and provider-countersigned trust states;
+- provider inbox in My EVO;
+- Service Proofs included in Passport history.
 
-- explainable risk analysis;
-- Seal + Issuer Trust + Passport + Pulse + Challenge evidence;
-- anomaly and continuity signals;
+### Issuer / organization evidence
+
+- wallet-proven issuer profile;
+- optional domain evidence;
+- optional organization evidence;
+- separate authority levels instead of presenting a typed organization name as verified identity.
+
+### Checkout / EVO Proof balance
+
+Commercial reference in the current UI:
+
+- first eligible Proof: free, once per wallet;
+- individual: **US$9.90** for one EVO Proof;
+- pack: **US$49** for ten EVO Proofs;
+- public verification remains free.
+
+Checkout verifies settlement in Circle-issued USDC on the supported EVM networks configured in the application. The browser does not hold private keys or custody customer funds. Exact purchased/used/remaining Proof counters are private and require a wallet signature to read; the public status exposes only the minimum entitlement state required by the UI.
+
+The receiving merchant wallet is intentionally public because it is an on-chain payment destination.
+
+### Reality / Guardian layers
+
+- Reality Continuity and authority-state building blocks;
+- EVO Pulse and Challenge as non-authoritative observation signals;
+- explainable Guardian risk analysis;
 - no unsupported physical-authenticity inference.
 
-### Secure NFC architecture
+### Future physical/standards layers
 
-- physical-proof design based on cryptographic NFC tags;
-- NTAG 424 DNA / TagTamper targeted for the first pilot;
-- server-side secret verification;
-- future `NFC_VERIFIED` evidence and Pulse sources.
+The repository includes design work for secure NFC, Digital Product Passport interoperability, verifiable credentials and other standards-oriented connectors. These documents describe direction/preparation and must not be presented as certifications already obtained.
 
-## EVO Reality Graph
+## Security baseline
 
-A Seal is becoming more than an ID. Its Reality Graph combines identity, issuer evidence, ownership, lifecycle history, observations, freshness proofs and future secure physical proofs into an evolving trust state.
+Security is treated as a release gate.
 
-The target property is **temporal uniqueness**: a copied label may reproduce public data, but it should not be able to reproduce the complete sequence of legitimate signed and cryptographic state transitions.
+Current code includes, among other controls:
 
-See `docs/REALITY_GRAPH.md`.
+- no private-key/seed storage;
+- RLS/minimum-grant design for exposed database surfaces;
+- privileged writes through server-side authority paths;
+- payload and format validation;
+- replay/idempotency protections;
+- checkout verification rate controls;
+- atomic economic/ownership state transitions;
+- local vendored QR dependency;
+- browser CSP baseline;
+- exact-origin CORS policy on the first set of privileged browser endpoints;
+- explicit separation between observational and authoritative trust.
+
+Important remaining release gates include branch protection, production-edge security headers, additional CORS rollout review, CSP reduction after browser/network inventory, a real production atomic-Seal E2E test, auditable cleanup of historical test state, rollback/key-rotation procedures and independent penetration/security review.
+
+EVO must not be described as “unhackable”, “hacker-proof” or “100% secure”.
 
 ## Repository map
 
-- `index.html` — original browser EVO Seal prototype
-- `v1/` — current V1 web application
-- `docs/ARCHITECTURE.md` — architecture and roadmap
-- `docs/REALITY_GRAPH.md` — evolving proof graph and EVO Reality Levels
-- `docs/ISSUER_TRUST.md` — issuer evidence model
-- `docs/NFC_ARCHITECTURE.md` — secure physical-proof architecture
-- `docs/ORGANIZATION_EVIDENCE.md` — organization evidence model
-- `docs/SECURITY.md` — security rules and release gates
-- `security/THREAT_MODEL.md` — threat model
-- `contracts/` — smart-contract experiments; no new production contract should be deployed without review
-- `tests/` — automated security and integrity tests
+- `index.html` — hardened root launcher into the current application.
+- `v1/` — current static browser application.
+- `supabase/functions/` — Edge Functions and shared browser-origin policy.
+- `supabase/migrations/` — PostgreSQL/RLS/atomic authority migrations.
+- `tests/` — JavaScript regression checks and SQL/concurrency tests.
+- `security/` — threat model and production-alignment audit material.
+- `standards/` — trust/authority and interoperability building blocks.
+- `schemas/` — portable schemas.
+- `docs/` — architecture, verticals, ISMS preparation and release/security documentation.
+- `DEVELOPMENT.md` — reproducible local-development workflow.
+- `docs/RELEASE_READINESS_V400.md` — current RC audit, blockers and promotion sequence.
 
-## Roadmap
+## Local development
 
-1. **V1 digital trust stack** — Seal, Issuer Trust, Passport, Transfer, Pulse, Challenge and Guardian.
-2. **Reality State V0** — canonical trust-state schema + EVO Reality Levels.
-3. **Reality Root** — deterministic hash of the current normalized trust state + test vectors.
-4. **Secure NFC pilot** — NTAG 424 DNA enrollment, dynamic proof verification and replay/counter testing.
-5. **Guardian physical-awareness** — analyze NFC-backed evidence without making unsupported binary authenticity claims.
-6. **Testnet anchoring** — minimal registry/Reality Root anchoring only where it adds measurable value.
-7. **Independent security review** before any production flow moves EVO or other assets.
-8. **Limited mainnet utility** with explicit limits and emergency controls.
+The frontend has no required JavaScript build step. Node is used to standardize regression commands.
+
+```bash
+npm test
+npm run test:security
+npm run test:document
+npm run test:service
+npm run test:navigation
+npm run test:release
+```
+
+For complete setup, Supabase local development, migrations and security rules, use `DEVELOPMENT.md`.
+
+## Release discipline
+
+1. Work on a branch, never directly on `main`.
+2. Keep code state and production-deployment state separate.
+3. Add regression coverage for every bug/security change.
+4. Never commit privileged secrets.
+5. Preserve signed/history records; use auditable lifecycle actions instead of silent deletion.
+6. Keep economic and ownership transitions atomic and idempotent.
+7. Do not weaken CORS/CSP/RLS to make local development easier.
+8. Promote an RC only after the gates in `docs/SECURITY.md` and `docs/RELEASE_READINESS_V400.md` are satisfied.
+
+## Development roadmap
+
+Immediate sequence for the RC:
+
+1. production deployment inventory;
+2. real browser-to-production atomic Seal E2E validation;
+3. remaining privileged endpoint CORS rollout with compatibility tests;
+4. browser network inventory and CSP narrowing;
+5. production-edge headers and protected `main`;
+6. rollback/incident/key-rotation drill;
+7. independent security review;
+8. production release decision.
+
+After the security/release baseline is complete, product expansion can continue around Document Provenance/EVO Origin, stronger issuer authority, standards interoperability and secure physical binding where there is a validated market need.
 
 ## Important
 
-EVO Protocol is experimental software. A seal is only as trustworthy as its issuer, evidence, lifecycle continuity and physical binding mechanism.
-
-**The QR is not the product. The evolving proof graph behind it is.**
+EVO is evidence infrastructure. Its assurance level comes from the quality and independence of the evidence attached to a record—not from the existence of a QR code alone.
