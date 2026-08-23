@@ -2,6 +2,7 @@
 // - Explicit user action only
 // - EIP-6963 discovery first
 // - User chooses the provider when multiple wallets are installed
+// - User chooses the account when one provider exposes multiple accounts
 // - Connection requests account permission only
 // - Address + chain are resolved ephemerally on simple connect
 // - Persistent EVO identity requires a signed/proven EVO action
@@ -10,10 +11,19 @@
 (()=>{
   const isProvider=p=>!!p&&typeof p.request==='function';
   const WALLET_REGISTER_URL=`${SUPABASE_URL}/functions/v1/register-evo-wallet`;
+  const preferenceKey='evo-wallet-preference-v277';
+  const walletRe=/^0x[0-9a-fA-F]{40}$/;
   let boundProvider=null;
   let walletAccount=null;
 
   function safeText(v,max=80){return String(v||'Wallet').replace(/[<>]/g,'').trim().slice(0,max)||'Wallet'}
+  function readPreference(){try{return JSON.parse(localStorage.getItem(preferenceKey)||'null')}catch{return null}}
+  function rememberPreference(entry,accountValue){
+    try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:entry?.info?.rdns||'',name:entry?.info?.name||'Wallet EVM',account:String(accountValue||'').toLowerCase()}))}catch{}
+  }
+  function normalizeAccounts(accounts){
+    return [...new Set((Array.isArray(accounts)?accounts:[]).map(value=>String(value||'').toLowerCase()).filter(value=>walletRe.test(value)))];
+  }
   function resetWalletUi(message='Conectar wallet'){
     account='';walletProvider=null;walletInfo=null;walletAccount=null;window.evoWalletAccount=null;
     const btn=document.getElementById('walletBtn');if(btn){btn.textContent=message;btn.removeAttribute('title');delete btn.dataset.issuerId}
@@ -72,20 +82,42 @@
     return 'Wallet EVM';
   }
 
-  function ensurePicker(){
-    let dlg=document.getElementById('evoWalletPicker');if(dlg)return dlg;
-    dlg=document.createElement('dialog');dlg.id='evoWalletPicker';
-    dlg.innerHTML=`<div class="evoWalletPickerInner"><div class="evoWalletPickerHead"><div><h3>Elegí tu wallet</h3><p>EVO sólo solicitará permiso para ver la cuenta pública.</p></div><button class="evoWalletClose" type="button" aria-label="Cerrar">×</button></div><div id="evoWalletList" class="evoWalletList"></div><div class="evoWalletSafety">Conectar una wallet no firma mensajes, no aprueba tokens y no mueve EVO, POL ni otros fondos. La conexión sola tampoco crea una identidad persistente.</div></div>`;
-    document.body.appendChild(dlg);dlg.querySelector('.evoWalletClose').onclick=()=>dlg.close('cancel');return dlg;
+  function ensurePicker(id,title,subtitle){
+    let dlg=document.getElementById(id);
+    if(!dlg){
+      dlg=document.createElement('dialog');dlg.id=id;
+      dlg.innerHTML=`<div class="evoWalletPickerInner"><div class="evoWalletPickerHead"><div><h3></h3><p></p></div><button class="evoWalletClose" type="button" aria-label="Cerrar">×</button></div><div class="evoWalletList"></div><div class="evoWalletSafety">Conectar una wallet no firma mensajes, no aprueba tokens y no mueve EVO, POL ni otros fondos. La conexión sola tampoco crea una identidad persistente.</div></div>`;
+      document.body.appendChild(dlg);dlg.querySelector('.evoWalletClose').onclick=()=>dlg.close('cancel');
+    }
+    dlg.querySelector('h3').textContent=title;dlg.querySelector('.evoWalletPickerHead p').textContent=subtitle;
+    return dlg;
   }
 
   function chooseWallet(wallets){
     if(wallets.length===1)return Promise.resolve(wallets[0]);
-    const dlg=ensurePicker(),list=dlg.querySelector('#evoWalletList');list.innerHTML='';
+    const dlg=ensurePicker('evoWalletPicker','Elegí tu wallet','EVO sólo solicitará permiso para ver la cuenta pública.'),list=dlg.querySelector('.evoWalletList');list.innerHTML='';
     return new Promise((resolve,reject)=>{
       let settled=false;const finish=(value,err)=>{if(settled)return;settled=true;dlg.close();err?reject(err):resolve(value)};
       wallets.forEach(w=>{const b=document.createElement('button');b.type='button';b.className='evoWalletChoice';const name=document.createElement('b');name.textContent=w.info.name;const meta=document.createElement('small');meta.textContent=w.source==='EIP-6963'?(w.info.rdns||'EIP-6963'):'Compatibilidad heredada';b.append(name,meta);b.onclick=()=>finish(w);list.appendChild(b)});
       dlg.onclose=()=>{if(!settled){settled=true;reject(new Error('Selección de wallet cancelada.'))}};dlg.showModal();
+    });
+  }
+
+  function chooseAccount(entry,accounts){
+    const valid=normalizeAccounts(accounts);
+    if(!valid.length)return Promise.reject(new Error('La wallet no devolvió una cuenta EVM válida.'));
+    if(valid.length===1)return Promise.resolve(valid[0]);
+    const dlg=ensurePicker('evoAccountPicker','Elegí la cuenta','MetaMask autorizó más de una cuenta. Elegí cuál querés usar en EVO.'),list=dlg.querySelector('.evoWalletList');list.innerHTML='';
+    const pref=readPreference();
+    return new Promise((resolve,reject)=>{
+      let settled=false;const finish=(value,err)=>{if(settled)return;settled=true;dlg.close();err?reject(err):resolve(value)};
+      valid.forEach(value=>{
+        const b=document.createElement('button');b.type='button';b.className='evoWalletChoice';
+        const name=document.createElement('b');name.textContent=`${safeText(entry.info?.name,24)} ${value.slice(0,6)}…${value.slice(-4)}`;
+        const meta=document.createElement('small');meta.textContent=`${value}${String(pref?.account||'').toLowerCase()===value?' · última usada en EVO':''}`;
+        b.append(name,meta);b.onclick=()=>finish(value);list.appendChild(b);
+      });
+      dlg.onclose=()=>{if(!settled){settled=true;reject(new Error('Selección de cuenta cancelada.'))}};dlg.showModal();
     });
   }
 
@@ -100,16 +132,30 @@
     return await provider.request({method:'eth_requestAccounts'});
   }
 
-  function bindProvider(provider,displayName){
+  function setActiveAccount(entry,accountValue,detail={}){
+    const normalized=String(accountValue||'').toLowerCase();
+    if(!walletRe.test(normalized))throw new Error('La cuenta seleccionada no es válida.');
+    walletProvider=entry.provider;walletInfo=entry.info;account=normalized;walletAccount=null;window.evoWalletAccount=null;
+    rememberPreference(entry,normalized);
+    const btn=document.getElementById('walletBtn');if(btn)btn.textContent=`${safeText(entry.info?.name,24)} ${normalized.slice(0,6)}…${normalized.slice(-4)}`;
+    window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:normalized,wallet:entry.info?.name||'Wallet EVM',rdns:entry.info?.rdns||'',...detail}}));
+    return normalized;
+  }
+
+  function bindProvider(entry){
+    const provider=entry.provider,displayName=entry.info?.name||'Wallet EVM';
     if(boundProvider===provider||typeof provider?.on!=='function')return;
     boundProvider=provider;
     provider.on('accountsChanged',accounts=>{
-      const a=accounts?.[0];
-      if(!a){resetWalletUi();toast('La wallet se desconectó.');return}
-      if(!/^0x[0-9a-fA-F]{40}$/.test(String(a)))return;
-      account=String(a).toLowerCase();walletAccount=null;window.evoWalletAccount=null;
-      const btn=document.getElementById('walletBtn');if(btn)btn.textContent=`${safeText(displayName,24)} ${account.slice(0,6)}…${account.slice(-4)}`;
-      window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account,wallet:displayName,changed:true}}));
+      const valid=normalizeAccounts(accounts);
+      if(!valid.length){resetWalletUi();toast('La wallet se desconectó.');return}
+      const pref=readPreference();const preferred=String(pref?.account||'').toLowerCase();const current=String(account||'').toLowerCase();
+      let next='';
+      if(preferred&&valid.includes(preferred))next=preferred;
+      else if(valid.length===1)next=valid[0];
+      else if(current&&valid.includes(current))next=current;
+      if(!next){resetWalletUi('Seleccionar cuenta');toast('Hay varias cuentas autorizadas. Elegí cuál usar desde EVO.');return}
+      setActiveAccount(entry,next,{changed:true,source:'ACCOUNTS_CHANGED'});
       registerWalletAccountSafely(provider,displayName);
     });
     provider.on('chainChanged',()=>{if(account)registerWalletAccountSafely(provider,displayName)});
@@ -118,13 +164,11 @@
 
   window.evoConnectWallet=async function(){
     const wallets=await discoverWallets();if(!wallets.length)throw new Error('No se detectó ninguna wallet EVM compatible.');
-    const selected=await chooseWallet(wallets),accounts=await requestAccounts(selected.provider),a=accounts?.[0];
-    if(!/^0x[0-9a-fA-F]{40}$/.test(String(a||'')))throw new Error('La wallet no devolvió una cuenta EVM válida.');
-    walletProvider=selected.provider;walletInfo=selected.info;account=String(a).toLowerCase();bindProvider(selected.provider,selected.info.name);
-    const btn=document.getElementById('walletBtn');if(btn)btn.textContent=`${safeText(selected.info.name,24)} ${account.slice(0,6)}…${account.slice(-4)}`;
-    window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account,wallet:selected.info.name,source:selected.source}}));
+    const selected=await chooseWallet(wallets),accounts=await requestAccounts(selected.provider),chosen=await chooseAccount(selected,accounts);
+    bindProvider(selected);
+    const active=setActiveAccount(selected,chosen,{source:selected.source,explicit:true});
     await registerWalletAccountSafely(selected.provider,selected.info.name);
-    return account;
+    return active;
   };
 
   window.evoGetWalletAccount=()=>walletAccount;
@@ -136,5 +180,5 @@
     const a=window.evoWalletAccount;
     toast(a?.persisted?`Identidad EVO confirmada · ${a.issuer_id||''}`:'Wallet conectada · la identidad persistente se crea sólo con una prueba EVO firmada.');
   }catch(e){toast(e?.message||'Conexión cancelada')}};
-  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'USER CONTROLLED',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
+  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'PROVIDER + ACCOUNT USER CONTROLLED',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
 })();
