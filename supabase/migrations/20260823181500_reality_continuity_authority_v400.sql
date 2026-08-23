@@ -85,42 +85,12 @@ begin
 
   if v_signer <> v_current_owner then raise exception 'signer_is_not_current_owner'; end if;
 
-  select coalesce((
-    select upper(ip.status)
-      from public.evo_issuer_profiles ip
-     where lower(ip.issuer_wallet) = v_issuer
-     limit 1
-  ), 'SELF_DECLARED') into v_issuer_trust;
+  select coalesce((select upper(ip.status) from public.evo_issuer_profiles ip where lower(ip.issuer_wallet) = v_issuer limit 1),'SELF_DECLARED') into v_issuer_trust;
+  select coalesce((select lower(ip.profile_hash) from public.evo_issuer_profiles ip where lower(ip.issuer_wallet) = v_issuer limit 1),'none') into v_issuer_profile_hash;
+  select coalesce((select lower(pe.event_digest) from public.evo_passport_events pe where pe.seal_id=v_seal_id and pe.status='ACTIVE' order by pe.registered_at desc, pe.event_id desc limit 1),'none') into v_passport_head;
+  select coalesce((select lower(ep.pulse_hash) from public.evo_pulses ep where ep.seal_id=v_seal_id and ep.status='ACTIVE' order by ep.observed_ms desc, ep.pulse_hash desc limit 1),'none') into v_pulse_head;
+  select coalesce((select upper(ec.challenge_id) from public.evo_challenges ec where ec.seal_id=v_seal_id and ec.status='CONSUMED' order by ec.completed_at desc nulls last, ec.challenge_id desc limit 1),'NONE') into v_challenge_head;
 
-  select coalesce((
-    select lower(ip.profile_hash)
-      from public.evo_issuer_profiles ip
-     where lower(ip.issuer_wallet) = v_issuer
-     limit 1
-  ), 'none') into v_issuer_profile_hash;
-
-  select coalesce((
-    select lower(pe.event_digest)
-      from public.evo_passport_events pe
-     where pe.seal_id = v_seal_id and pe.status = 'ACTIVE'
-     order by pe.registered_at desc, pe.event_id desc limit 1
-  ), 'none') into v_passport_head;
-
-  select coalesce((
-    select lower(ep.pulse_hash)
-      from public.evo_pulses ep
-     where ep.seal_id = v_seal_id and ep.status = 'ACTIVE'
-     order by ep.observed_ms desc, ep.pulse_hash desc limit 1
-  ), 'none') into v_pulse_head;
-
-  select coalesce((
-    select upper(ec.challenge_id)
-      from public.evo_challenges ec
-     where ec.seal_id = v_seal_id and ec.status = 'CONSUMED'
-     order by ec.completed_at desc nulls last, ec.challenge_id desc limit 1
-  ), 'NONE') into v_challenge_head;
-
-  -- Rebuild the exact canonical evidence object used by the Edge implementation.
   v_state_canonical :=
     '{"challengeHead":' || pg_catalog.to_json(v_challenge_head)::text ||
     ',"currentOwner":' || pg_catalog.to_json(v_current_owner)::text ||
@@ -135,7 +105,7 @@ begin
     ',"sealStatus":' || pg_catalog.to_json(v_seal_status)::text ||
     ',"version":"EVO-REALITY-EVIDENCE-V0"}';
 
-  v_expected_evidence_root := pg_catalog.encode(extensions.digest(v_state_canonical, 'sha256'), 'hex');
+  v_expected_evidence_root := pg_catalog.encode(extensions.digest(v_state_canonical,'sha256'),'hex');
   if v_evidence_root <> v_expected_evidence_root then raise exception 'stale_evidence_root'; end if;
 
   if coalesce(v_state ->> 'version','') <> 'EVO-REALITY-EVIDENCE-V0'
@@ -150,44 +120,24 @@ begin
      or lower(coalesce(v_state ->> 'pulseHead','')) <> v_pulse_head
      or upper(coalesce(v_state ->> 'challengeHead','')) <> v_challenge_head
      or upper(coalesce(v_state ->> 'physicalProofHead','')) <> 'NONE'
-  then
-    raise exception 'stale_evidence_state';
-  end if;
+  then raise exception 'stale_evidence_state'; end if;
 
-  select rs.* into v_existing
-  from public.evo_reality_snapshots rs
-  where rs.snapshot_id = v_snapshot_id;
+  select rs.* into v_existing from public.evo_reality_snapshots rs where rs.snapshot_id=v_snapshot_id;
   if found then
-    if rs.seal_id is null then null; end if;
     if v_existing.seal_id <> v_seal_id
        or lower(v_existing.evidence_root) <> v_evidence_root
        or lower(v_existing.continuity_root) <> v_continuity_root
        or v_existing.previous_continuity_root <> v_previous_root
        or lower(v_existing.signer_wallet) <> v_signer
        or v_existing.evidence_state <> v_state
-    then
-      raise exception 'snapshot_id_conflict';
-    end if;
-    return query select
-      v_existing.snapshot_id,v_existing.seal_id,v_existing.evidence_root,v_existing.continuity_root,
-      v_existing.previous_continuity_root,v_existing.signer_wallet,v_existing.signed_at,v_existing.registered_at,
-      v_existing.status,true;
+    then raise exception 'snapshot_id_conflict'; end if;
+    return query select v_existing.snapshot_id,v_existing.seal_id,v_existing.evidence_root,v_existing.continuity_root,v_existing.previous_continuity_root,v_existing.signer_wallet,v_existing.signed_at,v_existing.registered_at,v_existing.status,true;
     return;
   end if;
 
-  select coalesce((
-    select lower(rs.continuity_root)
-      from public.evo_reality_snapshots rs
-     where rs.seal_id = v_seal_id and rs.status = 'ACTIVE'
-     order by rs.registered_at desc, rs.snapshot_id desc limit 1
-  ), 'GENESIS') into v_expected_previous;
-
+  select coalesce((select lower(rs.continuity_root) from public.evo_reality_snapshots rs where rs.seal_id=v_seal_id and rs.status='ACTIVE' order by rs.registered_at desc, rs.snapshot_id desc limit 1),'GENESIS') into v_expected_previous;
   if v_previous_root <> v_expected_previous then raise exception 'stale_previous_root'; end if;
-
-  if exists (
-    select 1 from public.evo_reality_snapshots rs
-    where rs.seal_id = v_seal_id and lower(rs.evidence_root) = v_evidence_root
-  ) then raise exception 'evidence_already_checkpointed'; end if;
+  if exists(select 1 from public.evo_reality_snapshots rs where rs.seal_id=v_seal_id and lower(rs.evidence_root)=v_evidence_root) then raise exception 'evidence_already_checkpointed'; end if;
 
   v_continuity_canonical :=
     '{"evidenceRoot":' || pg_catalog.to_json(v_evidence_root)::text ||
@@ -196,25 +146,17 @@ begin
     ',"signedAt":' || pg_catalog.to_json(p_row ->> 'signed_at')::text ||
     ',"signerWallet":' || pg_catalog.to_json(v_signer)::text ||
     ',"version":"EVO-CONTINUITY-V0"}';
-
-  v_expected_continuity_root := pg_catalog.encode(extensions.digest(v_continuity_canonical, 'sha256'), 'hex');
+  v_expected_continuity_root := pg_catalog.encode(extensions.digest(v_continuity_canonical,'sha256'),'hex');
   if v_continuity_root <> v_expected_continuity_root then raise exception 'continuity_root_mismatch'; end if;
 
   v_expected_snapshot_id := 'EVR-' || upper(substr(v_continuity_root,1,8)) || '-' || upper(substr(v_continuity_root,9,8)) || '-' || upper(substr(v_continuity_root,17,8));
   if v_snapshot_id <> v_expected_snapshot_id then raise exception 'snapshot_id_mismatch'; end if;
 
-  insert into public.evo_reality_snapshots as rs(
-    snapshot_id,seal_id,version,evidence_root,continuity_root,previous_continuity_root,evidence_state,
-    signer_wallet,signature,signature_message,signed_at,status
-  ) values (
-    v_snapshot_id,v_seal_id,'EVO-CONTINUITY-V0',v_evidence_root,v_continuity_root,v_previous_root,v_state,
-    v_signer,v_signature,v_signature_message,v_signed_at,'ACTIVE'
-  ) returning rs.* into v_inserted;
+  insert into public.evo_reality_snapshots as rs(snapshot_id,seal_id,version,evidence_root,continuity_root,previous_continuity_root,evidence_state,signer_wallet,signature,signature_message,signed_at,status)
+  values(v_snapshot_id,v_seal_id,'EVO-CONTINUITY-V0',v_evidence_root,v_continuity_root,v_previous_root,v_state,v_signer,v_signature,v_signature_message,v_signed_at,'ACTIVE')
+  returning rs.* into v_inserted;
 
-  return query select
-    v_inserted.snapshot_id,v_inserted.seal_id,v_inserted.evidence_root,v_inserted.continuity_root,
-    v_inserted.previous_continuity_root,v_inserted.signer_wallet,v_inserted.signed_at,v_inserted.registered_at,
-    v_inserted.status,false;
+  return query select v_inserted.snapshot_id,v_inserted.seal_id,v_inserted.evidence_root,v_inserted.continuity_root,v_inserted.previous_continuity_root,v_inserted.signer_wallet,v_inserted.signed_at,v_inserted.registered_at,v_inserted.status,false;
 end;
 $$;
 
