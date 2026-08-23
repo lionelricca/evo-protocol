@@ -1,12 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2.105.4";
 import { verifyMessage } from "npm:viem@2.21.54";
+import { rejectUntrustedBrowserOrigin, restrictedPreflight, withRestrictedCors } from "../_shared/evo-cors.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 const sealRe = /^EVO-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/;
 const walletRe = /^0x[0-9a-f]{40}$/;
 const hex64 = /^[0-9a-f]{64}$/;
@@ -16,7 +12,6 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      ...cors,
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
@@ -95,8 +90,7 @@ function continuityMessage(sealId: string, evidenceRoot: string, previousRoot: s
   return `EVO PROOF OF CONTINUITY V0\nSeal ID: ${sealId}\nEvidence Root: ${evidenceRoot}\nPrevious Root: ${previousRoot}\nSigner: ${signer}\nSigned: ${signedAt}`;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+async function handle(req: Request) {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
   try {
@@ -110,7 +104,7 @@ Deno.serve(async (req) => {
     catch { return json({ error: "invalid_json" }, 400); }
 
     const action = String(body?.action || "get").toLowerCase();
-    if (!['get', 'prepare', 'commit'].includes(action)) return json({ error: "invalid_action" }, 400);
+    if (!["get", "prepare", "commit"].includes(action)) return json({ error: "invalid_action" }, 400);
     const sealId = String(body?.sealId || body?.payload?.sealId || "").trim().toUpperCase();
     if (!sealRe.test(sealId)) return json({ error: "invalid_seal_id" }, 400);
 
@@ -231,4 +225,12 @@ Deno.serve(async (req) => {
     if (code === "database_error") return json({ error: code }, 500);
     return json({ error: "internal_error" }, 500);
   }
+}
+
+Deno.serve(async (req: Request) => {
+  const preflight = restrictedPreflight(req);
+  if (preflight) return preflight;
+  const denied = rejectUntrustedBrowserOrigin(req);
+  if (denied) return denied;
+  return withRestrictedCors(req, await handle(req));
 });
