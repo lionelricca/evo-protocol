@@ -38,6 +38,13 @@ assert(!index.includes('<h2>El pasaporte digital de cada activo</h2>'),'asset-pa
 assert(index.includes('US$9,90')&&index.includes('US$49'),'implemented pilot prices must remain visible');
 assert(!index.includes('US$39'),'inactive monthly company plan must not appear in the browser entrypoint');
 assert(index.includes('1 EVO Proof · US$9,90'),'payment recovery must use Proof terminology');
+assert(!index.includes('id="guardian"'),'advanced Guardian panel must not ship on the default commercial surface');
+assert(!index.includes('./guardian.js'),'default commercial surface must not execute Guardian analysis');
+assert(!index.includes('./guardian-v04.js'),'default commercial surface must not activate Guardian authority UI or Battery DPP loader');
+assert(!index.includes('./guardian.css'),'default commercial surface must not load dormant Guardian presentation');
+assert(!index.includes('./pulse.js'),'default commercial surface must not emit background EVO Pulse observations');
+assert(!index.includes('Security Gate'),'internal release terminology must not appear in the customer entrypoint');
+assert(!index.includes('Battery DPP'),'advanced Battery DPP terminology must not appear in the customer entrypoint');
 
 assert(proof.includes('origin-verifier-v322.js?v=20260821-v322-origin-verifier'),'Origin exact-file verifier must be activated');
 assert(proof.includes('origin-authority-v323.js?v=20260821-v323-origin-authority'),'Origin issuer authority must be activated');
