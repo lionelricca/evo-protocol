@@ -1,12 +1,24 @@
 export const EVO_VC_DM_EXPORT_PROFILE='EVO-VC-DM-2.0-UNSECURED-EXPORT-V1';
 export const W3C_VC_CONTEXT='https://www.w3.org/ns/credentials/v2';
-export const EVO_VC_SCHEMA_URL='https://lionelricca.github.io/evo-protocol/schemas/evo-vc-dm-export-v400.schema.json';
+export const EVO_VC_CONTEXT='https://lionelricca.github.io/evo-protocol/contexts/evo-v1.jsonld';
+export const EVO_VC_SCHEMA_URL='https://lionelricca.github.io/evo-protocol/schemas/evo-proof-credential-v400.schema.json';
 
 const HEX64=/^[a-f0-9]{64}$/;
 
 function required(value,name){
   const out=String(value??'').trim();
   if(!out)throw new Error(`missing_${name}`);
+  return out;
+}
+
+function asUri(value,name){
+  const out=required(value,name);
+  try{
+    const parsed=new URL(out);
+    if(!parsed.protocol)throw new Error('missing_protocol');
+  }catch{
+    throw new Error(`invalid_${name}`);
+  }
   return out;
 }
 
@@ -24,14 +36,14 @@ function digestFrom(input={}){
 
 export function buildEvoVcDataModelExport(input={},options={}){
   const evoId=required(input.sealId||input.seal_id,'evo_id').toUpperCase();
-  const issuer=required(options.issuer||input.issuer,'issuer');
-  const verificationUrl=required(options.verificationUrl||input.verificationUrl,'verification_url');
+  const issuer=asUri(options.issuer||input.issuer,'issuer');
+  const verificationUrl=asUri(options.verificationUrl||input.verificationUrl,'verification_url');
+  const credentialId=asUri(options.credentialId||`urn:evo:credential:${evoId}`,'credential_id');
   const digest=digestFrom(input);
-  try{new URL(verificationUrl);}catch{throw new Error('invalid_verification_url');}
 
   const credential={
-    '@context':[W3C_VC_CONTEXT],
-    id:options.credentialId||`urn:evo:credential:${evoId}`,
+    '@context':[W3C_VC_CONTEXT,EVO_VC_CONTEXT],
+    id:credentialId,
     type:['VerifiableCredential','EvoProofCredential'],
     issuer,
     validFrom:asIso(input.registered_at||input.registeredAt||input.created_at||input.createdAt),
