@@ -29,8 +29,17 @@ assert.match(development, /No habilitar esa opción en producción/, 'local-orig
 
 const readiness = read('docs/RELEASE_READINESS_V400.md');
 assert.match(readiness, /Not equivalent to production readiness/, 'release audit must distinguish code readiness from deployment readiness');
+assert.match(readiness, /PRODUCTION_DEPLOYMENT_V400\.md/, 'release audit must point to the production deployment inventory');
+assert.match(readiness, /Battery Passport/, 'release audit must keep the remaining Battery CORS gate explicit');
 assert.match(readiness, /independent penetration\/security review/i, 'release audit must preserve the independent review gate');
 assert.match(readiness, /unhackable/, 'release audit must preserve the prohibited-claims guidance');
+
+const deployment = read('docs/PRODUCTION_DEPLOYMENT_V400.md');
+assert.match(deployment, /code state.*deployed production state/i, 'deployment inventory must preserve code-vs-production separation');
+assert.match(deployment, /evo-battery-passport/, 'deployment inventory must track the remaining Battery endpoint');
+assert.match(deployment, /CORS review pending/, 'deployment inventory must not silently mark Battery CORS complete');
+assert.match(deployment, /verify_jwt=false/, 'deployment inventory must record the JWT configuration boundary');
+assert.match(deployment, /CORS is a browser boundary, not a substitute for authorization/i, 'deployment inventory must preserve the CORS authorization caveat');
 
 const gitignore = read('.gitignore');
 assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
