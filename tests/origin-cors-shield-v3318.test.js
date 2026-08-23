@@ -10,6 +10,7 @@ const guardedFiles={
   'register-evo-issuer':fs.readFileSync('supabase/functions/register-evo-issuer/index.ts','utf8'),
   'evo-domain-verification':fs.readFileSync('supabase/functions/evo-domain-verification/index.ts','utf8'),
   'submit-evo-organization':fs.readFileSync('supabase/functions/submit-evo-organization/index.ts','utf8'),
+  'evo-document-lifecycle':fs.readFileSync('supabase/functions/evo-document-lifecycle/index.ts','utf8'),
 };
 
 assert(helper.includes('https://lionelricca.github.io'),'current GitHub Pages origin must be explicitly allowlisted');
@@ -37,5 +38,6 @@ assert(seal.includes('evo_register_seal_with_credit'),'CORS hardening must not r
 assert(guardedFiles['evo-domain-verification'].includes('evo_domain_take_check_slot'),'origin shielding must preserve the DNS-check abuse-control boundary');
 assert(guardedFiles['submit-evo-organization'].includes('submission_conflict_or_pending_exists'),'origin shielding must preserve organization concurrency handling');
 assert(guardedFiles['register-evo-wallet'].includes('EPHEMERAL_UNTIL_SIGNED'),'origin shielding must preserve proof-gated wallet persistence semantics');
+assert(guardedFiles['evo-document-lifecycle'].includes('evo_register_document_lifecycle_authoritative'),'origin shielding must preserve atomic Document Lifecycle authority');
 
 console.log('EVO V3.3.18 Origin & CORS Shield checks passed');
