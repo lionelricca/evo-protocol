@@ -20,22 +20,25 @@ A checked item means evidence exists for the exact release candidate being shipp
 - [x] Local exact-file verifier carried forward.
 - [x] Origin issuer-authority UI carried forward.
 - [x] Production-addressable JSON schema IDs replace placeholder EVO domains.
-- [ ] Final user-facing homepage copy audited in ES and EN.
+- [x] V4 homepage/product positioning audited and bilingual mappings added for the new Origin-first copy.
 - [ ] Remaining authority/mutation endpoints classified for CORS compatibility.
 - [ ] Dead/legacy product copy and unreachable code audited after final UI smoke test.
 
 ## C. Automated verification
 
-- [ ] EVO Security Gate green on the final V4.0 RC head.
-- [ ] EVO Document Proof checks green.
-- [ ] EVO Service Proof checks green.
-- [ ] EVO navigation checks green.
-- [ ] EVO navigation V2.7.3 checks green.
-- [ ] EVO Origin provenance test green.
-- [ ] EVO Origin exact-file verifier test green.
-- [ ] EVO Origin issuer-authority test green.
-- [ ] V4.0 project-truth/release-contract test green.
-- [ ] PostgreSQL 17 atomic/concurrency suite green.
+Verified green on V4.0 RC head `630ffb4c2bc816abe5d87c711de97e2f4d75005e`:
+
+- [x] EVO Security Gate.
+- [x] EVO Document Proof checks.
+- [x] EVO Service Proof checks.
+- [x] EVO navigation checks.
+- [x] EVO navigation V2.7.3 checks.
+- [x] EVO Origin provenance test.
+- [x] EVO Origin exact-file verifier test.
+- [x] EVO Origin issuer-authority test.
+- [x] V4.0 project-truth/release-contract test.
+- [x] W3C VC Data Model unsecured-export boundary test.
+- [x] PostgreSQL 17 atomic/concurrency suite.
 
 ## D. Real browser smoke test
 
@@ -71,15 +74,15 @@ Before deployment, compare Git migration history with the observed production mi
 
 - [ ] Protect `main`.
 - [ ] Require Security Gate and critical functional checks before merge.
-- [ ] Keep GitHub Actions pinned to immutable commit SHAs.
+- [x] GitHub Actions remain pinned to immutable commit SHAs under the Security Gate.
 - [ ] Decide repository licensing/copyright policy explicitly; do not infer an open-source license.
-- [ ] Resolve/supersede stale stacked PRs only after their useful content is present in the V4.0 RC.
+- [x] Stale stacked PRs #33, #43, #44, #45 and #46 were closed unmerged after their useful/corrected content was consolidated into PR #49.
 - [ ] Create final release/tag only after merge and production smoke verification.
 
 ## G. Historical production data
 
 - [ ] Resolve historical duplicate test identity `V1-TEST-001` using an auditable lifecycle action.
-- [ ] Do not silently delete or mutate historical production records merely to make an index pass.
+- [x] No historical production record was silently deleted or mutated during RC consolidation.
 
 ## H. High-assurance/enterprise claims
 
