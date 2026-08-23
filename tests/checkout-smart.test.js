@@ -19,7 +19,7 @@ function checkoutHarness() {
   });
   ['buyIndividualBtn','buyPackBtn','recoverPaymentBtn','checkoutStatus','recoveryStatus','recoveryTxHash','recoveryPlan','recoveryNetwork'].forEach(id => elements.set(id, makeElement(id)));
 
-  const calls = { paymentConfig:null, verification:null };
+  const calls = { paymentConfig:null, verification:null, requests:[] };
   const context = {
     SUPABASE_URL:'https://example.supabase.co',
     account:null,
@@ -29,7 +29,9 @@ function checkoutHarness() {
     setTimeout,
     clearTimeout,
     fetch:async (_url, options) => {
-      calls.verification = JSON.parse(options.body);
+      const body = JSON.parse(options.body);
+      calls.requests.push(body);
+      if (body.action === 'verify') calls.verification = body;
       return { status:200, ok:true, json:async () => ({ remainingCredits:1 }) };
     },
     localStorage:{
@@ -95,6 +97,7 @@ test('submitted smart payment is recoverable and verified against its settlement
     payerWallet:transaction.from,
     chainId:137
   });
+  assert.ok(harness.calls.requests.some(body => body.action === 'status' && body.wallet === transaction.from), 'checkout should refresh the private entitlement after verification');
   assert.equal(harness.storage.has('evo_pending_payment_v1'), false);
 });
 
