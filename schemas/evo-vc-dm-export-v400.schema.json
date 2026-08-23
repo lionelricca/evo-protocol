@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lionelricca.github.io/evo-protocol/schemas/evo-vc-dm-export-v400.schema.json",
+  "title": "EVO VC Data Model 2.0 Unsecured Export v1",
+  "type": "object",
+  "required": ["profile", "interoperabilityTarget", "security", "credential"],
+  "properties": {
+    "profile": {"const": "EVO-VC-DM-2.0-UNSECURED-EXPORT-V1"},
+    "interoperabilityTarget": {"const": "W3C Verifiable Credentials Data Model 2.0"},
+    "security": {
+      "type": "object",
+      "required": ["secured", "status", "statement"],
+      "properties": {
+        "secured": {"const": false},
+        "status": {"const": "UNSECURED_EXPORT"},
+        "statement": {"type": "string", "minLength": 40}
+      },
+      "additionalProperties": false
+    },
+    "credential": {
+      "type": "object",
+      "required": ["@context", "id", "type", "issuer", "validFrom", "credentialSubject", "credentialSchema"],
+      "properties": {
+        "@context": {"type": "array", "contains": {"const": "https://www.w3.org/ns/credentials/v2"}},
+        "id": {"type": "string"},
+        "type": {"type": "array", "contains": {"const": "VerifiableCredential"}},
+        "issuer": {"type": "string"},
+        "validFrom": {"type": "string", "format": "date-time"},
+        "credentialSubject": {
+          "type": "object",
+          "required": ["id", "evoId", "proofType", "digestAlgorithm", "digest", "verificationUrl", "evidenceLevel"],
+          "properties": {
+            "id": {"type": "string"},
+            "evoId": {"type": "string"},
+            "proofType": {"type": "string"},
+            "subjectType": {"type": "string"},
+            "title": {"type": "string"},
+            "reference": {"type": "string"},
+            "digestAlgorithm": {"const": "SHA-256"},
+            "digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+            "verificationUrl": {"type": "string", "format": "uri"},
+            "evidenceLevel": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "credentialSchema": {
+          "type": "object",
+          "required": ["id", "type"],
+          "properties": {
+            "id": {"const": "https://lionelricca.github.io/evo-protocol/schemas/evo-vc-dm-export-v400.schema.json"},
+            "type": {"const": "JsonSchema"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
