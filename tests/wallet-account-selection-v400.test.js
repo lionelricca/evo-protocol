@@ -10,7 +10,10 @@ const session=fs.readFileSync(path.join(__dirname,'..','v1','wallet-session-v277
 assert.match(connector,/function chooseAccount\(entry,accounts\)/,'explicit connect must choose an account inside a multi-account provider');
 assert.match(connector,/MetaMask autorizó más de una cuenta/,'multi-account ambiguity must be visible to the user');
 assert.match(connector,/rememberPreference\(entry,normalized\)/,'explicit account choice must become the EVO preference');
-assert.match(connector,/accounts=await requestAccounts\(selected\.provider\),chosen=await chooseAccount\(selected,accounts\)/,'provider connection must not silently consume accounts[0]');
+assert.match(connector,/wallet_revokePermissions/,'re-selecting an already connected account must be able to revoke the stale account permission');
+assert.match(connector,/requestAccounts\(selected\.provider,\{forceReselect\}\)/,'explicit re-selection must request a fresh provider account decision');
+assert.match(connector,/eth_requestAccounts/,'fresh re-selection must reopen the wallet account chooser');
+assert.match(connector,/evoConnectWallet\(\{forceReselect:connected\}\)/,'the connected-wallet button must enter account re-selection instead of silently reusing the old account');
 assert.doesNotMatch(connector,/const selected=await chooseWallet\(wallets\),accounts=await requestAccounts\(selected\.provider\),a=accounts\?\.\[0\]/,'legacy first-account selection must stay removed');
 
 assert.match(session,/const silentCandidate=\(accounts,pref\)=>/,'silent restore must resolve the preferred account explicitly');
@@ -18,4 +21,4 @@ assert.match(session,/if\(preferred&&valid\.includes\(preferred\)\)return prefer
 assert.match(session,/return valid\.length===1\?valid\[0\]:null/,'silent restore must fail closed when multiple accounts are authorized without a preference');
 assert.doesNotMatch(session,/accounts\.find\(value=>walletRe\.test/,'silent restore must not silently choose the first authorized account');
 
-console.log('EVO V4 multi-account selection regression checks passed');
+console.log('EVO V4 multi-account selection and fresh re-selection regression checks passed');
