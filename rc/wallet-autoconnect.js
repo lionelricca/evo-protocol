@@ -4,6 +4,7 @@
 // - User chooses the provider when multiple wallets are installed
 // - User chooses the account when one provider exposes multiple accounts
 // - Re-selecting a connected wallet requests a fresh account permission
+// - Explicit account choice is authoritative for silent startup restore
 // - Address + chain are resolved ephemerally on simple connect
 // - Persistent EVO identity requires a signed/proven EVO action
 // - NO personal_sign, NO transaction, NO token approval during connect
@@ -12,15 +13,16 @@
   const isProvider=p=>!!p&&typeof p.request==='function';
   const WALLET_REGISTER_URL=`${SUPABASE_URL}/functions/v1/register-evo-wallet`;
   const preferenceKey='evo-wallet-preference-v277';
+  const explicitPreferenceKey='evo-wallet-explicit-v400';
   const walletRe=/^0x[0-9a-fA-F]{40}$/;
   let boundProvider=null;
   let walletAccount=null;
 
   function safeText(v,max=80){return String(v||'Wallet').replace(/[<>]/g,'').trim().slice(0,max)||'Wallet'}
   function readPreference(){try{return JSON.parse(localStorage.getItem(preferenceKey)||'null')}catch{return null}}
-  function rememberPreference(entry,accountValue){
-    try{localStorage.setItem(preferenceKey,JSON.stringify({rdns:entry?.info?.rdns||'',name:entry?.info?.name||'Wallet EVM',account:String(accountValue||'').toLowerCase()}))}catch{}
-  }
+  function preferencePayload(entry,accountValue){return {rdns:entry?.info?.rdns||'',name:entry?.info?.name||'Wallet EVM',account:String(accountValue||'').toLowerCase()}}
+  function rememberPreference(entry,accountValue){try{localStorage.setItem(preferenceKey,JSON.stringify(preferencePayload(entry,accountValue)))}catch{}}
+  function rememberExplicitPreference(entry,accountValue){try{localStorage.setItem(explicitPreferenceKey,JSON.stringify(preferencePayload(entry,accountValue)))}catch{}}
   function normalizeAccounts(accounts){
     return [...new Set((Array.isArray(accounts)?accounts:[]).map(value=>String(value||'').toLowerCase()).filter(value=>walletRe.test(value)))];
   }
@@ -158,6 +160,7 @@
     if(!walletRe.test(normalized))throw new Error('La cuenta seleccionada no es válida.');
     walletProvider=entry.provider;walletInfo=entry.info;account=normalized;walletAccount=null;window.evoWalletAccount=null;
     rememberPreference(entry,normalized);
+    if(detail.explicit)rememberExplicitPreference(entry,normalized);
     const btn=document.getElementById('walletBtn');if(btn)btn.textContent=`${safeText(entry.info?.name,24)} ${normalized.slice(0,6)}…${normalized.slice(-4)}`;
     window.dispatchEvent(new CustomEvent('evo:wallet-connected',{detail:{account:normalized,wallet:entry.info?.name||'Wallet EVM',rdns:entry.info?.rdns||'',...detail}}));
     return normalized;
@@ -207,5 +210,5 @@
     const a=window.evoWalletAccount;
     toast(a?.persisted?`Identidad EVO confirmada · ${a.issuer_id||''}`:'Wallet conectada · la identidad persistente se crea sólo con una prueba EVO firmada.');
   }catch(e){toast(e?.message||'Conexión cancelada')}};
-  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'PROVIDER + ACCOUNT USER CONTROLLED',reselection:'EXPLICIT PERMISSION REFRESH',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
+  console.info('EVO wallet security',{discovery:'EIP-6963 FIRST',selection:'PROVIDER + ACCOUNT USER CONTROLLED',reselection:'EXPLICIT PERMISSION REFRESH',startupPreference:'EXPLICIT ACCOUNT AUTHORITATIVE',legacy:'FALLBACK ONLY',connect:'ACCOUNT PERMISSION + EPHEMERAL IDENTITY RESOLUTION',persistence:'SIGNED/PROVEN ACTION ONLY',accountChanges:'TRACKED',chainChanges:'TRACKED',signOnConnect:false,transactionsOnConnect:false});
 })();
