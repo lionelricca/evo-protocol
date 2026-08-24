@@ -1,8 +1,8 @@
-# EVO ISMS Control Evidence Index — V0.1
+# EVO ISMS Control Evidence Index — V0.2
 
 Target standard: ISO/IEC 27001:2022 readiness.
 
-Status: evidence index / gap tracker. This is **not** a Statement of Applicability and does not imply certification. A formal SoA must be prepared against the complete applicable ISO/IEC 27001:2022 Annex A control set during the certification program.
+Status: evidence index / gap tracker. This is **not** a Statement of Applicability and does not imply certification. A formal SoA must be prepared against an authorised copy of the complete applicable ISO/IEC 27001:2022 control set during the certification program.
 
 ## Purpose
 
@@ -14,7 +14,10 @@ Connect EVO security/ISMS requirements to actual repository, CI and production e
 | --- | --- | --- | --- |
 | ISMS scope | `docs/isms/ISMS_SCOPE.md` | Documented | Management approval/effective-date evidence before audit |
 | Information-security policy | `docs/isms/INFORMATION_SECURITY_POLICY.md` | Documented | Formal periodic review record |
-| Risk management | `docs/isms/RISK_REGISTER.md` | Initial register exists | Owner/review cadence and treatment evidence must remain current |
+| Risk management | `docs/isms/RISK_REGISTER.md` | Initial register exists | Owner/review cadence, residual scoring and treatment evidence must remain current |
+| Asset ownership/inventory | `docs/isms/ASSET_AND_INFORMATION_INVENTORY.md` | Initial ISMS asset/information register documented | Periodic review/retirement evidence and final provider/config details |
+| Information classification/handling | `docs/isms/INFORMATION_CLASSIFICATION_AND_HANDLING.md` | Handling standard documented | Operating evidence, exceptions and formal retention schedule |
+| SoA preparation | `docs/isms/SOA_PREPARATION.md` | Formal preparation method documented | Licensed/current standard review, full applicability decisions and management-approved formal SoA pending |
 | Secure development | PR workflow, Security Gate, Release Readiness, deterministic tests | Strong automated evidence | Independent SDLC audit/pentest still external |
 | Supply-chain evidence | `package-lock.json`, SPDX SBOM gate, `docs/SUPPLY_CHAIN_ASSURANCE_V460.md` | Implemented for npm root/package evidence | Vendored assets, Actions/platform/SaaS inventory handled separately |
 | Vulnerability disclosure | `.github/SECURITY.md` | Documented | GitHub private vulnerability reporting setting not verified/enabled from current integration |
@@ -32,9 +35,9 @@ Connect EVO security/ISMS requirements to actual repository, CI and production e
 | Default branch integrity | CI gates exist | **Gap** | GitHub `main` branch/ruleset protection remains disabled |
 | Public clean-browser evidence | Navigation/contract tests exist | **Gap** | Live clean-browser E2E still required |
 | Paid checkout E2E | Checkout security/idempotency tests exist | **Gap** | Controlled real paid purchase → credit → consumption verification pending |
-| DPP Registry integration | fail-closed adapter + DPP gate | Readiness implemented | Final Battery registry semantic/auth path remains external/current-EU dependency |
+| DPP Registry integration | fail-closed adapter + DPP gate + current Commission state documentation | Readiness implemented | Registry/TEST are operational and organisation onboarding is actionable, but successful Battery registration still awaits Commission Battery semantic enablement and a pinned usable API/schema contract |
 | Independent assurance | Internal CI/security controls | **Gap** | Independent pentest/security review pending |
-| ISO/IEC 27001 certification | ISMS readiness documents | **Gap** | Formal SoA, internal audit, management review, Stage 1/Stage 2 certification pending |
+| ISO/IEC 27001 certification | ISMS readiness documents + SoA preparation method | **Gap** | Formal approved SoA, internal audit, management review, Stage 1/Stage 2 certification pending |
 
 ## Evidence rule
 
@@ -71,16 +74,40 @@ Independent audit/test/certification evidence exists within its stated scope.
 
 EVO should not use E4 language for E1–E3 evidence.
 
+## Current ISMS preparation baseline
+
+The repository now contains an initial documented baseline for:
+
+- scope;
+- policy;
+- risk register;
+- asset/information inventory;
+- classification/handling;
+- access and secret management;
+- incident response;
+- backup/continuity;
+- vulnerability management;
+- supplier security;
+- control-evidence tracking;
+- SoA preparation method;
+- vulnerability disclosure;
+- secure-development/release/SBOM automation.
+
+This materially improves audit readiness, but documentation is **not** a substitute for E3 operating evidence or E4 independent assurance.
+
 ## Immediate next evidence priorities
 
 1. enable protection/ruleset on `main` with required checks;
 2. perform and record clean-browser production E2E;
 3. execute controlled paid checkout E2E;
 4. run physical NTAG 424 DNA TagTamper pilot;
-5. perform database restore/tabletop incident exercises;
-6. build privileged-account and material-supplier inventories;
-7. commission independent pentest;
-8. prepare complete formal SoA and internal-audit/management-review evidence before ISO certification audit.
+5. perform database restore and incident tabletop exercises;
+6. build privileged-account/MFA review records and material-supplier review records;
+7. complete risk ownership/residual-risk/treatment tracking;
+8. build the formal SoA from an authorised current standard copy and management approval;
+9. perform internal audit and management review;
+10. commission independent pentest;
+11. proceed to accredited certification audit only after the operating evidence is mature.
 
 ## Review
 
