@@ -66,6 +66,11 @@ export async function aes128DecryptBlock(key, block) {
   return decrypted;
 }
 
+export async function aes128DecryptBlockWithIv(key, block, iv) {
+  assertBytes(iv, 16, "aes_iv");
+  return xor(await aes128DecryptBlock(key, block), iv);
+}
+
 async function subkeys(key) {
   const L = await aes128EncryptBlock(key, new Uint8Array(16));
   const k1 = leftShift(L);
@@ -123,15 +128,24 @@ export function bytesToHex(bytes) {
   return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
-export async function deriveSdmFileReadMacKey(staticKey, uid, counter) {
-  assertBytes(staticKey, 16, "sdm_file_read_key");
+function buildSdmSessionVector(prefix, uid, counter) {
   assertBytes(uid, 7, "uid");
   assertBytes(counter, 3, "sdm_counter");
-  const sv2 = new Uint8Array(16);
-  sv2.set([0x3c, 0xc3, 0x00, 0x01, 0x00, 0x80], 0);
-  sv2.set(uid, 6);
-  sv2.set(counter, 13);
-  return aesCmac(staticKey, sv2);
+  const vector = new Uint8Array(16);
+  vector.set(prefix, 0);
+  vector.set(uid, 6);
+  vector.set(counter, 13);
+  return vector;
+}
+
+export async function deriveSdmFileReadEncKey(staticKey, uid, counter) {
+  assertBytes(staticKey, 16, "sdm_file_read_key");
+  return aesCmac(staticKey, buildSdmSessionVector([0xc3, 0x3c, 0x00, 0x01, 0x00, 0x80], uid, counter));
+}
+
+export async function deriveSdmFileReadMacKey(staticKey, uid, counter) {
+  assertBytes(staticKey, 16, "sdm_file_read_key");
+  return aesCmac(staticKey, buildSdmSessionVector([0x3c, 0xc3, 0x00, 0x01, 0x00, 0x80], uid, counter));
 }
 
 export async function calculateSdmMac(staticKey, uid, counter, dynamicInput = new Uint8Array(0)) {
@@ -156,6 +170,40 @@ export function parsePiccData(block) {
 export function counterLe24(counter) {
   assertBytes(counter, 3, "sdm_counter");
   return counter[0] | (counter[1] << 8) | (counter[2] << 16);
+}
+
+export async function decryptSdmEncFileData({ fileReadKey, uid, counter, encryptedData }) {
+  const staticKey = assertBytes(fileReadKey, 16, "file_read_key");
+  const encrypted = assertBytes(encryptedData, 16, "sdm_enc_file_data");
+  const sessionKey = await deriveSdmFileReadEncKey(staticKey, uid, counter);
+  const ivInput = new Uint8Array(16);
+  ivInput.set(assertBytes(counter, 3, "sdm_counter"), 0);
+  const iv = await aes128EncryptBlock(sessionKey, ivInput);
+  const plaintext = await aes128DecryptBlockWithIv(sessionKey, encrypted, iv);
+  return { plaintext, sessionKey, iv };
+}
+
+function decodeTtByte(value) {
+  if (value === 0x43) return "CLOSE";
+  if (value === 0x4f) return "OPEN";
+  if (value === 0x49) return "INVALID";
+  return "UNKNOWN";
+}
+
+export function parseTagTamperStatus(plaintext, offset = 0) {
+  assertBytes(plaintext, undefined, "tag_tamper_plaintext");
+  if (!Number.isInteger(offset) || offset < 0 || offset + 1 >= plaintext.length) throw new Error("tag_tamper_offset_invalid");
+  const permanentStatus = decodeTtByte(plaintext[offset]);
+  const currentStatus = decodeTtByte(plaintext[offset + 1]);
+  let tamperState = "UNKNOWN";
+  if (permanentStatus === "OPEN" || currentStatus === "OPEN") tamperState = "OPEN";
+  else if (permanentStatus === "CLOSE" && currentStatus === "CLOSE") tamperState = "INTACT";
+  return {
+    permanentStatus,
+    currentStatus,
+    tamperState,
+    verified: tamperState === "INTACT" || tamperState === "OPEN",
+  };
 }
 
 export async function verifyNtag424Sun({
