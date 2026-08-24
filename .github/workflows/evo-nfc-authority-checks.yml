@@ -1,0 +1,47 @@
+name: EVO NFC Authority checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  nfc-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 resolved 2026-08-21
+        with:
+          node-version: '24'
+      - name: Syntax check NFC verifier
+        run: node --check supabase/functions/evo-nfc-verifier/index.ts
+      - name: Validate NFC verifier security/claim boundary
+        run: node tests/nfc-verifier-v440.test.js
+      - name: Test PostgreSQL atomic replay authority
+        run: psql -h 127.0.0.1 -U postgres -d postgres -f tests/nfc-replay-authority-v450.sql
+      - name: Gate scope
+        run: echo "NFC tag/UID/Seal binding, exact service-role authority, deny-all browser RLS, atomic monotonic counter, replay/revocation rejection and per-tag physical-pilot gate."
