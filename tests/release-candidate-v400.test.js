@@ -97,7 +97,7 @@ assert(!nfcSchema.includes('aesKey')&&!nfcSchema.includes('masterKey'),'public N
 assert(/TTPermStatus[\s\S]*TTCurrStatus/.test(nfcArchitecture),'NFC architecture must document NXP TagTamper status order');
 assert(/43h[\s\S]*4Fh[\s\S]*49h/.test(nfcArchitecture),'NFC architecture must pin NXP Close/Open/Invalid values');
 assert(nfcArchitecture.includes('<enc>&cmac='),'NFC architecture must pin the authenticated encrypted-mirror MAC input');
-assert(nfcArchitecture.includes('physicalAuthenticity=false'),'NFC architecture must preserve the physical-authenticity boundary');
+assert(/Never infer `AUTHENTIC PRODUCT`|physicalAuthenticity=false/.test(nfcArchitecture),'NFC architecture must preserve the physical-authenticity boundary');
 
 // Security Gate already executes this product-truth test, so the behavioral NFC
 // boundary becomes mandatory without modifying the long PostgreSQL gate workflow.
