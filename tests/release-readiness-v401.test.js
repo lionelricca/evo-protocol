@@ -41,8 +41,12 @@ assert.match(readiness, /unhackable/, 'release audit must preserve prohibited-cl
 assert.match(readiness, /explicit owner authorization/i, 'release audit must require explicit authorization before promotion');
 
 const releaseBundle = read('.github/workflows/evo-release-bundle.yml');
+assert.match(releaseBundle, /Checkout exact candidate head/, 'release bundle must explicitly checkout the candidate head');
+assert.match(releaseBundle, /github\.event\.pull_request\.head\.sha \|\| github\.sha/, 'PR bundles must select the actual PR head SHA');
+assert.match(releaseBundle, /SOURCE_SHA="\$\(git rev-parse HEAD\)"/, 'release bundle must derive source identity from checked-out HEAD');
 assert.match(releaseBundle, /EVO_SOURCE_COMMIT\.txt/, 'release bundle must record the exact source commit');
-assert.match(releaseBundle, /source_commit=\$GITHUB_SHA/, 'release manifest must bind evidence to the workflow commit');
+assert.match(releaseBundle, /source_commit=\$SOURCE_SHA/, 'release manifest must bind evidence to the checked-out candidate commit');
+assert.match(releaseBundle, /workflow_trigger_sha=\$GITHUB_SHA/, 'release manifest must separately record the GitHub trigger/integration SHA');
 assert.match(releaseBundle, /EVO_Release_Manifest\.txt/, 'release bundle must upload an auditable manifest');
 assert.match(releaseBundle, /zip_sha256=/, 'release manifest must record the final source ZIP SHA-256');
 
