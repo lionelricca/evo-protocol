@@ -1,138 +1,141 @@
-# EVO NFC Pilot V4.2.1
+# EVO NFC Physical Pilot — V4.6
 
-Status: **laboratory contract / no production keys / no production NFC authority**
+Status: **software verifier complete / production NFC authority deployed / no physical tag approved yet**
+
+This file keeps its historical path for compatibility, but its current content describes the V4.6 physical-pilot gate.
 
 ## Objective
 
-Turn the NFC architecture into a testable EVO product boundary without pretending that software alone has already validated a physical tag.
+Move EVO from software-validated NFC cryptography to real physical evidence without treating test vectors, copied URLs or laboratory configuration as proof of a genuine deployed tag.
 
-The V4.2.1 milestone defines what EVO may expose publicly **after** a trusted server-side verifier has checked an NFC cryptographic proof.
+The software side currently includes:
 
-This milestone does not implement NXP key provisioning, AES/SUN verification, tag personalization or a production NFC endpoint.
+- NTAG 424 DNA AES/SUN/SDM verification;
+- encrypted PICCData parsing;
+- UID + EVO Seal binding;
+- atomic replay/counter authority;
+- NTAG 424 DNA TagTamper encrypted-status decryption;
+- NXP `TTPermStatus || TTCurrStatus` interpretation;
+- per-tag `physicalPilotApproved` fail-closed gate.
 
 ## Official hardware baseline
 
 Pilot target:
 
-- NXP NTAG 424 DNA for cryptographic physical binding;
-- NXP NTAG 424 DNA TagTamper where package/opening state matters.
+- NXP NTAG 424 DNA;
+- NXP NTAG 424 DNA TagTamper for the opening-state test.
 
-The implementation must be checked against current official NXP documentation before real provisioning, including:
+Official references used by the implementation:
 
-- NTAG 424 DNA product documentation;
-- NTAG 424 DNA data sheet `NT4H2421Gx`;
-- Application Note `AN12196` — NTAG 424 DNA and NTAG 424 DNA TagTamper features and hints;
-- TagTamper-specific documentation when tamper loops are used.
+- NXP AN12196 Rev. 2.0 — 4 March 2025;
+- NXP NT4H2421Tx data sheet Rev. 3.0 — 31 January 2019;
+- NIST SP 800-38B for AES-CMAC.
 
-EVO must not invent cryptographic field layouts or keys from memory.
+NXP documents the TagTamper values as:
 
-## V4.2.1 implementation
+- `43h` (`C`) = Close;
+- `4Fh` (`O`) = Open;
+- `49h` (`I`) = Invalid / feature not enabled.
 
-### Public evidence contract
+The permanent status cannot be reset to Close after an opening is detected.
 
-`standards/evo-nfc-proof-v421.mjs`
+## Reviewed TagTamper NDEF layout
 
-The public contract accepts only a **server decision**. It does not receive or verify secret tag keys.
+For the first physical pilot, use exactly the reviewed V4.6 shape:
 
-A proof can become `NFC_CRYPTO_VERIFIED` only when all of these are true:
+```text
+https://<EVO-domain>/nfc/<tag-id>?picc_data=<32-hex>&enc=<32-hex>&cmac=<16-hex>
+```
 
-1. verifier mode is `SERVER_SIDE_NTAG424`;
-2. MAC/authentication decision is valid;
-3. tag is bound to the expected EVO Seal;
-4. no replay is detected;
-5. dynamic counter/freshness policy passes;
-6. tag ID, Seal ID and verification timestamp are valid.
+Requirements:
 
-Any missing authority fails closed.
+- encrypted PICCData mirrors UID + SDM counter;
+- `enc` is one encrypted 16-byte SDM file-data block;
+- plaintext bytes `0..1` of that block contain `TTPermStatus || TTCurrStatus`;
+- `SDMMACInputOffset` begins at the first character of the `enc` value;
+- `SDMMACOffset` is placed after the literal `&cmac=`;
+- server-side dynamic MAC input is therefore exactly `<enc>&cmac=`.
 
-### Tamper state
+Do not improvise a different offset layout during the first pilot. A different layout requires a separate reviewed profile/test vector.
 
-When a supported TagTamper tag is cryptographically verified:
+## Server profile before physical approval
 
-- `INTACT` can add `TAMPER_STATUS_VERIFIED`;
-- `OPEN` can add `TAMPER_STATUS_VERIFIED` plus risk signal `TAMPER_OPEN`;
-- an open tamper loop does not invalidate that the NFC cryptographic proof was genuine, but it changes the public status to `VERIFIED_TAMPER_OPEN`.
+Each real tag receives a unique secret-side profile. Example shape only:
 
-### Claims boundary
+```json
+{
+  "NFC-<PUBLIC-ID>": {
+    "enabled": true,
+    "sealId": "EVO-XXXXXXXX-XXXXXXXX-XXXXXXXX",
+    "expectedUid": "<14 HEX>",
+    "metaReadKey": "<32 HEX SECRET>",
+    "fileReadKey": "<32 HEX SECRET>",
+    "tagType": "NTAG_424_DNA_TAGTAMPER",
+    "macInputMode": "ENC_ASCII_CMAC_SUFFIX",
+    "ttStatusIndex": 0,
+    "physicalPilotApproved": false
+  }
+}
+```
 
-Every public NFC proof carries:
+Real AES keys must exist only in the Supabase server secret `EVO_NFC_PILOT_KEYS`; never in GitHub, browser code, screenshots, QR/NDEF public text or the public database.
+
+## Physical pilot sequence
+
+1. Obtain genuine NTAG 424 DNA and TagTamper samples from a traceable source.
+2. Read and record the genuine 7-byte UID for each selected pilot tag.
+3. Create/select an ACTIVE EVO Seal for the test object.
+4. Generate unique non-default AES lab keys for that one tag.
+5. Configure the reviewed SDM/NDEF layout with NXP-compatible tooling.
+6. Add the per-tag profile to the server secret with `physicalPilotApproved=false`.
+7. Call controlled `enroll_binding` so `tag_id ↔ UID ↔ seal_id` is stored in `evo_nfc_tags`.
+8. Tap the unopened TagTamper tag and confirm:
+   - valid SUN/SDM MAC;
+   - UID match;
+   - counter accepted;
+   - `tamperState=INTACT`;
+   - `nfcCryptoVerified=false` because physical approval is still false.
+9. Tap again and confirm the counter increases.
+10. Replay the previous URL and confirm `REPLAY_REJECTED`.
+11. Modify one MAC/PICCData/enc character and confirm rejection.
+12. Break/open the physical tamper loop.
+13. Tap again and confirm `tamperState=OPEN` and verified TagTamper status.
+14. Confirm the permanent open state remains Open on subsequent taps.
+15. Record the evidence pack: tag type, UID, public tag alias, Seal ID, provisioning date, closed-tap result, replay result, altered-data result and opened-tap result. Never include AES keys.
+16. Only after every required test passes, change that tag profile to `physicalPilotApproved=true`.
+17. Perform one final tap and confirm the strong cryptographic result is emitted while `OPEN` still surfaces as a tamper risk when applicable.
+
+## Pass criteria
+
+The pilot passes only when all of these are demonstrated on a real tag:
+
+- genuine tag can be read and provisioned;
+- UID matches the enrolled profile;
+- NXP cryptographic proof validates;
+- counters increase across independent taps;
+- a replayed counter is rejected;
+- modified authenticated data is rejected;
+- copied public URL does not create a new bound tag identity;
+- TagTamper starts as `INTACT`;
+- deliberate opening produces `OPEN`;
+- permanent open evidence persists;
+- no AES secret appears in browser/network-visible payloads, GitHub or public DB;
+- `physicalPilotApproved` remains false until the test is complete.
+
+## Claims boundary
+
+A valid secure tag proves that the expected cryptographic tag participated in the verified tap. An `OPEN` state proves that the configured tamper mechanism reports an opening state.
+
+Neither statement alone proves the factual or legal authenticity of the product to which the tag is attached.
+
+The public proof therefore continues to carry:
 
 ```text
 physicalAuthenticity=false
 ```
 
-A cryptographically verified tag is evidence that the expected secure tag participated in the verification. It is not, by itself, a legal or factual declaration that the attached product is authentic.
+until a separate issuer/product assurance policy justifies a stronger statement.
 
-## Public schema
+## After the pilot
 
-`schemas/evo-nfc-proof-v1.schema.json`
-
-The schema:
-
-- contains no secret-key field;
-- permits only the public evidence result;
-- fixes `verifierMode` to server-side NTAG424 authority;
-- fixes `physicalAuthenticity` to `false`;
-- distinguishes verified, tamper-open and rejected states.
-
-## Regression tests
-
-`tests/nfc-proof-v421.test.mjs`
-
-Current test cases cover:
-
-- valid cryptographic server decision;
-- invalid MAC;
-- replay;
-- tag not bound to the Seal;
-- browser/local verifier rejected;
-- TagTamper intact;
-- TagTamper open;
-- accidental secret fields removed from the public result;
-- schema claim boundary.
-
-## What is deliberately NOT implemented yet
-
-- AES key provisioning;
-- SUN/SDM cryptographic verification;
-- raw NXP encrypted PICC data parsing;
-- production `evo_nfc_tags` table;
-- production tag-enrollment RPC/function;
-- production public NFC verification endpoint;
-- KMS/HSM key storage;
-- NFC-backed authoritative Pulse;
-- Guardian NFC scoring;
-- public `NFC CRYPTO VERIFIED` UI.
-
-## Next hardware gate
-
-Before implementing cryptography:
-
-1. obtain genuine NTAG 424 DNA samples;
-2. obtain a small number of TagTamper samples;
-3. select an NFC reader/writer compatible with secure configuration;
-4. provision one test tag using non-production keys;
-5. reproduce official NXP test vectors;
-6. confirm dynamic data changes across taps;
-7. reject modified MAC/data;
-8. test replay/counter policy;
-9. only then implement the EVO lab verifier.
-
-## Security rules
-
-- Never commit AES/master/per-tag keys.
-- Never expose tag keys to browser JavaScript.
-- Never store tag secrets in a public Supabase table or public API response.
-- Use different credentials for laboratory and production.
-- The browser may display an NFC proof; it must never create the authoritative cryptographic decision.
-- A copied QR or copied NFC URL must never receive physical-grade evidence by itself.
-
-## Promotion rule
-
-V4.2.1 remains laboratory-only until physical tests demonstrate that:
-
-- a genuine provisioned tag verifies;
-- a copied URL does not verify as another tag;
-- a replay is handled according to policy;
-- a modified authenticated payload is rejected;
-- TagTamper state changes are correctly interpreted where applicable.
+Once one TagTamper pilot passes, repeat the same procedure on multiple tags before treating provisioning as operationally reliable. For enterprise deployment, replace the flat pilot secret map with diversified per-tag keys and KMS/HSM-backed key operations plus auditable provisioning and rotation.
