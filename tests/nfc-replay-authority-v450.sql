@@ -34,7 +34,10 @@ begin
   if not has_function_privilege('service_role','public.evo_accept_nfc_counter(text,text,text,bigint,timestamp with time zone)','EXECUTE') then raise exception 'service_role lacks RPC EXECUTE'; end if;
 
   select proconfig into v_search_path from pg_proc where oid='public.evo_accept_nfc_counter(text,text,text,bigint,timestamp with time zone)'::regprocedure;
-  if v_search_path is null or not ('search_path=' = any(v_search_path)) then raise exception 'RPC search_path is not empty: %', v_search_path; end if;
+  if v_search_path is null or not exists (
+    select 1 from unnest(v_search_path) as cfg
+    where cfg in ('search_path=', 'search_path=""')
+  ) then raise exception 'RPC search_path is not empty: %', v_search_path; end if;
 
   r := public.evo_accept_nfc_counter('NFC-TESTVECTOR01','04DE5F1EACC040','EVO-460C9274-39725594-215E874B',5,now());
   if r->>'reason' <> 'TAG_BINDING_NOT_ACTIVE_OR_MISMATCH' then raise exception 'wrong Seal binding was not rejected: %', r; end if;
