@@ -12,6 +12,7 @@ A checked item means evidence exists for the exact release candidate state noted
 - [x] Implemented pricing is limited to Free / US$9.90 / US$49 pack.
 - [x] Current purchase architecture does not depend on the historical EVO token.
 - [x] W3C VC interoperability export is explicitly unsecured until a securing mechanism is implemented.
+- [x] Free Proof is framed as one benefit per eligible user, not one benefit per wallet.
 
 ## B. Code consolidation
 
@@ -25,13 +26,22 @@ A checked item means evidence exists for the exact release candidate state noted
 - [x] Passport Transfer and Battery Passport CORS classification completed: wildcard browser CORS is intentional for their mixed public/integration surfaces; signed/authoritative mutation controls remain the security boundary. See `docs/CORS_POLICY_V400.md`.
 - [x] Default commercial entrypoint reduced to Origin / Proof / Passport / Verify; dormant Guardian, Pulse and Battery DPP runtime loaders removed from the default page.
 - [x] Unreachable `organization-sync.js` removed after repository-wide load/reference audit.
-- [ ] Final dead/legacy copy and unreachable-code pass after the real-browser smoke test.
+- [x] Final live-copy pass removed the obsolete per-wallet Free Proof wording and reinforced critical ES/EN Origin/verification copy.
+- [ ] Final unreachable-code pass after all remaining real-browser blocks are complete.
 
 ## C. Automated verification
 
-Exact green RC1 code baseline: `9d0512fe4b6ee50fd84f3b329fcf02afeb2a58bd`.
+Historical immutable RC1 source-artifact baseline: `9d0512fe4b6ee50fd84f3b329fcf02afeb2a58bd`.
 
-All workflows completed successfully on that exact head:
+Source artifact from that exact baseline:
+
+- artifact: `evo-protocol-v4-rc1-source`;
+- GitHub artifact SHA-256: `53aca3251b3b15ee7820890ac6b31c7bfaabf6230d3c06ca7ad20bf3b180ece9`;
+- full source-bundle Node suite at that baseline: 55/55 passing.
+
+Current post-smoke UI/security head verified green: `e9c5c268cf0b2212436286a381bb000c853a8a44`.
+
+All seven focused workflows completed successfully on that exact current head:
 
 - [x] EVO Security Gate.
 - [x] EVO Release Readiness checks.
@@ -46,28 +56,37 @@ All workflows completed successfully on that exact head:
 - [x] V4 Reality Continuity Authority static + PostgreSQL runtime tests.
 - [x] Final browser CORS classification regression test.
 - [x] PostgreSQL 17 atomic/concurrency suites.
-- [x] Full source-bundle Node suite: 55/55 passing.
+- [x] Explicit-connect wallet startup regression checks.
+- [x] Multi-account wallet selection/re-selection regression checks.
+- [x] Free Proof anti-Sybil regression checks.
+- [x] Pre-signing Seal review regression checks.
+- [x] Critical bilingual V4 copy regression checks.
 
-RC1 source artifact generated from that head:
-
-- artifact: `evo-protocol-v4-rc1-source`;
-- GitHub artifact SHA-256: `53aca3251b3b15ee7820890ac6b31c7bfaabf6230d3c06ca7ad20bf3b180ece9`.
-
-Documentation-only commits after this baseline must still complete CI before final promotion.
+A new final source artifact/digest must be generated from the exact promotion head before tag/release.
 
 ## D. Real browser smoke test
 
-- [ ] Open EVO from a clean browser session.
-- [ ] Connect MetaMask/wallet successfully.
-- [ ] Confirm silent session restoration does not create unauthorized persistent identity state.
-- [ ] Confirm Free Proof availability for an eligible first-use wallet.
-- [ ] Create one real EVO Proof through the atomic registration path.
-- [ ] Verify the generated public QR/link.
-- [ ] For a document, verify exact-file match and modified-file mismatch.
-- [ ] Confirm revoked/superseded version messaging where test data exists.
-- [ ] Confirm declared issuer naming vs active organization verification.
-- [ ] Confirm ES/EN critical wording.
+- [ ] Repeat the final candidate once from a genuinely clean/private browser profile before promotion.
+- [x] Connect MetaMask/wallet successfully.
+- [x] Confirm page load/F5 starts disconnected and shows `Conectar wallet`; no wallet is activated without an explicit user action.
+- [x] Confirm changing MetaMask account updates EVO and does not retain the previous wallet dashboard data.
+- [x] Confirm Free Proof availability for an eligible first-use wallet.
+- [x] Create one real EVO Proof through the atomic registration path.
+- [x] Confirm the real Free Proof is reserved/consumed exactly once.
+- [x] Verify the generated public QR/link.
+- [x] For a document, verify exact-file match.
+- [x] For the same document, verify modified-file mismatch.
+- [x] Confirm the exact-file verifier performs SHA-256 locally and does not require a connected wallet.
+- [x] Add mandatory pre-sign review/normalization after the smoke test exposed accidental public-field content risk.
+- [ ] Confirm revoked/superseded version messaging where controlled test data exists.
+- [ ] Confirm declared issuer naming vs active organization verification with an organization-backed test case.
+- [ ] Confirm ES/EN critical wording visually in the real browser after the final bilingual reinforcement.
 - [ ] Test paid checkout/recovery only with a controlled transaction and explicit production authorization.
+
+Real Proof used for the smoke test:
+
+- Seal: `EVO-B8A24B42-54260524-48BBD34D`;
+- expected original SHA-256: `a9566768fa58fb3e574109c30ebe1307b660f2555c3b782c9622ddb617e414c4`.
 
 ## E. Backend production gate — explicit approval required
 
@@ -77,15 +96,20 @@ Read-only inventory is documented in `docs/PRODUCTION_INVENTORY_V400.md`.
 - [x] Production Security Advisor preflight: 0 security lints at audit time.
 - [x] Credit/economic consistency preflight: 0 orphan credit-consumption rows.
 - [x] Credit/economic consistency preflight: 0 paid-credit counter mismatches.
+- [x] Free Proof anti-Sybil authority migration deployed with explicit owner authorization.
+- [x] `evo-free-proof` production Edge Function deployed and observed responding successfully during the real-browser smoke test.
+- [x] Free Proof browser roles denied direct table/RPC authority; RLS/ACL audit completed.
+- [x] Post anti-Sybil Security Advisor audit returned 0 security lints.
+- [x] Real Free Proof reservation/consumption observed exactly once for the smoke-test wallet.
 - [x] Production drift identified: Service Proof authoritative RPCs are not deployed; production Service Proof still uses a direct write path.
 - [x] Production drift identified: Reality Continuity production v4 still directly inserts checkpoints after Edge-side checks.
 - [ ] Deploy V4 Service Proof Authority migration before matching `evo-service-proof` Edge Function.
 - [ ] Deploy V4 Reality Continuity Authority migration before matching `evo-reality-continuity` Edge Function.
 - [ ] Confirm/deploy any remaining branch-only Checkout Privacy / CORS / lifecycle function changes in dependency order.
-- [ ] Run post-deployment read-only RLS/RPC/Security Advisor audit.
-- [ ] Reconfirm zero orphan credit consumption and zero paid-credit counter mismatch after deployment.
+- [ ] Run full post-deployment read-only RLS/RPC/Security Advisor audit after the remaining authority deployments.
+- [ ] Reconfirm zero orphan credit consumption and zero paid-credit counter mismatch after the remaining authority deployments.
 - [ ] Verify exact deployed function versions/hashes and record rollback targets.
-- [ ] After a successful real atomic Seal creation, retire the legacy service-role credit RPC if compatibility permits.
+- [ ] Retire the legacy service-role credit RPC only if a compatibility audit confirms it is no longer required.
 
 ## F. Repository/release integrity
 
@@ -94,6 +118,7 @@ Read-only inventory is documented in `docs/PRODUCTION_INVENTORY_V400.md`.
 - [x] GitHub Actions remain pinned to immutable commit SHAs under the Security Gate.
 - [ ] Decide repository licensing/copyright policy explicitly; do not infer an open-source license.
 - [x] Stale stacked PRs #33, #43, #44, #45 and #46 were closed unmerged after consolidation into PR #49.
+- [ ] Generate a final source ZIP + SHA-256 from the exact promotion head.
 - [ ] Create final release/tag only after merge and production smoke verification.
 
 ## G. Historical production data
