@@ -14,9 +14,11 @@ const required = [
   'docs/isms/SOA_PREPARATION.md',
   'docs/isms/INCIDENT_RESPONSE.md',
   'docs/isms/ACCESS_AND_SECRET_MANAGEMENT.md',
+  'docs/isms/PRIVILEGED_ACCESS_REGISTER.md',
   'docs/isms/BACKUP_AND_CONTINUITY.md',
   'docs/isms/VULNERABILITY_MANAGEMENT.md',
   'docs/isms/SUPPLIER_SECURITY.md',
+  'docs/isms/MATERIAL_SUPPLIER_REGISTER.md',
   'docs/isms/CONTROL_EVIDENCE_INDEX.md',
   '.github/SECURITY.md',
 ];
@@ -69,6 +71,17 @@ assert.match(access, /never be committed to GitHub/i);
 assert.match(access, /per-tag|diversified/i);
 assert.match(access, /seed phrase/i);
 
+const privileged = read('docs/isms/PRIVILEGED_ACCESS_REGISTER.md');
+assert.match(privileged, /P-001/);
+assert.match(privileged, /GitHub account `lionelricca`/);
+assert.match(privileged, /permission API observed `admin`/i);
+assert.match(privileged, /MFA status \*\*NOT VERIFIED\*\*/i);
+assert.match(privileged, /Supabase `service_role`/);
+assert.match(privileged, /EVO_NFC_ADMIN_SECRET/);
+assert.match(privileged, /Customer wallet signer/);
+assert.match(privileged, /seed phrase.*prohibited/i);
+assert.match(privileged, /quarterly access review/i);
+
 const continuity = read('docs/isms/BACKUP_AND_CONTINUITY.md');
 assert.match(continuity, /RPO/);
 assert.match(continuity, /RTO/);
@@ -91,11 +104,23 @@ assert.match(suppliers, /Supabase/);
 assert.match(suppliers, /NFC/);
 assert.match(suppliers, /does not make EVO ISO-certified/i);
 
+const supplierRegister = read('docs/isms/MATERIAL_SUPPLIER_REGISTER.md');
+for (const supplier of ['GitHub', 'Supabase', 'DePay', 'European Commission DPP Registry', 'NXP']) {
+  assert.ok(supplierRegister.includes(supplier), `material supplier register must include ${supplier}`);
+}
+assert.match(supplierRegister, /widgets\/v13\.0\.45\.js/);
+assert.match(supplierRegister, /MFA status is \*\*NOT VERIFIED\*\*/i);
+assert.match(supplierRegister, /Battery semantic catalogue still blocks successful Battery registration/i);
+assert.match(supplierRegister, /no physical tag approved/i);
+assert.match(supplierRegister, /QTSP status\/scope independently verified/i);
+
 const index = read('docs/isms/CONTROL_EVIDENCE_INDEX.md');
 assert.match(index, /not.*Statement of Applicability/i);
 assert.match(index, /Asset ownership\/inventory/);
 assert.match(index, /Information classification\/handling/);
 assert.match(index, /SoA preparation/);
+assert.match(index, /initial factual register/i);
+assert.match(index, /DePay v13\.0\.45 dependency registered/);
 assert.match(index, /E0 — Planned/);
 assert.match(index, /E4 — Independently assured/);
 assert.match(index, /GitHub `main` branch\/ruleset protection remains disabled/);
@@ -133,4 +158,4 @@ for (const relative of required) {
   assertNoAffirmativeAbsoluteSecurityClaim(relative, content);
 }
 
-console.log('EVO V4.6 ISMS inventory/classification/SoA + operational-control checks passed');
+console.log('EVO V4.6 ISMS registers + inventory/classification/SoA + operational-control checks passed');
