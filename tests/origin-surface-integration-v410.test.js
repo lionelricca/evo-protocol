@@ -42,7 +42,8 @@ assert.match(guard,/guardRequest\('reserve'/,'Free Proof creation must reserve e
 assert.match(critical,/MutationObserver/,'V4.1 critical copy must normalize dynamically inserted status and error messages');
 assert.match(critical,/Crear mi Proof gratis/,'eligible action must be Proof-first, not Passport-first');
 assert.match(critical,/Tu Free Proof ya no está disponible/,'ineligible state must avoid the obsolete per-wallet explanation');
-assert.doesNotMatch(critical,/1 per wallet/,'V4.1 canonical critical copy must not expose the obsolete English per-wallet claim');
+assert.match(critical,/\['1 per wallet',\{es:'1 por usuario elegible',en:'1 per eligible user'\}\]/,'legacy English per-wallet copy must only survive as an input rewritten to the eligible-user rule');
+assert.match(critical,/EVO_EN_ES\['1 per wallet'\]='1 por usuario elegible'/,'legacy English translation lookup must normalize to eligible-user copy');
 
 // Follow the real Origin activation chain, not just file existence.
 assert.match(i18n,/ensureOriginDocumentModules/,'default surface must activate the consolidated document modules');
