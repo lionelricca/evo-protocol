@@ -30,12 +30,16 @@ assert.doesNotMatch(launcher, /20260823-v400-rc1/, 'root launcher must not keep 
 assert.doesNotMatch(launcherJs, /20260823-v400-rc1/, 'root launcher JS must not keep the retired RC1 target');
 
 const development = read('DEVELOPMENT.md');
-assert.match(development, /codex\/evo-v410-origin-truth-integration/, 'development guide must point to the current V4.1 branch');
-assert.match(development, /main` contiene la base V4\.0 RC1 promovida/, 'development guide must record the promoted baseline');
+assert.match(development, /`main` es siempre la base promovida del código/, 'development guide must define main as the promoted baseline');
+assert.match(development, /git checkout main/, 'development guide must start new work from main');
+assert.match(development, /git checkout -b codex\/evo-vXYZ-descripcion/, 'development guide must create a fresh branch per change');
+assert.doesNotMatch(development, /codex\/evo-v410-origin-truth-integration/, 'development guide must not hard-code an already merged branch');
 assert.match(development, /EVO_ALLOW_LOCAL_ORIGINS=true/, 'local CORS development switch must be documented explicitly');
 assert.match(development, /No habilitar esa opción en producción/, 'local-origin switch must be prohibited in production guidance');
 assert.match(development, /no reescribir una migración ya aplicada en producción/i, 'applied production migrations must remain immutable');
 assert.match(development, /1 Free Proof por usuario elegible/, 'development guide must preserve the anti-abuse product rule');
+assert.match(development, /npm run test:nfc/, 'development guide must expose the NFC laboratory regression command');
+assert.match(development, /docs\/NFC_PILOT_V411\.md/, 'development guide must reference the NFC laboratory pilot boundary');
 
 const readiness = read('docs/RELEASE_READINESS_V400.md');
 assert.match(readiness, /Not equivalent to production readiness/, 'release audit must distinguish code readiness from deployment readiness');
@@ -59,9 +63,16 @@ assert.match(releaseBundle, /zip_sha256=/, 'release manifest must record the fin
 assert.match(releaseBundle, /branches:\s*\n\s*- main/, 'release bundle must also run after promotion to main');
 assert.doesNotMatch(releaseBundle, /EVO_Protocol_V4_RC1\.zip/, 'release bundle must not hard-code the retired RC1 artifact name');
 
+const nfc=read('standards/evo-nfc-proof-v411.mjs');
+const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
+assert.match(nfc, /SERVER_SIDE_NTAG424/, 'NFC public proof must require a server-side verifier decision');
+assert.match(nfc, /physicalAuthenticity:false/, 'NFC public proof must not claim physical authenticity');
+assert.match(nfcSchema, /"physicalAuthenticity": \{ "const": false \}/, 'NFC schema must encode the physical-authenticity boundary');
+assert.doesNotMatch(nfc, /aesKey\s*:/i, 'public NFC proof contract must not expose AES key fields');
+
 const gitignore = read('.gitignore');
 assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
 assert.match(gitignore, /^\.env\.\*$/m, 'environment variants must remain ignored');
 assert.match(gitignore, /^!\.env\.example$/m, 'safe env template must remain allowlisted');
 
-console.log('EVO V4.1 release-readiness checks passed');
+console.log('EVO V4.1.1 release-readiness checks passed');
