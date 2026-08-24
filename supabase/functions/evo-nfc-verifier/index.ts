@@ -8,7 +8,9 @@ import {
 // @ts-ignore shared plain ESM is intentionally executed by both Node CI and Supabase Edge
 import {
   bytesToHex,
+  decryptSdmEncFileData,
   hexToBytes,
+  parseTagTamperStatus,
   verifyNtag424Sun,
 } from "../_shared/evo-aes-cmac.mjs";
 
@@ -19,6 +21,8 @@ const HEX_16 = /^[0-9a-fA-F]{32}$/;
 const HEX_8 = /^[0-9a-fA-F]{16}$/;
 const HEX_UID7 = /^[0-9a-fA-F]{14}$/;
 const ACTIONS = new Set(["status", "self_test", "enroll_binding", "verify_crypto"]);
+const TAG_424 = "NTAG_424_DNA";
+const TAG_424_TT = "NTAG_424_DNA_TAGTAMPER";
 
 type AnyRecord = Record<string, any>;
 type PilotProfile = {
@@ -27,8 +31,9 @@ type PilotProfile = {
   expectedUid: string;
   metaReadKey: string;
   fileReadKey: string;
-  macInputMode?: "ZERO_LENGTH";
+  macInputMode?: "ZERO_LENGTH" | "ENC_ASCII_CMAC_SUFFIX";
   tagType?: "NTAG_424_DNA" | "NTAG_424_DNA_TAGTAMPER";
+  ttStatusIndex?: number;
   physicalPilotApproved?: boolean;
 };
 
@@ -73,7 +78,21 @@ function loadProfile(tagId: string) {
   if (!HEX_UID7.test(String(profile.expectedUid || ""))) throw new Error("nfc_profile_uid_invalid");
   if (!HEX_16.test(String(profile.metaReadKey || "")) || !HEX_16.test(String(profile.fileReadKey || ""))) throw new Error("nfc_profile_key_invalid");
   profile.sealId = safeSealId(profile.sealId);
-  if ((profile.macInputMode || "ZERO_LENGTH") !== "ZERO_LENGTH") throw new Error("nfc_mac_input_mode_unsupported");
+
+  const tagType = profile.tagType || TAG_424;
+  if (tagType !== TAG_424 && tagType !== TAG_424_TT) throw new Error("nfc_tag_type_unsupported");
+  profile.tagType = tagType;
+
+  const macInputMode = profile.macInputMode || "ZERO_LENGTH";
+  if (tagType === TAG_424_TT) {
+    if (macInputMode !== "ENC_ASCII_CMAC_SUFFIX") throw new Error("nfc_tagtamper_mac_input_mode_required");
+    if (!Number.isInteger(profile.ttStatusIndex) || Number(profile.ttStatusIndex) < 0 || Number(profile.ttStatusIndex) > 14) {
+      throw new Error("nfc_tagtamper_status_index_invalid");
+    }
+  } else if (macInputMode !== "ZERO_LENGTH") {
+    throw new Error("nfc_mac_input_mode_unsupported");
+  }
+  profile.macInputMode = macInputMode;
   return profile;
 }
 function equalHex(a: string, b: string) {
@@ -126,7 +145,15 @@ async function selfTest() {
     piccEncData: hexToBytes("EF963FF7828658A599F3041510671E88"),
     sdmMac: hexToBytes("94EED9EE65337086"),
   });
-  return result.valid && bytesToHex(result.uid) === "04DE5F1EACC040" && result.counter === 61;
+  if (!result.valid || bytesToHex(result.uid) !== "04DE5F1EACC040" || result.counter !== 61) return false;
+
+  const encrypted = await decryptSdmEncFileData({
+    fileReadKey: zero,
+    uid: hexToBytes("04958CAA5C5E80"),
+    counter: hexToBytes("010000"),
+    encryptedData: hexToBytes("94592FDE69FA06E8E3B6CA686A22842B"),
+  });
+  return bytesToHex(encrypted.plaintext) === "78787878787878787878787878787878";
 }
 
 Deno.serve(async (req: Request) => {
@@ -146,25 +173,26 @@ Deno.serve(async (req: Request) => {
   if (action === "status") {
     return json(req, {
       ok: true,
-      service: "EVO NFC Verifier V4.5",
-      chipProfile: "NXP_NTAG_424_DNA_AES_SDM",
+      service: "EVO NFC Verifier V4.6",
+      chipProfile: "NXP_NTAG_424_DNA_AES_SDM_AND_TAGTAMPER",
       cryptoEngine: "NXP_AN12196_REV_2_0_VECTOR_VALIDATED",
       replayAuthority: "ATOMIC_TAG_UID_SEAL_COUNTER_RPC",
-      productionSecurityLintsAfterMigration: 0,
+      tagTamper: "SDM_ENCRYPTED_TTSTATUS_SUPPORTED",
+      tagTamperCodes: "NXP_C_O_I",
       publicClaim: "PHYSICAL_PILOT_REQUIRED_PER_TAG",
-      tamperStatus: "NOT_YET_IMPLEMENTED",
       pilotKeysConfigured: Boolean(Deno.env.get("EVO_NFC_PILOT_KEYS")),
     });
   }
 
   if (action === "self_test") {
-    try { return json(req, { ok: true, vector: "NXP_AN12196_TABLE_4", passed: await selfTest() }); }
+    try { return json(req, { ok: true, vectors: ["NXP_AN12196_TABLE_4", "NXP_AN12196_TABLE_3"], passed: await selfTest() }); }
     catch { return json(req, { ok: false, error: "nfc_crypto_self_test_failed" }, 500); }
   }
 
   try {
     const tagId = safeTagId(body.tagId);
     const profile = loadProfile(tagId);
+    const tagType = profile.tagType || TAG_424;
 
     if (action === "enroll_binding") {
       await requireAdmin(req);
@@ -175,7 +203,7 @@ Deno.serve(async (req: Request) => {
       const { error } = await db.from("evo_nfc_tags").insert({
         tag_id: tagId,
         seal_id: profile.sealId,
-        tag_type: profile.tagType || "NTAG_424_DNA",
+        tag_type: tagType,
         expected_uid: String(profile.expectedUid).toUpperCase(),
         status: "ACTIVE",
       });
@@ -183,7 +211,7 @@ Deno.serve(async (req: Request) => {
         if (String(error.code || "") === "23505") throw new Error("nfc_binding_already_exists");
         throw new Error("nfc_binding_insert_failed");
       }
-      return json(req, { ok: true, enrolled: true, tagId, sealId: profile.sealId, tagType: profile.tagType || "NTAG_424_DNA" });
+      return json(req, { ok: true, enrolled: true, tagId, sealId: profile.sealId, tagType });
     }
 
     const piccData = String(body.piccData || "").trim();
@@ -191,17 +219,58 @@ Deno.serve(async (req: Request) => {
     if (!HEX_16.test(piccData)) throw new Error("picc_data_invalid");
     if (!HEX_8.test(mac)) throw new Error("sdm_mac_invalid");
 
+    let encData = "";
+    let dynamicInput = new Uint8Array(0);
+    if (tagType === TAG_424_TT) {
+      encData = String(body.encData || "").trim().toUpperCase();
+      if (!HEX_16.test(encData)) throw new Error("sdm_enc_file_data_invalid");
+      // Pilot layout pins SDMMACInputOffset to the first ASCII hex byte of the
+      // encrypted TagTamper mirror, with SDMMACOffset after the literal &cmac=.
+      dynamicInput = new TextEncoder().encode(`${encData}&cmac=`);
+    }
+
     const result = await verifyNtag424Sun({
       metaReadKey: hexToBytes(profile.metaReadKey),
       fileReadKey: hexToBytes(profile.fileReadKey),
       piccEncData: hexToBytes(piccData),
       sdmMac: hexToBytes(mac),
+      dynamicInput,
     });
     const uid = bytesToHex(result.uid);
     const uidMatchesEnrollment = equalHex(uid, profile.expectedUid);
     const cryptoValid = result.valid && uidMatchesEnrollment;
     if (!cryptoValid) {
-      return json(req, { ok: true, tagId, sealId: profile.sealId, cryptoValid: false, uidMatchesEnrollment, readCounter: result.counter, evidenceState: "CRYPTO_REJECTED", nfcCryptoVerified: false });
+      return json(req, {
+        ok: true,
+        tagId,
+        sealId: profile.sealId,
+        tagType,
+        cryptoValid: false,
+        uidMatchesEnrollment,
+        readCounter: result.counter,
+        tamperState: tagType === TAG_424_TT ? "UNKNOWN" : "UNSUPPORTED",
+        tamperStatusVerified: false,
+        evidenceState: "CRYPTO_REJECTED",
+        nfcCryptoVerified: false,
+      });
+    }
+
+    let tamperState = "UNSUPPORTED";
+    let tamperPermanent = "UNSUPPORTED";
+    let tamperCurrent = "UNSUPPORTED";
+    let tamperStatusVerified = tagType !== TAG_424_TT;
+    if (tagType === TAG_424_TT) {
+      const tt = await decryptSdmEncFileData({
+        fileReadKey: hexToBytes(profile.fileReadKey),
+        uid: result.uid,
+        counter: result.counterBytes,
+        encryptedData: hexToBytes(encData),
+      });
+      const parsedTt = parseTagTamperStatus(tt.plaintext, Number(profile.ttStatusIndex));
+      tamperState = parsedTt.tamperState;
+      tamperPermanent = parsedTt.permanentStatus;
+      tamperCurrent = parsedTt.currentStatus;
+      tamperStatusVerified = parsedTt.verified;
     }
 
     const db = dbClient();
@@ -215,22 +284,27 @@ Deno.serve(async (req: Request) => {
     if (authorityError) throw new Error("nfc_replay_authority_failed");
     const replayAccepted = Boolean(authority?.accepted);
     const physicalApproved = profile.physicalPilotApproved === true;
-    const fullyVerified = cryptoValid && replayAccepted && physicalApproved;
+    const fullyVerified = cryptoValid && replayAccepted && physicalApproved && tamperStatusVerified;
     const evidenceState = !replayAccepted
       ? (authority?.reason === "REPLAY_OR_STALE_COUNTER" ? "REPLAY_REJECTED" : "TAG_BINDING_REJECTED")
+      : !tamperStatusVerified ? "TAGTAMPER_STATUS_INVALID"
       : physicalApproved ? "NFC_CRYPTO_VERIFIED" : "CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT";
 
     return json(req, {
       ok: true,
       tagId,
       sealId: profile.sealId,
-      tagType: profile.tagType || "NTAG_424_DNA",
+      tagType,
       cryptoValid,
       uidMatchesEnrollment,
       replayAccepted,
       replayReason: String(authority?.reason || ""),
       readCounter: result.counter,
       physicalPilotApproved: physicalApproved,
+      tamperState,
+      tamperPermanent,
+      tamperCurrent,
+      tamperStatusVerified,
       evidenceState,
       nfcCryptoVerified: fullyVerified,
     });
