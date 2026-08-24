@@ -14,18 +14,21 @@ assert.match(String(pkg.engines && pkg.engines.node || ''), />=20/, 'Node develo
 assert.equal(read('VERSION').trim(), pkg.version, 'VERSION and package.json must remain aligned');
 
 const readme = read('README.md');
-assert.match(readme, /Current stage:\s*V4\.1 Development Line/, 'README must expose the current V4.1 development stage');
+assert.match(readme, /Current stage:\s*V4\.2\.1 Development Line/, 'README must expose the current V4.2.1 development stage');
 assert.match(readme, /V4\.0 RC1 was promoted to `main`/, 'README must preserve the V4 promotion history');
+assert.match(readme, /V4\.2 added EU DPP Registry integration readiness/, 'README must preserve the promoted V4.2 DPP line');
 assert.doesNotMatch(readme, /Current stage:\s*V1\.5 Commercial Pilot/i, 'README must not regress to the obsolete V1.5 status');
 assert.match(readme, /PROJECT_TRUTH_V400\.md/, 'README must point to the V4 product-truth source');
 assert.match(readme, /RELEASE_CHECKLIST_V400\.md/, 'README must preserve the V4 promotion checklist reference');
 assert.match(readme, /one benefit per eligible user/i, 'README must preserve the server-side Free Proof policy');
 assert.doesNotMatch(readme, /Free Proof:\*\* one demonstration Proof per wallet/i, 'README must not restore one-free-proof-per-wallet marketing');
+assert.match(readme, /DPP_REGISTRY_INTEGRATION_V420\.md/, 'README must expose the current EU DPP Registry readiness track');
+assert.match(readme, /NFC_PILOT_V421\.md/, 'README must expose the current NFC laboratory track');
 
 const launcher = read('index.html');
 const launcherJs = read('root-launch.js');
-assert.match(launcher, /20260824-v410-dev1/, 'root launcher must use the current V4.1 cache key');
-assert.match(launcherJs, /20260824-v410-dev1/, 'root launcher JS must target the current V4.1 app');
+assert.match(launcher, /20260824-v410-dev1/, 'root launcher must use the current V4 browser cache key');
+assert.match(launcherJs, /20260824-v410-dev1/, 'root launcher JS must target the current V4 browser app');
 assert.doesNotMatch(launcher, /20260823-v400-rc1/, 'root launcher must not keep the retired RC1 cache key');
 assert.doesNotMatch(launcherJs, /20260823-v400-rc1/, 'root launcher JS must not keep the retired RC1 target');
 
@@ -39,7 +42,8 @@ assert.match(development, /No habilitar esa opción en producción/, 'local-orig
 assert.match(development, /no reescribir una migración ya aplicada en producción/i, 'applied production migrations must remain immutable');
 assert.match(development, /1 Free Proof por usuario elegible/, 'development guide must preserve the anti-abuse product rule');
 assert.match(development, /npm run test:nfc/, 'development guide must expose the NFC laboratory regression command');
-assert.match(development, /docs\/NFC_PILOT_V411\.md/, 'development guide must reference the NFC laboratory pilot boundary');
+assert.match(development, /docs\/NFC_PILOT_V421\.md/, 'development guide must reference the current NFC laboratory pilot boundary');
+assert.match(development, /docs\/DPP_REGISTRY_INTEGRATION_V420\.md/, 'development guide must preserve the DPP Registry integration track');
 
 const readiness = read('docs/RELEASE_READINESS_V400.md');
 assert.match(readiness, /Not equivalent to production readiness/, 'release audit must distinguish code readiness from deployment readiness');
@@ -63,7 +67,7 @@ assert.match(releaseBundle, /zip_sha256=/, 'release manifest must record the fin
 assert.match(releaseBundle, /branches:\s*\n\s*- main/, 'release bundle must also run after promotion to main');
 assert.doesNotMatch(releaseBundle, /EVO_Protocol_V4_RC1\.zip/, 'release bundle must not hard-code the retired RC1 artifact name');
 
-const nfc=read('standards/evo-nfc-proof-v411.mjs');
+const nfc=read('standards/evo-nfc-proof-v421.mjs');
 const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
 assert.match(nfc, /SERVER_SIDE_NTAG424/, 'NFC public proof must require a server-side verifier decision');
 assert.match(nfc, /physicalAuthenticity:false/, 'NFC public proof must not claim physical authenticity');
@@ -75,4 +79,4 @@ assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
 assert.match(gitignore, /^\.env\.\*$/m, 'environment variants must remain ignored');
 assert.match(gitignore, /^!\.env\.example$/m, 'safe env template must remain allowlisted');
 
-console.log('EVO V4.1.1 release-readiness checks passed');
+console.log('EVO V4.2.1 release-readiness checks passed');
