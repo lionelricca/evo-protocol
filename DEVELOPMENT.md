@@ -8,29 +8,27 @@ Esta guía describe cómo trabajar sobre EVO Protocol sin depender de una instal
 - `v1/`: frontend estático de EVO (Origin, wallet, checkout, Proofs, Passports, navegación e interfaces públicas).
 - `supabase/functions/`: Edge Functions de autoridad, pagos, ciclo de vida y verificación.
 - `supabase/migrations/`: cambios versionados de PostgreSQL/RLS/RPC.
+- `standards/`: contratos portables de evidencia e interoperabilidad.
+- `schemas/`: contratos JSON públicos.
 - `tests/`: regresiones JavaScript y pruebas SQL/concurrencia.
 - `security/`: threat model, auditoría y estado de migraciones.
-- `docs/`: arquitectura, seguridad, estándares, NFC y verticales.
+- `docs/`: arquitectura, seguridad, estándares, DPP, NFC y verticales.
 
 El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni secretos de firma. La clave pública/anon de Supabase puede estar en código cliente cuando RLS y grants estén correctamente limitados; cualquier credencial privilegiada debe permanecer en servidor/Edge Function.
 
 ## 2. Estado de ramas
 
-`main` contiene la base V4.0 RC1 promovida el 2026-08-24.
+`main` es siempre la base promovida del código.
 
-La línea de trabajo actual V4.1 es:
+Toda funcionalidad nueva debe nacer desde `main` actualizado en una rama independiente. No hardcodear una rama de desarrollo específica en esta guía porque queda obsoleta después de cada merge.
 
-```text
-codex/evo-v410-origin-truth-integration
-```
-
-V4.1 prioriza:
+La línea V4.2 combina:
 
 - EVO Origin como entrada comercial por defecto;
-- coherencia de producto entre frontend y autoridad server-side;
-- carga determinística de módulos críticos;
+- readiness de integración con el EU DPP Registry;
+- coherencia entre frontend y autoridad server-side;
 - pruebas de integración sobre la cadena real del navegador;
-- preparación del piloto NFC sin claves productivas.
+- piloto NFC sin claves productivas.
 
 No desarrollar directamente sobre `main`.
 
@@ -48,21 +46,22 @@ Para backend local y pruebas completas:
 - Docker compatible con Supabase local.
 - PostgreSQL client (`psql`) para ejecutar manualmente fixtures SQL.
 
-## 4. Clonar y seleccionar la rama
+## 4. Clonar y crear una rama
 
 ```bash
 git clone https://github.com/lionelricca/evo-protocol.git
 cd evo-protocol
 git fetch --all --prune
-git checkout codex/evo-v410-origin-truth-integration
-```
-
-Para iniciar una línea nueva desde producción de código:
-
-```bash
 git checkout main
 git pull --ff-only
 git checkout -b codex/evo-vXYZ-descripcion
+```
+
+Para retomar una rama ya existente:
+
+```bash
+git fetch --all --prune
+git checkout <nombre-de-rama>
 ```
 
 ## 5. Ejecutar el frontend local
@@ -106,11 +105,12 @@ npm run test:document
 npm run test:service
 npm run test:navigation
 npm run test:release
+npm run test:nfc
 ```
 
 Antes de enviar un PR, ejecutar como mínimo `npm run test:security` y las suites de las áreas modificadas.
 
-V4.1 agrega pruebas de integración que deben comprobar la cadena de carga real del frontend, no solamente que los archivos existan en el repositorio.
+Las pruebas de integración deben comprobar la cadena de carga real del frontend, no solamente que los archivos existan en el repositorio.
 
 ## 7. Backend Supabase local
 
@@ -187,11 +187,26 @@ Reglas:
 - usar claves de laboratorio separadas;
 - validar primero vectores oficiales y replay/counter behavior;
 - no desplegar `NFC CRYPTO VERIFIED` hasta que la comprobación criptográfica sea server-side;
-- un QR o una URL copiada nunca debe elevar confianza física.
+- un QR o una URL copiada nunca debe elevar confianza física;
+- el objeto público NFC nunca debe afirmar autenticidad física por sí solo.
 
-La arquitectura base está en `docs/NFC_ARCHITECTURE.md`.
+Arquitectura y piloto:
 
-## 12. Flujo Git recomendado
+- `docs/NFC_ARCHITECTURE.md`
+- `docs/NFC_PILOT_V421.md`
+- `standards/evo-nfc-proof-v421.mjs`
+- `schemas/evo-nfc-proof-v1.schema.json`
+
+## 12. DPP Registry
+
+La readiness del Registro DPP se documenta en:
+
+- `docs/DPP_COMPLIANCE_MATRIX.md`
+- `docs/DPP_REGISTRY_INTEGRATION_V420.md`
+
+No mezclar credenciales de test y producción ni convertir readiness/integración en una afirmación de certificación regulatoria.
+
+## 13. Flujo Git recomendado
 
 ```bash
 git checkout main
@@ -209,7 +224,7 @@ Antes de fusionar una entrega:
 - ninguna credencial nueva en el repositorio;
 - estado de producción claramente separado del estado del código.
 
-## 13. Publicación
+## 14. Publicación
 
 El estado de un branch o PR **no implica** que sus Edge Functions o migraciones estén desplegadas. Registrar por separado:
 
@@ -221,6 +236,6 @@ El estado de un branch o PR **no implica** que sus Edge Functions o migraciones 
 
 Para un release de alta confianza siguen siendo gates relevantes los detallados en `docs/SECURITY.md`, incluyendo protección de `main`, headers de seguridad servidos por infraestructura, revisión del CSP, pruebas E2E reales y revisión independiente.
 
-## 14. Regla de producto
+## 15. Regla de producto
 
 EVO puede afirmar registro, integridad criptográfica, firma, procedencia declarada y continuidad de evidencia según el nivel demostrado. No debe afirmar que un archivo, producto u objeto físico es auténtico o legalmente original sólo porque exista un registro EVO.

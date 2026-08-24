@@ -3,6 +3,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
+const {execFileSync}=require('child_process');
 
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
@@ -19,10 +20,14 @@ const provenanceSchema=read('schemas/document-provenance-v1.schema.json');
 const vcExport=read('standards/evo-vc-dm-export-v400.mjs');
 const vcSchema=read('schemas/evo-vc-dm-export-v400.schema.json');
 const i18n=read('v1/i18n-v275.js');
+const nfc=read('standards/evo-nfc-proof-v421.mjs');
+const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
+const dppRegistry=read('docs/DPP_REGISTRY_INTEGRATION_V420.md');
 
 assert(readme.startsWith('# EVO Protocol'),'umbrella brand must be EVO Protocol');
-assert(readme.includes('Current stage: V4.1 Development Line'),'README must expose the current V4.1 development stage');
+assert(readme.includes('Current stage: V4.2.1 Development Line'),'README must expose the current V4.2.1 development stage');
 assert(readme.includes('V4.0 RC1 was promoted to `main`'),'README must preserve the promoted V4 baseline');
+assert(readme.includes('V4.2 added EU DPP Registry integration readiness'),'README must preserve the current DPP line');
 assert(!readme.includes('Current stage: V1.5'),'stale V1.5 stage must stay removed');
 assert(!readme.includes('Creating trust may consume EVO'),'current commercial trust model must not depend on token consumption');
 assert(readme.includes('There is **no active US$39/month company subscription'),'inactive company-plan reference must be explicitly corrected');
@@ -31,6 +36,8 @@ assert(readme.includes('EVO Origin'),'commercial focus must name EVO Origin');
 assert(/B2B|industrial/i.test(readme),'commercial focus must retain industrial/B2B scope');
 assert(/technical and quality documentation|document provenance|technical-document/i.test(readme),'commercial wedge must remain document provenance');
 assert(/one benefit per eligible user/i.test(readme),'Free Proof policy must remain user-eligibility based');
+assert(readme.includes('docs/DPP_REGISTRY_INTEGRATION_V420.md'),'README must expose the DPP Registry readiness track');
+assert(readme.includes('docs/NFC_PILOT_V421.md'),'README must expose the NFC laboratory track');
 
 assert(index.includes('<title>EVO Protocol · Verificación documental y pasaportes digitales</title>'),'browser title must use EVO Protocol');
 assert(index.includes('ORIGIN · PROOF · PASSPORT · VERIFY'),'hero must lead with Origin');
@@ -41,7 +48,7 @@ assert(index.includes('US$9,90')&&index.includes('US$49'),'implemented pilot pri
 assert(!index.includes('US$39'),'inactive monthly company plan must not appear in the browser entrypoint');
 assert(index.includes('1 EVO Proof · US$9,90'),'payment recovery must use Proof terminology');
 assert(index.includes('1 por usuario elegible'),'default Free Proof surface must use eligible-user language');
-assert(!index.includes('1 por wallet'),'default V4.1 surface must not market Free Proof per wallet');
+assert(!index.includes('1 por wallet'),'default V4 surface must not market Free Proof per wallet');
 const documentOption=index.indexOf('<option value="Documento">Informe / documento</option>');
 const productOption=index.indexOf('<option value="Producto">Equipo / producto</option>');
 assert(documentOption>=0&&productOption>=0&&documentOption<productOption,'Origin/document mode must be the default first creation path');
@@ -66,6 +73,20 @@ assert(vcExport.includes("status:'UNSECURED_EXPORT'"),'VC interoperability statu
 assert(vcExport.includes('credential_not_cryptographically_secured'),'secured-credential boundary must fail closed');
 assert(!vcExport.includes('evo.example')&&!vcSchema.includes('evo.example'),'VC release files must use no placeholder EVO domain');
 assert(!vcExport.includes('proof:{'),'unsecured VC export must not fabricate a proof');
+
+assert(/test|production/i.test(dppRegistry),'DPP Registry integration document must distinguish controlled environments');
+assert(/certif/i.test(dppRegistry),'DPP Registry integration document must preserve certification claim boundaries');
+
+assert(nfc.includes("EVO_NFC_TRUSTED_VERIFIER='SERVER_SIDE_NTAG424'"),'NFC evidence must require the trusted server-side verifier mode');
+assert(nfc.includes('physicalAuthenticity:false'),'NFC public evidence must preserve the physical-authenticity claim boundary');
+assert(nfc.includes("addRisk(risks,'REPLAY_DETECTED')"),'NFC contract must reject replayed proof decisions');
+assert(nfc.includes("addRisk(risks,'MAC_INVALID')"),'NFC contract must reject invalid cryptographic decisions');
+assert(nfcSchema.includes('"physicalAuthenticity": { "const": false }'),'NFC schema must make the physical-authenticity boundary machine-readable');
+assert(!nfcSchema.includes('aesKey')&&!nfcSchema.includes('masterKey'),'public NFC schema must expose no key fields');
+
+// Security Gate already executes this product-truth test, so the behavioral NFC
+// boundary becomes mandatory without modifying the long PostgreSQL gate workflow.
+execFileSync(process.execPath,[path.join(root,'tests','nfc-proof-v421.test.mjs')],{stdio:'inherit'});
 
 assert(!app.includes('0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f'),'legacy EVO token contract must not remain coupled to the V4 browser client');
 assert(!app.includes("x.fillText('EVO VERIFIED'"),'printable evidence must not use a generic VERIFIED claim');
@@ -100,4 +121,4 @@ for(const file of scanRoots.flatMap(walk)){
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
 
-console.log('EVO V4.1 product-truth checks passed');
+console.log('EVO V4.2.1 product-truth + DPP + NFC boundary checks passed');

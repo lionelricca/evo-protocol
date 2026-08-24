@@ -4,9 +4,9 @@
 
 EVO Protocol is the umbrella trust layer. It lets an issuer register cryptographic evidence, preserve signed history and publish a free verification surface without uploading the original document by default.
 
-## Current stage: V4.1 Development Line
+## Current stage: V4.2.1 Development Line
 
-V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 is the next development line and is focused on **Origin-first product integration**, customer-facing truth consistency and stronger end-to-end surface tests.
+V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 then consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.2.1 adds the laboratory NFC public-proof contract without introducing production NFC keys or authority.
 
 The product family is:
 
@@ -14,7 +14,8 @@ The product family is:
 - **EVO Passport** — identity, ownership and lifecycle history for assets.
 - **EVO Service Proof** — owner-declared and provider-countersigned technical service evidence.
 - **EVO Issuer Trust** — wallet, domain and organization evidence kept as distinct trust levels.
-- **EVO Secure NFC** — planned cryptographic physical binding for high-value products using secure tags; not required for normal Origin verification.
+- **EVO DPP** — standards/regulatory integration layer, including EU DPP Registry readiness.
+- **EVO Secure NFC** — cryptographic physical-binding layer under laboratory development for high-value products; not required for normal Origin verification.
 - **EVO Guardian / Reality Continuity** — explainable anomaly and continuity analysis; public telemetry never elevates authoritative trust.
 
 ## Commercial focus
@@ -46,7 +47,7 @@ At the base cryptographic layer EVO can prove:
 - domain control or organization verification only when that evidence actually exists;
 - independently validated external evidence only when an adapter has actually validated it.
 
-EVO does **not** claim, merely from a hash or wallet signature, that:
+EVO does **not** claim, merely from a hash, wallet signature, QR or NFC record, that:
 
 - the statements inside a document are factually true;
 - a file is a legally privileged “original”;
@@ -119,7 +120,7 @@ The current checkout model is non-custodial from the wallet-connection perspecti
 
 The historical EVO token experiment is **not required** for current EVO Protocol purchases and is not part of the current commercial trust architecture.
 
-## Security baseline carried into V4.1
+## Security baseline carried into V4.2.1
 
 The promoted V4 baseline includes defense-in-depth controls such as:
 
@@ -142,13 +143,35 @@ The promoted V4 baseline includes defense-in-depth controls such as:
 
 These controls support the description **security-hardened / defense in depth**. They do not justify claims such as “unhackable”, “100% secure” or “certified secure”.
 
+## EU DPP Registry readiness
+
+V4.2 carries the integration-readiness architecture for the EU Digital Product Passport Registry. This is a controlled integration track, not a claim that EVO is an EU-certified DPP provider or that a customer dataset is automatically compliant.
+
+See:
+
+- `docs/DPP_COMPLIANCE_MATRIX.md`
+- `docs/DPP_REGISTRY_INTEGRATION_V420.md`
+
 ## Secure NFC direction
 
-NFC is an optional premium physical-evidence layer, not a dependency of EVO Origin.
+NFC is an optional premium physical-evidence layer, not a dependency of EVO Origin or the regulatory DPP carrier itself.
 
-The pilot architecture targets secure tags such as NXP NTAG 424 DNA / TagTamper, with unique per-tag secret material held server-side and authenticated dynamic NFC data. QR discovery alone must never be represented as proof of physical authenticity.
+V4.2.1 introduces a fail-closed public evidence contract for a future server-side NTAG 424 verification path. The public object can expose `NFC_CRYPTO_VERIFIED` only after a trusted server decision confirms cryptographic validity, tag-to-Seal binding, freshness/counter policy and absence of replay.
 
-See `docs/NFC_ARCHITECTURE.md`.
+Even a valid cryptographic tag proof keeps:
+
+```text
+physicalAuthenticity=false
+```
+
+until independent issuer/product policy and operational evidence justify a stronger statement.
+
+See:
+
+- `docs/NFC_ARCHITECTURE.md`
+- `docs/NFC_PILOT_V421.md`
+- `standards/evo-nfc-proof-v421.mjs`
+- `schemas/evo-nfc-proof-v1.schema.json`
 
 ## Standards and certification direction
 
@@ -172,9 +195,12 @@ See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 - `standards/document-provenance-v321.mjs` — EVO Origin provenance semantics.
 - `schemas/document-provenance-v1.schema.json` — public provenance schema.
 - `standards/evo-vc-dm-export-v400.mjs` — W3C VC Data Model 2.0 export boundary.
+- `standards/evo-nfc-proof-v421.mjs` — NFC public-evidence boundary.
 - `docs/DOCUMENT_PROVENANCE_V321.md` — EVO Origin product and evidence model.
 - `docs/PROJECT_TRUTH_V400.md` — authoritative V4 claims boundary.
+- `docs/DPP_REGISTRY_INTEGRATION_V420.md` — EU DPP Registry integration readiness.
 - `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture.
+- `docs/NFC_PILOT_V421.md` — NFC laboratory gate.
 - `docs/PRODUCTION_CLOSEOUT_20260824.md` — production authority closeout evidence.
 - `docs/RELEASE_CHECKLIST_V400.md` — historical V4 promotion checklist and remaining high-assurance gates.
 - `docs/SECURITY.md` — security rules.
@@ -184,9 +210,9 @@ See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 
 ## Development and release status
 
-`main` contains the promoted V4.0 RC1 baseline. New work must be developed on branches and must not silently mutate production data, production keys or historical records.
+`main` is the promoted code baseline. New work must be developed on branches and must not silently mutate production data, production keys or historical records.
 
-The V4.1 line still requires its own green CI before merge. High-assurance claims additionally require controls such as protected `main`, production response headers, real browser/E2E smoke evidence and independent penetration/security review.
+V4.2.1 remains a development/laboratory line until its own CI is green and its NFC hardware gate is completed. High-assurance claims additionally require controls such as protected `main`, production response headers, real browser/E2E smoke evidence and independent penetration/security review.
 
 ## Product rule
 

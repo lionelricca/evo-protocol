@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:evo:schema:nfc-proof:v1",
+  "title": "EVO NFC Proof V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "tagId",
+    "sealId",
+    "verifiedAt",
+    "verifierMode",
+    "status",
+    "cryptographicVerified",
+    "evidenceLevels",
+    "tamperState",
+    "replayDetected",
+    "counterFresh",
+    "tagBound",
+    "riskSignals",
+    "claims"
+  ],
+  "properties": {
+    "version": { "const": "EVO-NFC-PROOF-V1" },
+    "tagId": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "sealId": { "type": "string", "pattern": "^EVO-[A-Z0-9]{8}-[A-Z0-9]{8}-[A-Z0-9]{8}$" },
+    "verifiedAt": { "type": "string", "format": "date-time" },
+    "verifierMode": { "const": "SERVER_SIDE_NTAG424" },
+    "status": { "enum": ["VERIFIED", "VERIFIED_TAMPER_OPEN", "REJECTED"] },
+    "cryptographicVerified": { "type": "boolean" },
+    "evidenceLevels": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["NFC_CRYPTO_VERIFIED", "TAMPER_STATUS_VERIFIED"] }
+    },
+    "tamperState": { "enum": ["UNSUPPORTED", "INTACT", "OPEN", "UNKNOWN"] },
+    "replayDetected": { "type": "boolean" },
+    "counterFresh": { "type": "boolean" },
+    "tagBound": { "type": "boolean" },
+    "riskSignals": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cryptographicTagProof", "tamperStatusVerified", "physicalAuthenticity"],
+      "properties": {
+        "cryptographicTagProof": { "type": "boolean" },
+        "tamperStatusVerified": { "type": "boolean" },
+        "physicalAuthenticity": { "const": false }
+      }
+    }
+  }
+}
