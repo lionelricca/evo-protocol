@@ -10,21 +10,23 @@ const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const pkg = JSON.parse(read('package.json'));
 assert.equal(pkg.private, true, 'release package metadata must stay private/non-publishable');
 assert.match(pkg.version, /^4\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, 'release metadata must stay on the EVO V4 version line');
-assert.equal(pkg.version, '4.5.0', 'release metadata must identify the promoted V4.5 software-authority line');
+assert.equal(pkg.version, '4.6.0', 'release metadata must identify the V4.6 TagTamper verification line');
 assert.match(String(pkg.engines && pkg.engines.node || ''), />=20/, 'Node development baseline must stay explicit');
 assert.equal(read('VERSION').trim(), pkg.version, 'VERSION and package.json must remain aligned');
 assert.match(pkg.scripts['test:nfc'], /nfc-proof-v421\.test\.mjs/, 'NFC test command must preserve the public-proof contract regression');
 assert.match(pkg.scripts['test:nfc'], /nfc-crypto-v440\.test\.mjs/, 'NFC test command must execute the NXP crypto vectors');
 assert.match(pkg.scripts['test:nfc'], /nfc-verifier-v440\.test\.js/, 'NFC test command must execute verifier/claim-boundary checks');
-assert.match(pkg.scripts['test:nfc:authority'], /nfc-replay-authority-v450\.sql/, 'NFC DB authority command must expose the V4.5 replay regression');
+assert.match(pkg.scripts['test:nfc:authority'], /nfc-replay-authority-v450\.sql/, 'NFC DB authority command must preserve the V4.5 replay regression');
 
 const readme = read('README.md');
-assert.match(readme, /Current stage:\s*V4\.5 Software Authority Line/, 'README must expose the current V4.5 software-authority stage');
+assert.match(readme, /Current stage:\s*V4\.6 TagTamper Verification Line/, 'README must expose the current V4.6 TagTamper stage');
 assert.match(readme, /V4\.0 RC1 was promoted to `main`/, 'README must preserve the V4 promotion history');
 assert.match(readme, /V4\.2 added EU DPP Registry integration readiness/, 'README must preserve the promoted V4.2 DPP line');
 assert.match(readme, /V4\.3 added a fail-closed server adapter/, 'README must expose the promoted V4.3 DPP adapter line');
 assert.match(readme, /V4\.4 implemented NTAG 424 DNA SDM\/SUN cryptographic verification/, 'README must expose the promoted V4.4 NFC crypto line');
-assert.match(readme, /V4\.5 completed the software NFC authority/, 'README must expose the promoted V4.5 replay-authority line');
+assert.match(readme, /V4\.5 completed protected tag\/UID\/Seal binding and atomic replay authority/, 'README must preserve the V4.5 replay-authority line');
+assert.match(readme, /V4\.6 adds encrypted NTAG 424 DNA TagTamper status verification/, 'README must expose the V4.6 TagTamper line');
+assert.doesNotMatch(readme, /Current stage:\s*V4\.5 Software Authority Line/, 'README must not regress to the prior V4.5 current-stage label');
 assert.doesNotMatch(readme, /Current stage:\s*V4\.2\.1 Development Line/, 'README must not regress to the obsolete V4.2.1 current-stage label');
 assert.doesNotMatch(readme, /Current stage:\s*V1\.5 Commercial Pilot/i, 'README must not regress to the obsolete V1.5 status');
 assert.match(readme, /PROJECT_TRUTH_V400\.md/, 'README must point to the V4 product-truth source');
@@ -34,7 +36,9 @@ assert.doesNotMatch(readme, /Free Proof:\*\* one demonstration Proof per wallet/
 assert.match(readme, /DPP_REGISTRY_INTEGRATION_V420\.md/, 'README must expose the current EU DPP Registry readiness track');
 assert.match(readme, /NFC_PILOT_V421\.md/, 'README must preserve the physical NFC pilot boundary');
 assert.match(readme, /CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT/, 'README must preserve the pre-physical-pilot claim boundary');
-assert.match(readme, /nfc-replay-authority-v450\.sql/, 'README must expose the V4.5 replay-authority regression evidence');
+assert.match(readme, /TAGTAMPER_STATUS_INVALID/, 'README must preserve fail-closed invalid TagTamper handling');
+assert.match(readme, /<enc>&cmac=/, 'README must expose the reviewed authenticated TagTamper dynamic-input layout');
+assert.match(readme, /nfc-replay-authority-v450\.sql/, 'README must preserve replay-authority regression evidence');
 assert.match(readme, /physicalAuthenticity=false/, 'README must preserve the physical-authenticity claim boundary');
 
 const launcher = read('index.html');
@@ -82,9 +86,17 @@ assert.doesNotMatch(releaseBundle, /EVO_Protocol_V4_RC1\.zip/, 'release bundle m
 const nfc = read('standards/evo-nfc-proof-v421.mjs');
 const nfcSchema = read('schemas/evo-nfc-proof-v1.schema.json');
 assert.match(nfc, /SERVER_SIDE_NTAG424/, 'NFC public proof must require a server-side verifier decision');
+assert.match(nfc, /TAMPER_STATES=new Set\(\['UNSUPPORTED','INTACT','OPEN','UNKNOWN'\]\)/, 'public proof must preserve explicit TagTamper states');
 assert.match(nfc, /physicalAuthenticity:false/, 'NFC public proof must not claim physical authenticity');
 assert.match(nfcSchema, /"physicalAuthenticity": \{ "const": false \}/, 'NFC schema must encode the physical-authenticity boundary');
 assert.doesNotMatch(nfc, /aesKey\s*:/i, 'public NFC proof contract must not expose AES key fields');
+
+const nfcArchitecture = read('docs/NFC_ARCHITECTURE.md');
+assert.match(nfcArchitecture, /V4\.6 software authority complete including NTAG 424 DNA TagTamper parsing/, 'architecture must identify the V4.6 TagTamper boundary');
+assert.match(nfcArchitecture, /TTPermStatus \|\| TTCurrStatus/, 'architecture must document the NXP permanent/current tamper order');
+assert.match(nfcArchitecture, /43h[\s\S]*4Fh[\s\S]*49h/, 'architecture must document the NXP C/O/I values');
+assert.match(nfcArchitecture, /SDMMACInputOffset[\s\S]*<enc>&cmac=/, 'architecture must pin the reviewed authenticated encrypted-mirror layout');
+assert.match(nfcArchitecture, /physicalPilotApproved=true/, 'architecture must preserve the per-tag physical approval gate');
 
 const nfcAuthorityWorkflow = read('.github/workflows/evo-nfc-authority-checks.yml');
 assert.match(nfcAuthorityWorkflow, /postgres:17/, 'NFC authority workflow must execute against an isolated PostgreSQL service');
@@ -96,4 +108,4 @@ assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
 assert.match(gitignore, /^\.env\.\*$/m, 'environment variants must remain ignored');
 assert.match(gitignore, /^!\.env\.example$/m, 'safe env template must remain allowlisted');
 
-console.log('EVO V4.5 release-readiness checks passed');
+console.log('EVO V4.6 release-readiness checks passed');
