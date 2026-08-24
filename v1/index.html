@@ -32,7 +32,7 @@
 <main>
 <section id="pricing" class="wrap block"><div class="proofIntro"><div><h2>EVO Proofs</h2><p class="sub">Creá tu primer EVO Proof gratis. Para los siguientes, elegí un plan y pagá con una criptomoneda compatible disponible en tu wallet.</p></div><span class="proofLabel">ONE PROOF → ONE EVO RECORD</span></div>
 <div class="grid">
-  <div class="panel proofPlan" id="demoPlanCard"><span class="kicker">FREE PROOF</span><h3>1 Free Proof</h3><p><strong id="demoPlanValue" class="evoPriceValue">Gratis</strong> <span class="sub">1 por wallet</span></p><span class="proofEquation"><strong>1 PROOF</strong> → 1 EVO RECORD</span><div id="demoPlanStatus" class="passportNotice">Conectá tu wallet para comprobar si está disponible.</div><div class="checks"><p>Incluye identificación EVO, QR, ficha pública, firma e historial.</p><p>La verificación pública siempre es gratuita.</p></div><a id="demoPlanAction" class="btn primary" href="#seal">Conectar y comprobar</a></div>
+  <div class="panel proofPlan" id="demoPlanCard"><span class="kicker">FREE PROOF</span><h3>1 Free Proof</h3><p><strong id="demoPlanValue" class="evoPriceValue">Gratis</strong> <span class="sub">1 por usuario elegible</span></p><span class="proofEquation"><strong>1 PROOF</strong> → 1 EVO RECORD</span><div id="demoPlanStatus" class="passportNotice">Conectá tu wallet para comprobar si está disponible.</div><div class="checks"><p>Incluye identificación EVO, QR, ficha pública, firma e historial.</p><p>La verificación pública siempre es gratuita.</p></div><a id="demoPlanAction" class="btn primary" href="#seal">Conectar y comprobar</a></div>
   <div class="panel proofPlan"><span class="kicker">INDIVIDUAL</span><h3>1 EVO Proof</h3><p><strong class="evoPriceValue">US$9,90</strong></p><span class="proofEquation"><strong>1 PROOF</strong> → 1 EVO RECORD</span><div class="checks"><p>Pago único, sin suscripción.</p><p>La verificación pública siempre es gratuita.</p></div><button id="buyIndividualBtn" class="btn primary" type="button">Elegir cripto y pagar</button></div>
   <div class="panel proofPlan"><span class="kicker">AHORRO</span><h3>10 EVO Proofs</h3><p><strong class="evoPriceValue">US$49</strong></p><span class="proofEquation"><strong>10 PROOFS</strong> → 10 EVO RECORDS</span><div class="checks"><p>US$4,90 por Proof.</p><p>La verificación pública siempre es gratuita.</p></div><button id="buyPackBtn" class="btn gold" type="button">Elegir cripto y pagar</button></div>
 </div>
@@ -42,7 +42,7 @@
 
 <section id="seal" class="wrap block"><h2>Crear un registro EVO</h2><p class="sub">Elegí documento para crear un EVO Origin Proof o registrá otro tipo de activo como EVO Passport. Los archivos permanecen en tu dispositivo: EVO conserva únicamente su huella digital SHA-256.</p>
 <div class="grid"><form id="sealForm" class="panel form">
-<label>Tipo de activo<select id="type"><option value="Producto">Equipo / producto</option><option value="Documento">Informe / documento</option><option value="Imagen">Fotografía</option><option value="Video">Video</option><option value="Certificado">Certificado</option><option value="Otro">Otro activo</option></select></label>
+<label>Tipo de activo<select id="type"><option value="Documento">Informe / documento</option><option value="Producto">Equipo / producto</option><option value="Imagen">Fotografía</option><option value="Video">Video</option><option value="Certificado">Certificado</option><option value="Otro">Otro activo</option></select></label>
 <label>Activo / título<input id="title" required maxlength="160" placeholder="Ej. Generador Doosan GE08TI"></label>
 <label>Empresa / emisor<input id="issuer" maxlength="160" placeholder="Ej. EVO Demo o nombre de la empresa"></label>
 <label>Serie / referencia<input id="serial" maxlength="160" placeholder="Ej. GE08TI-001"></label>
@@ -93,9 +93,11 @@
 <script src="./app.js?v=20260821-v15-public-passport"></script>
 <script src="./i18n.js?v=20260821-v20-smart-checkout-1"></script>
 <script src="./i18n-v275.js?v=20260823-v400-release-candidate"></script>
+<script data-evo-i18n-critical-v410="1" src="./i18n-critical-v410.js?v=20260824-v410-critical-copy"></script>
 <script src="./wallet-autoconnect.js?v=20260821-v277-base"></script>
-<script src="./wallet-session-v277.js?v=20260821-v277-session"></script>
+<script src="./wallet-session-v277.js?v=20260824-v410-session"></script>
 <script src="./checkout.js?v=20260821-v22-proof-wallet"></script>
+<script data-evo-free-proof-v400="1" src="./free-proof-antisybil-v400.js?v=20260823-v400-antisybil"></script>
 <script src="./issuer.js?v=20260821-v14"></script>
 <script src="./organization.js?v=20260821-v14"></script>
 <script src="./organization-simple.js?v=20260821-v277-loader"></script>

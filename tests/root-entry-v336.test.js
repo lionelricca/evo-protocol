@@ -31,7 +31,8 @@ assert(!/@import\b/i.test(css),'root CSS must not import remote stylesheets');
 assert(!/url\s*\(/i.test(css),'root CSS must not fetch secondary resources');
 assert(!/https?:\/\//i.test(js),'root redirect script must not reference remote origins');
 new vm.Script(js,{filename:'root-launch.js'});
-assert(js.includes("location.replace('./v1/?v=20260823-v400-rc1')"),'root redirect must stay same-origin and target the current EVO V4 RC app');
-assert(html.includes('./v1/?v=20260823-v400-rc1'),'HTML redirect and fallback link must target the current EVO V4 RC app');
+assert(js.includes("location.replace('./v1/?v=20260824-v410-dev1')"),'root redirect must stay same-origin and target the current EVO V4.1 app');
+assert(html.includes('./v1/?v=20260824-v410-dev1'),'HTML redirect and fallback link must target the current EVO V4.1 app');
+assert(!html.includes('20260823-v400-rc1')&&!js.includes('20260823-v400-rc1'),'retired RC1 cache keys must not return');
 
-console.log('EVO V4 RC1 root entrypoint security checks passed');
+console.log('EVO V4.1 root entrypoint security checks passed');

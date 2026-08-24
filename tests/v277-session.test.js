@@ -18,8 +18,8 @@ assert(nav.includes("document.querySelector('nav .brand')"),'EVO logo must be bo
 assert(nav.includes("url.hash='myEvo'"),'Logo and floating control must target My EVO');
 assert(nav.includes("url.search=''"),'Returning from Passport must remove seal query state');
 assert(nav.includes("document.getElementById('evoBackTop')?.remove()"),'Legacy Passport/Inicio button must be removed');
-assert(index.includes('wallet-session-v277.js?v=20260821-v277-session'),'Index must load the explicit-connect session policy module');
+assert(index.includes('wallet-session-v277.js?v=20260824-v410-session'),'Index must load the explicit-connect session policy module with the current V4.1 cache key');
 assert(index.includes('myevo-nav-v277.js?v=20260821-v277-nav'),'Index must load My EVO navigation with a fresh immutable URL');
 assert(!index.includes('<script src="./back-to-top.js'),'Index must not directly load the legacy navigation script');
 
-console.log('EVO V2.7.7 explicit wallet connection and My EVO navigation checks passed');
+console.log('EVO V4.1 explicit wallet connection and My EVO navigation checks passed');

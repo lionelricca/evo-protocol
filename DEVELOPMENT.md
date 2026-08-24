@@ -1,20 +1,40 @@
 # Desarrollo de EVO
 
-Esta guía describe cómo trabajar sobre EVO Trust Layer sin depender de una instalación global de JavaScript ni de secretos dentro del frontend.
+Esta guía describe cómo trabajar sobre EVO Protocol sin depender de una instalación global de JavaScript ni de secretos dentro del frontend.
 
 ## 1. Arquitectura
 
 - `index.html`: entrada raíz y redirección a la aplicación actual.
-- `v1/`: frontend estático de EVO (wallet, checkout, Proofs, Passports, navegación e interfaces públicas).
+- `v1/`: frontend estático de EVO (Origin, wallet, checkout, Proofs, Passports, navegación e interfaces públicas).
 - `supabase/functions/`: Edge Functions de autoridad, pagos, ciclo de vida y verificación.
 - `supabase/migrations/`: cambios versionados de PostgreSQL/RLS/RPC.
 - `tests/`: regresiones JavaScript y pruebas SQL/concurrencia.
 - `security/`: threat model, auditoría y estado de migraciones.
-- `docs/`: arquitectura, seguridad, estándares y verticales.
+- `docs/`: arquitectura, seguridad, estándares, NFC y verticales.
 
-El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni secretos de firma. La clave anon de Supabase puede estar en código cliente cuando las políticas RLS y los grants estén correctamente limitados; cualquier credencial privilegiada debe permanecer en el entorno de servidor/Edge Function.
+El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni secretos de firma. La clave pública/anon de Supabase puede estar en código cliente cuando RLS y grants estén correctamente limitados; cualquier credencial privilegiada debe permanecer en servidor/Edge Function.
 
-## 2. Requisitos
+## 2. Estado de ramas
+
+`main` contiene la base V4.0 RC1 promovida el 2026-08-24.
+
+La línea de trabajo actual V4.1 es:
+
+```text
+codex/evo-v410-origin-truth-integration
+```
+
+V4.1 prioriza:
+
+- EVO Origin como entrada comercial por defecto;
+- coherencia de producto entre frontend y autoridad server-side;
+- carga determinística de módulos críticos;
+- pruebas de integración sobre la cadena real del navegador;
+- preparación del piloto NFC sin claves productivas.
+
+No desarrollar directamente sobre `main`.
+
+## 3. Requisitos
 
 Mínimos para frontend y pruebas JavaScript:
 
@@ -26,20 +46,26 @@ Para backend local y pruebas completas:
 
 - Supabase CLI.
 - Docker compatible con Supabase local.
-- PostgreSQL client (`psql`) para ejecutar manualmente los fixtures SQL.
+- PostgreSQL client (`psql`) para ejecutar manualmente fixtures SQL.
 
-## 3. Clonar y seleccionar la rama
+## 4. Clonar y seleccionar la rama
 
 ```bash
 git clone https://github.com/lionelricca/evo-protocol.git
 cd evo-protocol
 git fetch --all --prune
-git checkout codex/evo-v400-release-candidate
+git checkout codex/evo-v410-origin-truth-integration
 ```
 
-Mientras el PR #49 siga abierto, esta rama es la línea consolidada de release candidate. Cuando se fusione con autorización explícita, trabajar desde `main` actualizado y crear una rama nueva por cambio.
+Para iniciar una línea nueva desde producción de código:
 
-## 4. Ejecutar el frontend local
+```bash
+git checkout main
+git pull --ff-only
+git checkout -b codex/evo-vXYZ-descripcion
+```
+
+## 5. Ejecutar el frontend local
 
 No hay build obligatorio: EVO es una aplicación web estática modular.
 
@@ -49,7 +75,7 @@ Linux/macOS:
 python3 -m http.server 8000
 ```
 
-Windows (Python Launcher):
+Windows:
 
 ```powershell
 py -m http.server 8000
@@ -61,7 +87,7 @@ Abrir:
 http://localhost:8000/v1/
 ```
 
-La carga del frontend funciona localmente, pero las Edge Functions endurecidas rechazan orígenes HTTP salvo localhost y sólo cuando el entorno del backend define explícitamente:
+Las Edge Functions endurecidas rechazan orígenes HTTP salvo localhost y sólo cuando el entorno backend define explícitamente:
 
 ```text
 EVO_ALLOW_LOCAL_ORIGINS=true
@@ -69,9 +95,9 @@ EVO_ALLOW_LOCAL_ORIGINS=true
 
 No habilitar esa opción en producción.
 
-## 5. Pruebas JavaScript
+## 6. Pruebas JavaScript
 
-No hay dependencias npm de runtime. `package.json` existe para estandarizar los comandos.
+No hay dependencias npm de runtime. `package.json` estandariza los comandos:
 
 ```bash
 npm test
@@ -82,9 +108,11 @@ npm run test:navigation
 npm run test:release
 ```
 
-Antes de enviar un PR, ejecutar como mínimo `npm run test:security` y la suite del área modificada.
+Antes de enviar un PR, ejecutar como mínimo `npm run test:security` y las suites de las áreas modificadas.
 
-## 6. Backend Supabase local
+V4.1 agrega pruebas de integración que deben comprobar la cadena de carga real del frontend, no solamente que los archivos existan en el repositorio.
+
+## 7. Backend Supabase local
 
 Inicializar el stack local según la versión actual de Supabase CLI:
 
@@ -110,11 +138,11 @@ EVO_ALLOW_LOCAL_ORIGINS=true
 
 `EVO_ALLOWED_ORIGINS` debe contener solamente orígenes HTTPS confiables, separados por coma. En producción `EVO_ALLOW_LOCAL_ORIGINS` debe permanecer deshabilitado.
 
-## 7. Migraciones
+## 8. Migraciones
 
 Reglas:
 
-1. Crear una migración nueva; no reescribir una migración ya aplicada en producción.
+1. Crear una migración nueva; **no reescribir una migración ya aplicada en producción**.
 2. Hacer cambios aditivos cuando sea posible.
 3. Mantener RLS y grants mínimos.
 4. Probar rollback lógico o comportamiento de error antes de desplegar.
@@ -123,7 +151,7 @@ Reglas:
 
 Nunca ejecutar migraciones de producción sólo porque una prueba local pasa. La promoción a producción es un paso explícito y auditable.
 
-## 8. Edge Functions
+## 9. Edge Functions
 
 Toda función privilegiada debe:
 
@@ -136,9 +164,34 @@ Toda función privilegiada debe:
 - responder con `Cache-Control: no-store` cuando maneje datos sensibles o decisiones de autoridad;
 - no devolver secretos ni detalles internos innecesarios.
 
-El helper compartido actual está en `supabase/functions/_shared/evo-cors.ts`.
+El helper CORS compartido está en `supabase/functions/_shared/evo-cors.ts`.
 
-## 9. Flujo Git recomendado
+## 10. Free Proof
+
+El frontend y backend deben conservar la misma regla:
+
+```text
+1 Free Proof por usuario elegible
+```
+
+No debe mostrarse ni implementarse como “1 por wallet”. Crear otra wallet no reinicia el beneficio. La decisión de elegibilidad pertenece al control server-side y el navegador debe fallar cerrado si ese control no está disponible.
+
+## 11. NFC de laboratorio
+
+El piloto NFC se desarrolla sin claves productivas.
+
+Reglas:
+
+- no comprometer AES/master keys en GitHub;
+- no almacenar secretos NFC en tablas/API públicas;
+- usar claves de laboratorio separadas;
+- validar primero vectores oficiales y replay/counter behavior;
+- no desplegar `NFC CRYPTO VERIFIED` hasta que la comprobación criptográfica sea server-side;
+- un QR o una URL copiada nunca debe elevar confianza física.
+
+La arquitectura base está en `docs/NFC_ARCHITECTURE.md`.
+
+## 12. Flujo Git recomendado
 
 ```bash
 git checkout main
@@ -146,17 +199,17 @@ git pull --ff-only
 git checkout -b codex/evo-vXYZ-descripcion
 ```
 
-Hacer cambios pequeños y verificables, ejecutar tests, subir la rama y abrir PR. No desarrollar directamente sobre `main`.
+Hacer cambios pequeños y verificables, ejecutar tests, subir la rama y abrir PR.
 
-Antes de fusionar una entrega de seguridad:
+Antes de fusionar una entrega:
 
-- Security Gate verde.
-- Suites Document Proof, Service Proof y navegación verdes si el cambio las afecta.
+- Security Gate verde;
+- suites Document Proof, Service Proof y navegación verdes si el cambio las afecta;
 - revisión de diffs y migraciones;
 - ninguna credencial nueva en el repositorio;
 - estado de producción claramente separado del estado del código.
 
-## 10. Publicación
+## 13. Publicación
 
 El estado de un branch o PR **no implica** que sus Edge Functions o migraciones estén desplegadas. Registrar por separado:
 
@@ -166,8 +219,8 @@ El estado de un branch o PR **no implica** que sus Edge Functions o migraciones 
 - variables de entorno/orígenes autorizados;
 - plan de rollback.
 
-Para un release de alta confianza todavía son obligatorios los gates detallados en `docs/SECURITY.md`, incluyendo protección de `main`, headers de seguridad servidos por infraestructura, revisión del CSP, pruebas E2E reales y revisión independiente.
+Para un release de alta confianza siguen siendo gates relevantes los detallados en `docs/SECURITY.md`, incluyendo protección de `main`, headers de seguridad servidos por infraestructura, revisión del CSP, pruebas E2E reales y revisión independiente.
 
-## 11. Regla de producto
+## 14. Regla de producto
 
 EVO puede afirmar registro, integridad criptográfica, firma, procedencia declarada y continuidad de evidencia según el nivel demostrado. No debe afirmar que un archivo, producto u objeto físico es auténtico o legalmente original sólo porque exista un registro EVO.

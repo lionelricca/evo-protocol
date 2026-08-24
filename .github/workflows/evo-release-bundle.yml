@@ -5,7 +5,7 @@ on:
   pull_request:
   push:
     branches:
-      - codex/evo-v400-release-candidate
+      - main
 
 permissions:
   contents: read
@@ -20,6 +20,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
       - name: Build auditable source bundle
         shell: bash
         env:
@@ -28,19 +29,26 @@ jobs:
           set -euo pipefail
 
           SOURCE_SHA="$(git rev-parse HEAD)"
+          VERSION="$(tr -d '\r\n' < VERSION)"
+          test -n "$VERSION"
+          SAFE_VERSION="$(printf '%s' "$VERSION" | tr -c 'A-Za-z0-9._-' '_')"
+          ZIP_FILE="EVO_Protocol_${SAFE_VERSION}.zip"
+          SHA_FILE="${ZIP_FILE}.sha256"
+
           printf '%s\n' "$SOURCE_SHA" > EVO_SOURCE_COMMIT.txt
 
-          zip -qr EVO_Protocol_V4_RC1.zip . \
+          zip -qr "$ZIP_FILE" . \
             -x '.git/*' \
-               'EVO_Protocol_V4_RC1.zip' \
-               'EVO_Protocol_V4_RC1.zip.sha256' \
+               "$ZIP_FILE" \
+               "$SHA_FILE" \
                'EVO_Release_Manifest.txt'
 
-          sha256sum EVO_Protocol_V4_RC1.zip > EVO_Protocol_V4_RC1.zip.sha256
-          ZIP_SHA256="$(cut -d ' ' -f1 EVO_Protocol_V4_RC1.zip.sha256)"
+          sha256sum "$ZIP_FILE" > "$SHA_FILE"
+          ZIP_SHA256="$(cut -d ' ' -f1 "$SHA_FILE")"
 
           cat > EVO_Release_Manifest.txt <<EOF
-          EVO Protocol V4.0 RC1 Release Bundle
+          EVO Protocol Release Bundle
+          version=$VERSION
           repository=$GITHUB_REPOSITORY
           source_commit=$SOURCE_SHA
           source_ref=$CANDIDATE_REF
@@ -49,20 +57,27 @@ jobs:
           workflow_run_id=$GITHUB_RUN_ID
           workflow_run_number=$GITHUB_RUN_NUMBER
           generated_at_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          zip_file=EVO_Protocol_V4_RC1.zip
+          zip_file=$ZIP_FILE
           zip_sha256=$ZIP_SHA256
           EOF
 
           test "$SOURCE_SHA" = "$(cat EVO_SOURCE_COMMIT.txt)"
+          grep -F "version=$VERSION" EVO_Release_Manifest.txt
           grep -F "source_commit=$SOURCE_SHA" EVO_Release_Manifest.txt
+          grep -F "zip_file=$ZIP_FILE" EVO_Release_Manifest.txt
           grep -F "zip_sha256=$ZIP_SHA256" EVO_Release_Manifest.txt
+
+          printf 'EVO_BUNDLE_VERSION=%s\n' "$SAFE_VERSION" >> "$GITHUB_ENV"
+          printf 'EVO_ZIP_FILE=%s\n' "$ZIP_FILE" >> "$GITHUB_ENV"
+          printf 'EVO_SHA_FILE=%s\n' "$SHA_FILE" >> "$GITHUB_ENV"
+
       - name: Upload source ZIP and evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: evo-protocol-v4-rc1-source
+          name: evo-protocol-${{ env.EVO_BUNDLE_VERSION }}-source
           path: |
-            EVO_Protocol_V4_RC1.zip
-            EVO_Protocol_V4_RC1.zip.sha256
+            ${{ env.EVO_ZIP_FILE }}
+            ${{ env.EVO_SHA_FILE }}
             EVO_SOURCE_COMMIT.txt
             EVO_Release_Manifest.txt
           retention-days: 14

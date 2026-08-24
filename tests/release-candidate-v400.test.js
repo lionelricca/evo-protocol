@@ -21,7 +21,8 @@ const vcSchema=read('schemas/evo-vc-dm-export-v400.schema.json');
 const i18n=read('v1/i18n-v275.js');
 
 assert(readme.startsWith('# EVO Protocol'),'umbrella brand must be EVO Protocol');
-assert(readme.includes('V4.0 Release Candidate'),'README must expose the current release-candidate stage');
+assert(readme.includes('Current stage: V4.1 Development Line'),'README must expose the current V4.1 development stage');
+assert(readme.includes('V4.0 RC1 was promoted to `main`'),'README must preserve the promoted V4 baseline');
 assert(!readme.includes('Current stage: V1.5'),'stale V1.5 stage must stay removed');
 assert(!readme.includes('Creating trust may consume EVO'),'current commercial trust model must not depend on token consumption');
 assert(readme.includes('There is **no active US$39/month company subscription'),'inactive company-plan reference must be explicitly corrected');
@@ -29,6 +30,7 @@ assert(readme.includes('historical EVO token experiment is **not required'),'leg
 assert(readme.includes('EVO Origin'),'commercial focus must name EVO Origin');
 assert(/B2B|industrial/i.test(readme),'commercial focus must retain industrial/B2B scope');
 assert(/technical and quality documentation|document provenance|technical-document/i.test(readme),'commercial wedge must remain document provenance');
+assert(/one benefit per eligible user/i.test(readme),'Free Proof policy must remain user-eligibility based');
 
 assert(index.includes('<title>EVO Protocol · Verificación documental y pasaportes digitales</title>'),'browser title must use EVO Protocol');
 assert(index.includes('ORIGIN · PROOF · PASSPORT · VERIFY'),'hero must lead with Origin');
@@ -38,6 +40,11 @@ assert(!index.includes('<h2>El pasaporte digital de cada activo</h2>'),'asset-pa
 assert(index.includes('US$9,90')&&index.includes('US$49'),'implemented pilot prices must remain visible');
 assert(!index.includes('US$39'),'inactive monthly company plan must not appear in the browser entrypoint');
 assert(index.includes('1 EVO Proof · US$9,90'),'payment recovery must use Proof terminology');
+assert(index.includes('1 por usuario elegible'),'default Free Proof surface must use eligible-user language');
+assert(!index.includes('1 por wallet'),'default V4.1 surface must not market Free Proof per wallet');
+const documentOption=index.indexOf('<option value="Documento">Informe / documento</option>');
+const productOption=index.indexOf('<option value="Producto">Equipo / producto</option>');
+assert(documentOption>=0&&productOption>=0&&documentOption<productOption,'Origin/document mode must be the default first creation path');
 assert(!index.includes('id="guardian"'),'advanced Guardian panel must not ship on the default commercial surface');
 assert(!index.includes('./guardian.js'),'default commercial surface must not execute Guardian analysis');
 assert(!index.includes('./guardian-v04.js'),'default commercial surface must not activate Guardian authority UI or Battery DPP loader');
@@ -93,4 +100,4 @@ for(const file of scanRoots.flatMap(walk)){
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
 
-console.log('EVO V4.0 release-candidate product-truth checks passed');
+console.log('EVO V4.1 product-truth checks passed');
