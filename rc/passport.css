@@ -1,0 +1,39 @@
+.passportSummary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.passportStat{
+  padding:16px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:14px;
+  background:linear-gradient(145deg,rgba(102,227,255,.045),rgba(255,255,255,.018));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+}
+.passportStat span{display:block;color:#8491a5;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.11em}
+.passportStat b{display:block;margin-top:6px;color:#eef7ff;overflow-wrap:anywhere}
+.passportTimeline{position:relative;margin-top:18px;padding-left:26px}
+.passportTimeline:before{content:"";position:absolute;left:8px;top:5px;bottom:5px;width:2px;background:linear-gradient(var(--cyan),var(--violet),var(--magenta));box-shadow:0 0 14px rgba(102,227,255,.22)}
+.passportEvent{position:relative;padding:0 0 24px 18px}
+.passportEvent:before{content:"";position:absolute;left:-22px;top:5px;width:10px;height:10px;border:2px solid #07101a;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px rgba(102,227,255,.09),0 0 18px rgba(102,227,255,.48)}
+.passportEvent h4{margin:0 0 5px;font-size:15px;color:#f5f9ff}
+.passportEvent p{margin:3px 0;color:#a2aec1}
+.passportEvent .eventMeta{font-size:11px;color:#748096;overflow-wrap:anywhere}
+.passportNotice{padding:13px 15px;border:1px solid rgba(102,227,255,.17);border-radius:13px;background:linear-gradient(135deg,rgba(102,227,255,.05),rgba(167,123,255,.035));color:#b9c6d8;font-size:12px}
+.passportOwner{color:#bff9dc}
+.transferPanel{
+  margin-top:18px;
+  padding:28px;
+  border-color:rgba(102,227,255,.18);
+  background:
+    radial-gradient(620px 280px at 0 0,rgba(102,227,255,.07),transparent 66%),
+    linear-gradient(180deg,rgba(15,22,37,.92),rgba(7,11,20,.92));
+}
+.transferHeader{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:20px}
+.transferHeader h3{font-size:27px;letter-spacing:-.03em;margin:10px 0 5px}
+.transferHeader p{color:#9aa6bb;margin:0;max-width:760px}
+.transferGrid{align-items:start}
+.transferBox{padding:20px;border:1px solid rgba(255,255,255,.09);border-radius:16px;background:rgba(3,7,15,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.transferBox h3{margin-top:0}
+.transferActions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.transferBox .empty,.transferBox .result{margin-top:14px}
+.transferBox input{width:100%}
+.transferPanel .status{white-space:nowrap}
+@media(max-width:900px){.passportSummary{grid-template-columns:1fr}.transferHeader{display:block}.transferHeader>.status{margin-top:12px}.transferGrid{grid-template-columns:1fr}}
+@media(max-width:620px){.transferPanel{padding:22px}}
