@@ -1,249 +1,103 @@
 # EVO Protocol
 
-**Portable trust and provenance for documents, assets and technical evidence.**
+**Portable trust and provenance for documents, assets and Digital Product Passports.**
 
-EVO Protocol is the umbrella trust layer. It lets an issuer register cryptographic evidence, preserve signed history and publish a free verification surface without uploading the original document by default.
+## Current stage: V4.6.0 RC1
 
-## Current stage: V4.5 Software Authority Line
+V4.6.0 RC1 is the current **software/readiness release candidate**. It is not an ISO certificate, EU provider certification, legal-originality statement, qualified signature or physical-product authenticity claim.
 
-V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.3 added a fail-closed server adapter for the EU DPP Registry without inventing an unavailable Battery registration contract. V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification against reviewed NXP vectors. V4.5 completed the software NFC authority with protected tag/UID/Seal binding and an atomic monotonic replay counter. The final physical-grade claim remains gated by a real tag pilot.
+V4.0 RC1 was promoted to `main` on 2026-08-24. V4.1 consolidated Origin-first. V4.2 added EU DPP Registry integration readiness. V4.3 added the fail-closed Registry adapter. V4.4 implemented NTAG 424 DNA SDM/SUN cryptography. V4.5 added atomic tag/UID/Seal/counter replay authority. V4.6 adds the ISO/IEC 27001 ISMS readiness baseline. Historical marker retired: `Current stage: V4.2.1 Development Line`.
 
-The product family is:
+## Product family
 
 - **EVO Origin** — exact-file verification, document provenance, revisions and issuer authority.
-- **EVO Passport** — identity, ownership and lifecycle history for assets.
-- **EVO Service Proof** — owner-declared and provider-countersigned technical service evidence.
+- **EVO Passport** — asset identity, ownership and lifecycle history.
+- **EVO Service Proof** — owner-declared and provider-countersigned service evidence.
 - **EVO Issuer Trust** — wallet, domain and organization evidence kept as distinct trust levels.
-- **EVO DPP** — standards/regulatory integration layer, including EU DPP Registry readiness and a fail-closed server adapter.
-- **EVO Secure NFC** — NTAG 424 DNA cryptographic verification and atomic replay authority for high-value products; the physical pilot remains mandatory before the strongest physical-evidence claim.
-- **EVO Guardian / Reality Continuity** — explainable anomaly and continuity analysis; public telemetry never elevates authoritative trust.
+- **EVO DPP** — Battery/Digital Product Passport readiness and EU DPP Registry integration layer.
+- **EVO Secure NFC** — optional cryptographic physical-binding layer using NTAG 424 DNA, server verification and anti-replay authority.
+- **EVO Guardian / Reality Continuity** — explainable anomaly/continuity analysis; public telemetry never elevates authoritative trust.
 
 ## Commercial focus
 
-The first target market is **B2B technical and quality documentation**, especially documents that are frequently exchanged as PDFs but are difficult to validate after forwarding or revision:
+The first commercial wedge is **B2B technical and quality documentation / document provenance**: inspection, maintenance, commissioning, calibration, test, equipment-condition, warranty/service and engineering evidence commonly exchanged as PDF.
 
-- inspection reports;
-- maintenance and service certificates;
-- commissioning reports;
-- calibration certificates;
-- test reports;
-- equipment-condition reports;
-- warranty/service records;
-- engineering deliverables;
-- compliance evidence packages;
-- OEM and supplier technical certificates;
-- material and quality records such as MTC/MTR, EN 10204 and CoA workflows.
-
-EVO is intended to integrate with existing ERPs, quality systems, portals and customer workflows through verification links, QR and future APIs rather than replacing those systems.
+The regulated growth line is EU Digital Product Passport infrastructure, beginning with Battery Passport readiness as the Commission framework becomes executable end to end.
 
 ## What EVO proves
 
-At the base cryptographic layer EVO can prove:
+EVO can prove exact-file SHA-256 match, the wallet/issuer that declared a signed action, recorded lifecycle relationships and independently validated evidence only when that authority actually exists.
 
-- that the exact bytes of a file match a registered SHA-256 digest;
-- that an EVO issuer declared and signed a registration;
-- the recorded lifecycle/version relationships;
-- the wallet responsible for signed EVO actions;
-- domain control or organization verification only when that evidence actually exists;
-- independently validated external evidence only when an adapter has actually validated it.
-
-EVO does **not** claim, merely from a hash, wallet signature, QR or NFC record, that:
-
-- the statements inside a document are factually true;
-- a file is a legally privileged “original”;
-- a wallet signature is a qualified electronic signature;
-- a physical asset is authentic;
-- EVO is accredited, government-certified, ISO-certified or a qualified trust-service provider.
+EVO does **not** infer factual truth, legal originality, qualified-signature status, physical authenticity, regulatory conformity or certification merely from a hash, signature, QR, readiness score or NFC record.
 
 See `docs/PROJECT_TRUTH_V400.md` and `docs/DOCUMENT_PROVENANCE_V321.md`.
 
-## Trust model
+## Free Proof and pricing
 
-EVO keeps evidence classes separate instead of collapsing everything into one generic “verified” badge.
+Public verification is free. The Free Proof is **one benefit per eligible user**, protected by server-side anti-abuse rules.
 
-A simplified authority ladder is:
+- Free Proof: one Proof for an eligible user.
+- Individual: US$9.90 for one additional Proof.
+- Pack 10: US$49 for ten additional Proofs.
 
-1. wallet-signed identity;
-2. signed continuity/history;
-3. verified digital issuer / independent countersignature;
-4. externally validated or regulated/physical high-assurance evidence.
+There is **no active US$39/month company subscription**. The historical EVO token experiment is **not required** for current EVO Protocol purchases.
 
-**EVO Pulse and software Challenge are observational signals only.** They may help detect anomalies, but many public observations can never compensate for missing high-assurance evidence.
+## Security baseline
 
-## EVO Origin
+The promoted baseline includes server-side signature checks, atomic registration/state transitions, duplicate-active-identity protection, anti-abuse controls, RLS/explicit-deny rules, authoritative database RPCs, rate/replay controls, restricted CORS, CSP/browser hardening, deterministic crypto tests, pinned GitHub Actions and PostgreSQL atomicity/concurrency suites.
 
-For a registered document version EVO Origin records or derives:
+These controls support **security-hardened / defense in depth** language, not “unhackable”, “100% secure” or “certified secure”.
 
-- SHA-256 of the exact file bytes;
-- EVO Seal ID;
-- issuer wallet;
-- optional verified-domain / organization evidence;
-- registration time;
-- public verification URL;
-- lifecycle/replacement links;
-- explicit evidence classification.
+## EU DPP Registry
 
-The public verifier can hash a received file locally and distinguish:
+The V4.3 server adapter is fail closed and designed for deterministic/idempotent registration preparation. The Commission Registry/test environment is operating, but the Battery semantic/catalogue work remains an external dependency for a successful official Battery Passport registration. EVO never fabricates Registry success.
 
-- exact match;
-- exact match but revoked;
-- exact match to a superseded version;
-- another known EVO version in the same issuer lineage;
-- mismatch / unknown file.
+See `docs/DPP_REGISTRY_INTEGRATION_V420.md` and `docs/DPP_COMPLIANCE_MATRIX.md`.
 
-The selected file remains in the browser for the local SHA-256 comparison.
+## Secure NFC
 
-## Free Proof policy
+V4.4/V4.5 implement AES-128/AES-CMAC NTAG 424 DNA SDM/SUN verification, AN12196 Rev. 2.0 reference vectors, UID/read-counter extraction, server-only keys, tag ↔ UID ↔ EVO Seal binding and an atomic strictly monotonic replay counter.
 
-Public verification is always free.
+A per-tag physical-pilot approval gate remains mandatory. The public contract keeps `physicalAuthenticity=false` and a pre-pilot read remains `CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT`, not final physical verification.
 
-The V4 authority model intentionally does **not** grant one Free Proof for every wallet. The Free Proof is **one benefit per eligible user**, protected by the server-side anti-abuse policy. Creating another wallet does not reset eligibility.
+See `docs/NFC_ARCHITECTURE.md`, `docs/NFC_PILOT_V421.md`, `standards/evo-nfc-proof-v421.mjs` and `schemas/evo-nfc-proof-v1.schema.json`.
 
-Current pilot pricing:
+## ISO/IEC 27001 readiness
 
-- **Free Proof:** one Proof for an eligible user.
-- **Individual:** US$9.90 for one additional Proof.
-- **Pack 10:** US$49 for ten additional Proofs.
+V4.6 establishes a working ISMS baseline against **ISO/IEC 27001:2022 + Amendment 1:2024**, including climate-change context consideration. It includes scope/context, security policy, asset inventory, risk register, a working Statement of Applicability considering all 93 Annex A control IDs, operating controls, incident/continuity/restore procedures and internal-audit/management-review planning.
 
-There is **no active US$39/month company subscription**. Business/API/enterprise packaging remains a commercial next step and must not be advertised as an activated automated plan until implemented.
+This is **readiness work, not ISO certification**. Certification requires management approval and operating evidence, internal audit, management review and an independent accredited certification process.
 
-## Payments
+See `docs/isms/README.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 
-The current checkout model is non-custodial from the wallet-connection perspective:
+## Standards direction
 
-- the customer explicitly approves the payment in the connected wallet;
-- the checkout may offer compatible source assets/routes;
-- EVO validates the resulting onchain payment before crediting;
-- settlement for the implemented commercial plans is verified in official Circle-issued USDC on supported EVM networks;
-- payment verification includes network, token contract, payer, recipient, amount, receipt/confirmation and replay/idempotency controls;
-- EVO never requests or stores a seed phrase or private key.
-
-The historical EVO token experiment is **not required** for current EVO Protocol purchases and is not part of the current commercial trust architecture.
-
-## Security baseline carried into V4.5
-
-The promoted V4 baseline includes defense-in-depth controls such as:
-
-- server-side wallet-signature verification for sensitive signed actions;
-- atomic Seal + credit registration;
-- duplicate active asset-identity protection;
-- Free Proof server-side anti-abuse authority;
-- ownership-sensitive database locking/state machines;
-- authoritative Service Proof and Reality Continuity RPC paths;
-- checkout replay and blockchain-verification controls;
-- durable verification-rate limits;
-- private exact-balance reads requiring a wallet signature;
-- RLS and restricted `SECURITY DEFINER` execution paths;
-- local vendoring of the QR runtime;
-- browser CSP hardening;
-- exact-origin CORS policy for the highest-impact browser endpoints;
-- bounded request bodies / abuse controls;
-- PostgreSQL atomicity/concurrency tests;
-- immutable GitHub Action pins and fail-closed SQL execution in CI;
-- NTAG 424 DNA SDM/SUN verification against reviewed NXP vectors;
-- server-only NFC keys for the pilot path;
-- protected tag/UID/Seal enrollment and atomic monotonic counter acceptance;
-- explicit replay, revoked-tag and pre-physical-pilot rejection paths.
-
-These controls support the description **security-hardened / defense in depth**. They do not justify claims such as “unhackable”, “100% secure” or “certified secure”.
-
-## EU DPP Registry readiness
-
-V4.2 introduced the integration-readiness architecture for the EU Digital Product Passport Registry and V4.3 added a server-only, fail-closed adapter with bounded batch preparation and deterministic fingerprints for future idempotency/audit evidence.
-
-The adapter deliberately does not fabricate a successful Battery Registry submission while the official Battery semantic catalogue/contract required for that registration path remains unavailable or incomplete. EVO therefore does not claim to be an EU-certified DPP provider or to make a customer dataset automatically compliant.
-
-See:
-
-- `docs/DPP_COMPLIANCE_MATRIX.md`
-- `docs/DPP_REGISTRY_INTEGRATION_V420.md`
-
-## Secure NFC direction
-
-NFC is an optional premium physical-evidence layer, not a dependency of EVO Origin or the regulatory DPP carrier itself.
-
-V4.5 implements the software trust chain for the reviewed NTAG 424 DNA SDM/SUN path:
-
-1. server-side AES/CMAC verification;
-2. decrypted UID matching the enrolled tag;
-3. tag ID + UID + EVO Seal binding;
-4. ACTIVE tag state;
-5. strictly increasing 24-bit read counter accepted atomically;
-6. replay/revocation rejection;
-7. a per-tag `physicalPilotApproved` gate before the strongest NFC claim can be emitted.
-
-A cryptographically correct read that passes replay authority but has not completed its real physical pilot must remain in the bounded state:
-
-```text
-CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT
-```
-
-and must not be promoted to `NFC_CRYPTO_VERIFIED`.
-
-The public NFC proof contract also keeps:
-
-```text
-physicalAuthenticity=false
-```
-
-because cryptographic tag evidence alone does not prove the factual authenticity of the product to which the tag was attached.
-
-See:
-
-- `docs/NFC_ARCHITECTURE.md`
-- `docs/NFC_PILOT_V421.md`
-- `standards/evo-nfc-proof-v421.mjs`
-- `schemas/evo-nfc-proof-v1.schema.json`
-- `supabase/functions/evo-nfc-verifier/index.ts`
-- `tests/nfc-crypto-v440.test.mjs`
-- `tests/nfc-verifier-v440.test.js`
-- `tests/nfc-replay-authority-v450.sql`
-
-## Standards and certification direction
-
-EVO is designed to interoperate rather than invent a closed trust vocabulary.
-
-Current / planned targets include:
-
-- **W3C Verifiable Credentials Data Model 2.0** — the current export is explicitly **unsecured**; no cryptographic VC proof is fabricated.
-- **RFC 3161** timestamp evidence — integration target.
-- **PAdES / regulated electronic-signature evidence** — integration target where legally relevant.
-- **C2PA** — provenance interoperability for suitable media/content cases.
-- **eIDAS / qualified trust services** — integrate qualified providers where customers require regulated trust; EVO is not a QTSP.
-- **Chile Law 19.799 ecosystem** — integrate accredited providers when advanced electronic-signature requirements apply.
-- **ISO/IEC 27001** — organizational certification-readiness track; no ISO certification is currently claimed.
-
-See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
+- W3C Verifiable Credentials Data Model 2.0 — current export remains explicitly unsecured.
+- RFC 3161 / PAdES / regulated e-signature evidence — integration targets.
+- C2PA — provenance interoperability target.
+- eIDAS / qualified trust services — integrate qualified providers where required; EVO is not a QTSP.
+- Chile Law 19.799 ecosystem — accredited-provider integration target when required.
+- ISO/IEC 27001 — organizational certification-readiness track; no certificate is claimed.
 
 ## Repository map
 
-- `v1/` — current browser application.
-- `standards/document-provenance-v321.mjs` — EVO Origin provenance semantics.
-- `schemas/document-provenance-v1.schema.json` — public provenance schema.
-- `standards/evo-vc-dm-export-v400.mjs` — W3C VC Data Model 2.0 export boundary.
-- `standards/evo-nfc-proof-v421.mjs` — NFC public-evidence boundary.
-- `docs/DOCUMENT_PROVENANCE_V321.md` — EVO Origin product and evidence model.
-- `docs/PROJECT_TRUTH_V400.md` — authoritative V4 claims boundary.
-- `docs/DPP_REGISTRY_INTEGRATION_V420.md` — EU DPP Registry integration readiness.
-- `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture and V4.5 software authority boundary.
-- `docs/NFC_PILOT_V421.md` — NFC laboratory/physical pilot gate.
-- `docs/PRODUCTION_CLOSEOUT_20260824.md` — production authority closeout evidence.
-- `docs/RELEASE_CHECKLIST_V400.md` — historical V4 promotion checklist and remaining high-assurance gates.
-- `docs/SECURITY.md` — security rules.
-- `security/THREAT_MODEL.md` — threat model.
-- `supabase/` — database migrations and Edge Functions.
-- `tests/` — security, provenance, navigation, NFC and database regression tests.
+- `v1/` — browser application.
+- `standards/` and `schemas/` — evidence semantics.
+- `supabase/` — migrations and Edge Functions.
+- `tests/` — security, provenance, DPP, NFC, navigation and ISMS regression tests.
+- `docs/isms/` — ISMS readiness records.
+- `docs/PRODUCTION_CLOSEOUT_20260824.md` — production closeout evidence.
+- `docs/RELEASE_CHECKLIST_V400.md` — historical V4 checklist and remaining assurance gates.
+- `docs/PROJECT_TRUTH_V400.md` — authoritative product-claim boundary.
 
 ## Development and release status
 
-`main` is the promoted code baseline. New work must be developed on branches and must not silently mutate production data, production keys or historical records.
+`main` is the promoted code baseline. New changes use branches and applied production migrations are immutable.
 
-V4.5 closes the current repository-side NFC software authority line. The remaining gates are external or operational rather than missing cryptographic code: a real NTAG 424 DNA physical pilot before physical-grade claims, completion of the official EU Battery Registry semantic/authentication path when the Commission makes it available, repository protection for `main`, final clean-browser/paid-checkout evidence, and independent security/organizational assurance before enterprise high-assurance or certification claims.
+V4.6.0 RC1 is a software/readiness release candidate. Stronger assurance remains gated by operational/external evidence: protected `main`, backup/restore and incident exercises, clean-browser evidence, independent penetration/security review, the real NFC hardware pilot, Commission Battery Registry availability and ISO certification if pursued.
 
 ## Product rule
 
 **The QR is discovery. The evidence graph is the product.**
-
-For documents, the clearest promise is:
 
 > EVO can prove that the file being checked is the exact registered version and show who declared it, its version history and the trust evidence attached to that record — without pretending that a hash alone proves legal originality or factual truth.
