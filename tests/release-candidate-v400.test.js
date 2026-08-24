@@ -42,7 +42,9 @@ assert(!index.includes('US$39'),'inactive monthly company plan must not appear i
 assert(index.includes('1 EVO Proof · US$9,90'),'payment recovery must use Proof terminology');
 assert(index.includes('1 por usuario elegible'),'default Free Proof surface must use eligible-user language');
 assert(!index.includes('1 por wallet'),'default V4.1 surface must not market Free Proof per wallet');
-assert(index.includes('<option value="Documento" selected>'),'Origin/document mode must be the default creation path');
+const documentOption=index.indexOf('<option value="Documento">Informe / documento</option>');
+const productOption=index.indexOf('<option value="Producto">Equipo / producto</option>');
+assert(documentOption>=0&&productOption>=0&&documentOption<productOption,'Origin/document mode must be the default first creation path');
 assert(!index.includes('id="guardian"'),'advanced Guardian panel must not ship on the default commercial surface');
 assert(!index.includes('./guardian.js'),'default commercial surface must not execute Guardian analysis');
 assert(!index.includes('./guardian-v04.js'),'default commercial surface must not activate Guardian authority UI or Battery DPP loader');
