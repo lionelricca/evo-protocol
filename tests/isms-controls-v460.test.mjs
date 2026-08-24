@@ -52,12 +52,12 @@ assert.match(productionReview, /security_definer=true/);
 assert.match(productionReview, /anon_execute=false/);
 assert.match(productionReview, /authenticated_execute=false/);
 assert.match(productionReview, /service_role_execute=true/);
-assert.match(productionReview, /18 production Edge Functions observed ACTIVE/i);
+assert.match(productionReview, /Production Edge Functions\s*\|\s*18 observed as `ACTIVE`/i);
 assert.match(productionReview, /evo-nfc-verifier.*version 6/is);
 assert.match(productionReview, /a278ed45596c3287bb1ee902fdd9af9debba5829583ac8267224954ab1dd4eb2/);
 assert.match(productionReview, /same calendar day/i);
-assert.match(productionReview, /does not prove.*MFA/is);
-assert.match(productionReview, /does not prove.*ISO\/IEC 27001 certification/is);
+assert.match(productionReview, /does \*\*not\*\* prove.*MFA/is);
+assert.match(productionReview, /does \*\*not\*\* prove.*ISO\/IEC 27001 certification/is);
 
 const inventory = read('docs/isms/ASSET_AND_INFORMATION_INVENTORY.md');
 assert.match(inventory, /A-001/);
