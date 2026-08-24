@@ -8,6 +8,8 @@ Esta guía describe cómo trabajar sobre EVO Protocol sin depender de una instal
 - `v1/`: frontend estático de EVO (Origin, wallet, checkout, Proofs, Passports, navegación e interfaces públicas).
 - `supabase/functions/`: Edge Functions de autoridad, pagos, ciclo de vida y verificación.
 - `supabase/migrations/`: cambios versionados de PostgreSQL/RLS/RPC.
+- `standards/`: contratos portables de evidencia e interoperabilidad.
+- `schemas/`: contratos JSON públicos.
 - `tests/`: regresiones JavaScript y pruebas SQL/concurrencia.
 - `security/`: threat model, auditoría y estado de migraciones.
 - `docs/`: arquitectura, seguridad, estándares, NFC y verticales.
@@ -16,13 +18,9 @@ El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni
 
 ## 2. Estado de ramas
 
-`main` contiene la base V4.0 RC1 promovida el 2026-08-24.
+`main` es siempre la base promovida del código.
 
-La línea de trabajo actual V4.1 es:
-
-```text
-codex/evo-v410-origin-truth-integration
-```
+Toda funcionalidad nueva debe nacer desde `main` actualizado en una rama independiente. No hardcodear una rama de desarrollo específica en esta guía porque queda obsoleta después de cada merge.
 
 V4.1 prioriza:
 
@@ -30,7 +28,7 @@ V4.1 prioriza:
 - coherencia de producto entre frontend y autoridad server-side;
 - carga determinística de módulos críticos;
 - pruebas de integración sobre la cadena real del navegador;
-- preparación del piloto NFC sin claves productivas.
+- piloto NFC sin claves productivas.
 
 No desarrollar directamente sobre `main`.
 
@@ -48,21 +46,22 @@ Para backend local y pruebas completas:
 - Docker compatible con Supabase local.
 - PostgreSQL client (`psql`) para ejecutar manualmente fixtures SQL.
 
-## 4. Clonar y seleccionar la rama
+## 4. Clonar y crear una rama
 
 ```bash
 git clone https://github.com/lionelricca/evo-protocol.git
 cd evo-protocol
 git fetch --all --prune
-git checkout codex/evo-v410-origin-truth-integration
-```
-
-Para iniciar una línea nueva desde producción de código:
-
-```bash
 git checkout main
 git pull --ff-only
 git checkout -b codex/evo-vXYZ-descripcion
+```
+
+Para retomar una rama ya existente:
+
+```bash
+git fetch --all --prune
+git checkout <nombre-de-rama>
 ```
 
 ## 5. Ejecutar el frontend local
@@ -106,11 +105,12 @@ npm run test:document
 npm run test:service
 npm run test:navigation
 npm run test:release
+npm run test:nfc
 ```
 
 Antes de enviar un PR, ejecutar como mínimo `npm run test:security` y las suites de las áreas modificadas.
 
-V4.1 agrega pruebas de integración que deben comprobar la cadena de carga real del frontend, no solamente que los archivos existan en el repositorio.
+Las pruebas de integración deben comprobar la cadena de carga real del frontend, no solamente que los archivos existan en el repositorio.
 
 ## 7. Backend Supabase local
 
@@ -187,9 +187,15 @@ Reglas:
 - usar claves de laboratorio separadas;
 - validar primero vectores oficiales y replay/counter behavior;
 - no desplegar `NFC CRYPTO VERIFIED` hasta que la comprobación criptográfica sea server-side;
-- un QR o una URL copiada nunca debe elevar confianza física.
+- un QR o una URL copiada nunca debe elevar confianza física;
+- el objeto público NFC nunca debe afirmar autenticidad física por sí solo.
 
-La arquitectura base está en `docs/NFC_ARCHITECTURE.md`.
+Arquitectura y piloto:
+
+- `docs/NFC_ARCHITECTURE.md`
+- `docs/NFC_PILOT_V411.md`
+- `standards/evo-nfc-proof-v411.mjs`
+- `schemas/evo-nfc-proof-v1.schema.json`
 
 ## 12. Flujo Git recomendado
 
