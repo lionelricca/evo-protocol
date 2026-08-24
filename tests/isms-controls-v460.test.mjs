@@ -73,11 +73,24 @@ assert.match(index, /Stage 1\/Stage 2 certification pending/);
 const disclosure = read('.github/SECURITY.md');
 assert.match(disclosure, /vulnerabilit/i);
 assert.doesNotMatch(disclosure, /we are ISO[- ]certified/i);
+assert.match(
+  disclosure,
+  /does not claim that EVO is unhackable, 100% secure, independently penetration-tested, ISO-certified/i,
+  'public disclosure policy must preserve the explicit unsupported-claim disclaimer',
+);
+
+const affirmativeAbsoluteSecurityClaims = [
+  /\bEVO (?:is|remains|provides) (?:fully |completely )?(?:unhackable|hacker-proof|100% secure)\b/i,
+  /\bEVO guarantees (?:absolute|100%) security\b/i,
+  /\bguaranteed (?:unhackable|hacker-proof|100% secure)\b/i,
+];
 
 for (const relative of required) {
   const content = read(relative);
   assert.doesNotMatch(content, /EVO is ISO[-/ ]?IEC 27001 certified/i, `${relative} must not claim ISO certification`);
-  assert.doesNotMatch(content, /100% secure|unhackable|hacker-proof/i, `${relative} must not make absolute security claims`);
+  for (const pattern of affirmativeAbsoluteSecurityClaims) {
+    assert.doesNotMatch(content, pattern, `${relative} must not make affirmative absolute security claims`);
+  }
 }
 
 console.log('EVO V4.6 ISMS operational-control checks passed');
