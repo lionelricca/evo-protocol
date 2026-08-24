@@ -19,16 +19,44 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - name: Build source ZIP
+      - name: Build auditable source bundle
+        shell: bash
         run: |
-          zip -qr EVO_Protocol_V4_RC1.zip . -x '.git/*' 'EVO_Protocol_V4_RC1.zip'
+          set -euo pipefail
+
+          printf '%s\n' "$GITHUB_SHA" > EVO_SOURCE_COMMIT.txt
+
+          zip -qr EVO_Protocol_V4_RC1.zip . \
+            -x '.git/*' \
+               'EVO_Protocol_V4_RC1.zip' \
+               'EVO_Protocol_V4_RC1.zip.sha256' \
+               'EVO_Release_Manifest.txt'
+
           sha256sum EVO_Protocol_V4_RC1.zip > EVO_Protocol_V4_RC1.zip.sha256
-      - name: Upload source ZIP
+          ZIP_SHA256="$(cut -d ' ' -f1 EVO_Protocol_V4_RC1.zip.sha256)"
+
+          cat > EVO_Release_Manifest.txt <<EOF
+          EVO Protocol V4.0 RC1 Release Bundle
+          repository=$GITHUB_REPOSITORY
+          source_commit=$GITHUB_SHA
+          source_ref=$GITHUB_REF
+          workflow_run_id=$GITHUB_RUN_ID
+          workflow_run_number=$GITHUB_RUN_NUMBER
+          generated_at_utc=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          zip_file=EVO_Protocol_V4_RC1.zip
+          zip_sha256=$ZIP_SHA256
+          EOF
+
+          grep -F "source_commit=$GITHUB_SHA" EVO_Release_Manifest.txt
+          grep -F "zip_sha256=$ZIP_SHA256" EVO_Release_Manifest.txt
+      - name: Upload source ZIP and evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: evo-protocol-v4-rc1-source
           path: |
             EVO_Protocol_V4_RC1.zip
             EVO_Protocol_V4_RC1.zip.sha256
+            EVO_SOURCE_COMMIT.txt
+            EVO_Release_Manifest.txt
           retention-days: 14
           if-no-files-found: error
