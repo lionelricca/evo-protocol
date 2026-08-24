@@ -67,4 +67,12 @@ window.addEventListener('load',()=>{
     review.dataset.evoSealReviewV400='1';
     document.body.appendChild(review);
   }
+
+  if(!document.querySelector('link[data-evo-ui-polish-v400]')){
+    const polish=document.createElement('link');
+    polish.rel='stylesheet';
+    polish.href='./ui-polish-v400.css?v=20260823-v400-filepicker';
+    polish.dataset.evoUiPolishV400='1';
+    document.head.appendChild(polish);
+  }
 },{once:true});
