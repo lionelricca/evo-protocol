@@ -3,6 +3,7 @@
 const assert=require('assert');
 const fs=require('fs');
 const path=require('path');
+const {execFileSync}=require('child_process');
 
 const root=path.resolve(__dirname,'..');
 const read=rel=>fs.readFileSync(path.join(root,rel),'utf8');
@@ -19,6 +20,8 @@ const provenanceSchema=read('schemas/document-provenance-v1.schema.json');
 const vcExport=read('standards/evo-vc-dm-export-v400.mjs');
 const vcSchema=read('schemas/evo-vc-dm-export-v400.schema.json');
 const i18n=read('v1/i18n-v275.js');
+const nfc=read('standards/evo-nfc-proof-v411.mjs');
+const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
 
 assert(readme.startsWith('# EVO Protocol'),'umbrella brand must be EVO Protocol');
 assert(readme.includes('Current stage: V4.1 Development Line'),'README must expose the current V4.1 development stage');
@@ -67,6 +70,17 @@ assert(vcExport.includes('credential_not_cryptographically_secured'),'secured-cr
 assert(!vcExport.includes('evo.example')&&!vcSchema.includes('evo.example'),'VC release files must use no placeholder EVO domain');
 assert(!vcExport.includes('proof:{'),'unsecured VC export must not fabricate a proof');
 
+assert(nfc.includes("EVO_NFC_TRUSTED_VERIFIER='SERVER_SIDE_NTAG424'"),'NFC evidence must require the trusted server-side verifier mode');
+assert(nfc.includes('physicalAuthenticity:false'),'NFC public evidence must preserve the physical-authenticity claim boundary');
+assert(nfc.includes("addRisk(risks,'REPLAY_DETECTED')"),'NFC contract must reject replayed proof decisions');
+assert(nfc.includes("addRisk(risks,'MAC_INVALID')"),'NFC contract must reject invalid cryptographic decisions');
+assert(nfcSchema.includes('"physicalAuthenticity": { "const": false }'),'NFC schema must make the physical-authenticity boundary machine-readable');
+assert(!nfcSchema.includes('aesKey')&&!nfcSchema.includes('masterKey'),'public NFC schema must expose no key fields');
+
+// Security Gate already executes this product-truth test, so the behavioral NFC
+// boundary becomes mandatory without modifying the long PostgreSQL gate workflow.
+execFileSync(process.execPath,[path.join(root,'tests','nfc-proof-v411.test.mjs')],{stdio:'inherit'});
+
 assert(!app.includes('0x622b09038bc1ae90ee13a35ba5756b931d9dcc9f'),'legacy EVO token contract must not remain coupled to the V4 browser client');
 assert(!app.includes("x.fillText('EVO VERIFIED'"),'printable evidence must not use a generic VERIFIED claim');
 assert(app.includes("x.fillText('EVO PROOF'"),'printable evidence must identify itself as an EVO Proof');
@@ -100,4 +114,4 @@ for(const file of scanRoots.flatMap(walk)){
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
 
-console.log('EVO V4.1 product-truth checks passed');
+console.log('EVO V4.1.1 product-truth + NFC boundary checks passed');
