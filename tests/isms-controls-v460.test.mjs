@@ -9,6 +9,9 @@ const required = [
   'docs/isms/ISMS_SCOPE.md',
   'docs/isms/INFORMATION_SECURITY_POLICY.md',
   'docs/isms/RISK_REGISTER.md',
+  'docs/isms/ASSET_AND_INFORMATION_INVENTORY.md',
+  'docs/isms/INFORMATION_CLASSIFICATION_AND_HANDLING.md',
+  'docs/isms/SOA_PREPARATION.md',
   'docs/isms/INCIDENT_RESPONSE.md',
   'docs/isms/ACCESS_AND_SECRET_MANAGEMENT.md',
   'docs/isms/BACKUP_AND_CONTINUITY.md',
@@ -22,6 +25,34 @@ for (const relative of required) {
   assert.ok(fs.existsSync(path.join(root, relative)), `${relative} must exist`);
   assert.ok(read(relative).trim().length > 300, `${relative} must contain substantive control content`);
 }
+
+const inventory = read('docs/isms/ASSET_AND_INFORMATION_INVENTORY.md');
+assert.match(inventory, /A-001/);
+assert.match(inventory, /Supabase production project/);
+assert.match(inventory, /NFC pilot\/production key material/);
+assert.match(inventory, /OUT OF SCOPE \/ PROHIBITED TO COLLECT/);
+assert.match(inventory, /customer wallet private keys \/ seed phrases/i);
+assert.match(inventory, /protected `main` branch\/ruleset/);
+assert.match(inventory, /independent pentest/i);
+assert.match(inventory, /ISO\/IEC 27001 certification/i);
+
+const classification = read('docs/isms/INFORMATION_CLASSIFICATION_AND_HANDLING.md');
+for (const level of ['PUBLIC', 'INTERNAL', 'CONFIDENTIAL', 'RESTRICTED', 'OUT OF SCOPE / PROHIBITED TO COLLECT']) {
+  assert.ok(classification.includes(level), `classification standard must include ${level}`);
+}
+assert.match(classification, /seed phrases/);
+assert.match(classification, /NFC AES keys/);
+assert.match(classification, /public.*does not authorize arbitrary mutation/is);
+
+const soa = read('docs/isms/SOA_PREPARATION.md');
+assert.match(soa, /preparation method only/i);
+assert.match(soa, /authorised current copy|authorised.*ISO/i);
+assert.match(soa, /Do not copy substantial copyrighted ISO control text/i);
+assert.match(soa, /formal SoA/);
+assert.match(soa, /management formally reviews\/approves the SoA/i);
+assert.match(soa, /GitHub `main` is not yet protected/);
+assert.match(soa, /independent penetration\/security review is pending/);
+assert.match(soa, /Stage 1\/Stage 2 audits have not occurred/);
 
 const incident = read('docs/isms/INCIDENT_RESPONSE.md');
 assert.match(incident, /SEV-1 — Critical/);
@@ -62,6 +93,9 @@ assert.match(suppliers, /does not make EVO ISO-certified/i);
 
 const index = read('docs/isms/CONTROL_EVIDENCE_INDEX.md');
 assert.match(index, /not.*Statement of Applicability/i);
+assert.match(index, /Asset ownership\/inventory/);
+assert.match(index, /Information classification\/handling/);
+assert.match(index, /SoA preparation/);
 assert.match(index, /E0 — Planned/);
 assert.match(index, /E4 — Independently assured/);
 assert.match(index, /GitHub `main` branch\/ruleset protection remains disabled/);
@@ -99,4 +133,4 @@ for (const relative of required) {
   assertNoAffirmativeAbsoluteSecurityClaim(relative, content);
 }
 
-console.log('EVO V4.6 ISMS operational-control checks passed');
+console.log('EVO V4.6 ISMS inventory/classification/SoA + operational-control checks passed');
