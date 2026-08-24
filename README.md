@@ -4,9 +4,9 @@
 
 EVO Protocol is the umbrella trust layer. It lets an issuer register cryptographic evidence, preserve signed history and publish a free verification surface without uploading the original document by default.
 
-## Current stage: V4.5 Software Authority Line
+## Current stage: V4.6 TagTamper Verification Line
 
-V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.3 added a fail-closed server adapter for the EU DPP Registry without inventing an unavailable Battery registration contract. V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification against reviewed NXP vectors. V4.5 completed the software NFC authority with protected tag/UID/Seal binding and an atomic monotonic replay counter. The final physical-grade claim remains gated by a real tag pilot.
+V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.3 added a fail-closed server adapter for the EU DPP Registry without inventing an unavailable Battery registration contract. V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification against reviewed NXP vectors. V4.5 completed protected tag/UID/Seal binding and atomic replay authority. V4.6 adds encrypted NTAG 424 DNA TagTamper status verification while preserving the per-tag physical-pilot gate.
 
 The product family is:
 
@@ -15,7 +15,7 @@ The product family is:
 - **EVO Service Proof** — owner-declared and provider-countersigned technical service evidence.
 - **EVO Issuer Trust** — wallet, domain and organization evidence kept as distinct trust levels.
 - **EVO DPP** — standards/regulatory integration layer, including EU DPP Registry readiness and a fail-closed server adapter.
-- **EVO Secure NFC** — NTAG 424 DNA cryptographic verification and atomic replay authority for high-value products; the physical pilot remains mandatory before the strongest physical-evidence claim.
+- **EVO Secure NFC** — NTAG 424 DNA cryptographic verification, atomic replay authority and encrypted TagTamper opening-state verification for high-value products; the real physical pilot remains mandatory before the strongest physical-evidence claim.
 - **EVO Guardian / Reality Continuity** — explainable anomaly and continuity analysis; public telemetry never elevates authoritative trust.
 
 ## Commercial focus
@@ -120,7 +120,7 @@ The current checkout model is non-custodial from the wallet-connection perspecti
 
 The historical EVO token experiment is **not required** for current EVO Protocol purchases and is not part of the current commercial trust architecture.
 
-## Security baseline carried into V4.5
+## Security baseline carried into V4.6
 
 The promoted V4 baseline includes defense-in-depth controls such as:
 
@@ -143,7 +143,10 @@ The promoted V4 baseline includes defense-in-depth controls such as:
 - NTAG 424 DNA SDM/SUN verification against reviewed NXP vectors;
 - server-only NFC keys for the pilot path;
 - protected tag/UID/Seal enrollment and atomic monotonic counter acceptance;
-- explicit replay, revoked-tag and pre-physical-pilot rejection paths.
+- explicit replay, revoked-tag and pre-physical-pilot rejection paths;
+- NTAG 424 DNA TagTamper encrypted SDM file-data decryption;
+- fail-closed interpretation of NXP `C` / `O` / `I` permanent/current tamper states;
+- server-derived dynamic MAC input that binds the encrypted tamper mirror to the authenticated message.
 
 These controls support the description **security-hardened / defense in depth**. They do not justify claims such as “unhackable”, “100% secure” or “certified secure”.
 
@@ -162,7 +165,7 @@ See:
 
 NFC is an optional premium physical-evidence layer, not a dependency of EVO Origin or the regulatory DPP carrier itself.
 
-V4.5 implements the software trust chain for the reviewed NTAG 424 DNA SDM/SUN path:
+V4.6 implements the reviewed NTAG 424 DNA / TagTamper software trust chain:
 
 1. server-side AES/CMAC verification;
 2. decrypted UID matching the enrolled tag;
@@ -170,17 +173,33 @@ V4.5 implements the software trust chain for the reviewed NTAG 424 DNA SDM/SUN p
 4. ACTIVE tag state;
 5. strictly increasing 24-bit read counter accepted atomically;
 6. replay/revocation rejection;
-7. a per-tag `physicalPilotApproved` gate before the strongest NFC claim can be emitted.
+7. for TagTamper, authenticated `SDMENCFileData` decryption;
+8. interpretation of `TTPermStatus || TTCurrStatus` as `INTACT`, `OPEN` or fail-closed `UNKNOWN`;
+9. a per-tag `physicalPilotApproved` gate before the strongest NFC claim can be emitted.
 
-A cryptographically correct read that passes replay authority but has not completed its real physical pilot must remain in the bounded state:
+The first TagTamper pilot is pinned to a reviewed dynamic-input layout where the MAC covers:
+
+```text
+<enc>&cmac=
+```
+
+and the encrypted plaintext begins with the two NXP tamper status bytes. The server derives this MAC input internally rather than trusting arbitrary caller-provided MAC input.
+
+A cryptographically correct read that passes replay authority but has not completed its real physical pilot remains:
 
 ```text
 CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT
 ```
 
-and must not be promoted to `NFC_CRYPTO_VERIFIED`.
+A TagTamper profile whose status is invalid/not enabled returns:
 
-The public NFC proof contract also keeps:
+```text
+TAGTAMPER_STATUS_INVALID
+```
+
+An authenticated `OPEN` state does not invalidate the secure tag proof; it surfaces opening evidence/risk to the public proof layer.
+
+The public NFC proof contract continues to keep:
 
 ```text
 physicalAuthenticity=false
@@ -225,8 +244,8 @@ See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 - `docs/DOCUMENT_PROVENANCE_V321.md` — EVO Origin product and evidence model.
 - `docs/PROJECT_TRUTH_V400.md` — authoritative V4 claims boundary.
 - `docs/DPP_REGISTRY_INTEGRATION_V420.md` — EU DPP Registry integration readiness.
-- `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture and V4.5 software authority boundary.
-- `docs/NFC_PILOT_V421.md` — NFC laboratory/physical pilot gate.
+- `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture and V4.6 TagTamper verifier boundary.
+- `docs/NFC_PILOT_V421.md` — current physical-pilot execution procedure (historical path retained).
 - `docs/PRODUCTION_CLOSEOUT_20260824.md` — production authority closeout evidence.
 - `docs/RELEASE_CHECKLIST_V400.md` — historical V4 promotion checklist and remaining high-assurance gates.
 - `docs/SECURITY.md` — security rules.
@@ -238,7 +257,7 @@ See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 
 `main` is the promoted code baseline. New work must be developed on branches and must not silently mutate production data, production keys or historical records.
 
-V4.5 closes the current repository-side NFC software authority line. The remaining gates are external or operational rather than missing cryptographic code: a real NTAG 424 DNA physical pilot before physical-grade claims, completion of the official EU Battery Registry semantic/authentication path when the Commission makes it available, repository protection for `main`, final clean-browser/paid-checkout evidence, and independent security/organizational assurance before enterprise high-assurance or certification claims.
+V4.6 closes the repository-side software path for the reviewed NTAG 424 DNA TagTamper pilot. Remaining gates are external or operational: obtain/provision genuine physical tags, run the closed/open/replay/alteration pilot before enabling any per-tag physical approval, protect `main`, complete clean-browser and paid-checkout evidence, finish the official EU Battery Registry integration when the Commission exposes the required path, and obtain independent security/organizational assurance before enterprise high-assurance or certification claims.
 
 ## Product rule
 

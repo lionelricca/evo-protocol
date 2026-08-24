@@ -22,15 +22,18 @@ const vcSchema=read('schemas/evo-vc-dm-export-v400.schema.json');
 const i18n=read('v1/i18n-v275.js');
 const nfc=read('standards/evo-nfc-proof-v421.mjs');
 const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
+const nfcArchitecture=read('docs/NFC_ARCHITECTURE.md');
 const dppRegistry=read('docs/DPP_REGISTRY_INTEGRATION_V420.md');
 
 assert(readme.startsWith('# EVO Protocol'),'umbrella brand must be EVO Protocol');
-assert(readme.includes('Current stage: V4.5 Software Authority Line'),'README must expose the current V4.5 software-authority stage');
+assert(readme.includes('Current stage: V4.6 TagTamper Verification Line'),'README must expose the current V4.6 TagTamper stage');
 assert(readme.includes('V4.0 RC1 was promoted to `main`'),'README must preserve the promoted V4 baseline');
 assert(readme.includes('V4.2 added EU DPP Registry integration readiness'),'README must preserve the current DPP line');
 assert(readme.includes('V4.3 added a fail-closed server adapter'),'README must preserve the V4.3 DPP adapter line');
 assert(readme.includes('V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification'),'README must preserve the V4.4 NFC crypto line');
-assert(readme.includes('V4.5 completed the software NFC authority'),'README must preserve the V4.5 NFC replay-authority line');
+assert(readme.includes('V4.5 completed protected tag/UID/Seal binding and atomic replay authority'),'README must preserve the V4.5 NFC replay-authority line');
+assert(readme.includes('V4.6 adds encrypted NTAG 424 DNA TagTamper status verification'),'README must preserve the V4.6 TagTamper line');
+assert(!readme.includes('Current stage: V4.5 Software Authority Line'),'stale V4.5 stage must stay removed');
 assert(!readme.includes('Current stage: V4.2.1 Development Line'),'stale V4.2.1 current-stage label must stay removed');
 assert(!readme.includes('Current stage: V1.5'),'stale V1.5 stage must stay removed');
 assert(!readme.includes('Creating trust may consume EVO'),'current commercial trust model must not depend on token consumption');
@@ -43,6 +46,8 @@ assert(/one benefit per eligible user/i.test(readme),'Free Proof policy must rem
 assert(readme.includes('docs/DPP_REGISTRY_INTEGRATION_V420.md'),'README must expose the DPP Registry readiness track');
 assert(readme.includes('docs/NFC_PILOT_V421.md'),'README must expose the NFC physical-pilot track');
 assert(readme.includes('CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT'),'README must preserve the pre-physical-pilot NFC claim boundary');
+assert(readme.includes('TAGTAMPER_STATUS_INVALID'),'README must preserve invalid/not-enabled TagTamper failure state');
+assert(readme.includes('<enc>&cmac='),'README must expose the reviewed authenticated TagTamper dynamic input');
 
 assert(index.includes('<title>EVO Protocol · Verificación documental y pasaportes digitales</title>'),'browser title must use EVO Protocol');
 assert(index.includes('ORIGIN · PROOF · PASSPORT · VERIFY'),'hero must lead with Origin');
@@ -86,8 +91,13 @@ assert(nfc.includes("EVO_NFC_TRUSTED_VERIFIER='SERVER_SIDE_NTAG424'"),'NFC evide
 assert(nfc.includes('physicalAuthenticity:false'),'NFC public evidence must preserve the physical-authenticity claim boundary');
 assert(nfc.includes("addRisk(risks,'REPLAY_DETECTED')"),'NFC contract must reject replayed proof decisions');
 assert(nfc.includes("addRisk(risks,'MAC_INVALID')"),'NFC contract must reject invalid cryptographic decisions');
+assert(nfc.includes("addRisk(risks,'TAMPER_OPEN')"),'public proof must surface verified-open TagTamper risk');
 assert(nfcSchema.includes('"physicalAuthenticity": { "const": false }'),'NFC schema must make the physical-authenticity boundary machine-readable');
 assert(!nfcSchema.includes('aesKey')&&!nfcSchema.includes('masterKey'),'public NFC schema must expose no key fields');
+assert(/TTPermStatus[\s\S]*TTCurrStatus/.test(nfcArchitecture),'NFC architecture must document NXP TagTamper status order');
+assert(/43h[\s\S]*4Fh[\s\S]*49h/.test(nfcArchitecture),'NFC architecture must pin NXP Close/Open/Invalid values');
+assert(nfcArchitecture.includes('<enc>&cmac='),'NFC architecture must pin the authenticated encrypted-mirror MAC input');
+assert(/Never infer `AUTHENTIC PRODUCT`|physicalAuthenticity=false/.test(nfcArchitecture),'NFC architecture must preserve the physical-authenticity boundary');
 
 // Security Gate already executes this product-truth test, so the behavioral NFC
 // boundary becomes mandatory without modifying the long PostgreSQL gate workflow.
@@ -126,4 +136,4 @@ for(const file of scanRoots.flatMap(walk)){
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
 
-console.log('EVO V4.5 product-truth + DPP + NFC boundary checks passed');
+console.log('EVO V4.6 product-truth + DPP + NFC TagTamper boundary checks passed');

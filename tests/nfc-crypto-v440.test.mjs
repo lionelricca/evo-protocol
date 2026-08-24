@@ -3,8 +3,11 @@ import {
   aes128DecryptBlock,
   bytesToHex,
   calculateSdmMac,
+  decryptSdmEncFileData,
+  deriveSdmFileReadEncKey,
   deriveSdmFileReadMacKey,
   hexToBytes,
+  parseTagTamperStatus,
   verifyNtag424Sun,
 } from '../supabase/functions/_shared/evo-aes-cmac.mjs';
 
@@ -53,4 +56,39 @@ const dynamicInput = new TextEncoder().encode('CEE9A53E3E463EF1F459635736738962&
 const mac2 = await calculateSdmMac(ZERO, uid2, counter2, dynamicInput);
 assert.equal(x(mac2), 'ECC1E7F6C6C73BF6', 'dynamic-input SDMMAC must match NXP reference');
 
-console.log('EVO V4.4 NTAG 424 DNA SDM cryptographic vectors passed');
+const verifiedDynamic = await verifyNtag424Sun({
+  metaReadKey: ZERO,
+  fileReadKey: ZERO,
+  piccEncData: h('FD91EC264309878BE6345CBE53BADF40'),
+  sdmMac: h('ECC1E7F6C6C73BF6'),
+  dynamicInput,
+});
+assert.equal(verifiedDynamic.valid, true, 'complete dynamic-input SUN verification must accept NXP Table 5');
+assert.equal(x(verifiedDynamic.uid), '04958CAA5C5E80');
+assert.equal(verifiedDynamic.counter, 8);
+
+// NXP AN12196 Rev 2.0, Table 3 / SDMENCFileData decryption example.
+const uid3 = h('04958CAA5C5E80');
+const counter3 = h('010000');
+const encSession = await deriveSdmFileReadEncKey(ZERO, uid3, counter3);
+assert.equal(x(encSession), '8097D73344D53F963B09E23E03B62336', 'SDM session ENC key must match NXP reference');
+const encResult = await decryptSdmEncFileData({
+  fileReadKey: ZERO,
+  uid: uid3,
+  counter: counter3,
+  encryptedData: h('94592FDE69FA06E8E3B6CA686A22842B'),
+});
+assert.equal(x(encResult.iv), '7B3F3CFC39D3B7FF5868636E38AF7C3A', 'SDM encrypted-data IV must match NXP reference');
+assert.equal(x(encResult.plaintext), '78787878787878787878787878787878', 'SDMENCFileData decrypt must match NXP reference');
+
+// NXP NT4H2421Tx data sheet 10.2 defines C/O/I as Close/Open/Invalid.
+const intact = parseTagTamperStatus(h('43430000000000000000000000000000'), 0);
+assert.deepEqual(intact, { permanentStatus: 'CLOSE', currentStatus: 'CLOSE', tamperState: 'INTACT', verified: true });
+const opened = parseTagTamperStatus(h('4F4F0000000000000000000000000000'), 0);
+assert.equal(opened.tamperState, 'OPEN');
+assert.equal(opened.verified, true);
+const invalid = parseTagTamperStatus(h('49490000000000000000000000000000'), 0);
+assert.equal(invalid.tamperState, 'UNKNOWN');
+assert.equal(invalid.verified, false);
+
+console.log('EVO V4.6 NTAG 424 DNA SDM + TagTamper cryptographic vectors passed');
