@@ -24,8 +24,6 @@
     window.dispatchEvent(new CustomEvent('evo:wallet-disconnected',{detail:{source:'STARTUP_EXPLICIT_CONNECT'}}));
   }
 
-  // Keep a non-authoritative preference only after an explicit connection.
-  // It may order the wallet/account chooser, but it must never activate a wallet.
   window.addEventListener('evo:wallet-connected',event=>{
     const value=String(event.detail?.account||'').toLowerCase();
     if(!walletRe.test(value))return;
@@ -38,7 +36,6 @@
     }catch{}
   });
 
-  // Compatibility API: callers may invoke it, but restoration is intentionally disabled.
   window.evoRestoreWalletSession=async()=>{
     disconnectForStartup();
     return false;
@@ -49,10 +46,25 @@
 })();
 
 window.addEventListener('load',()=>{
-  if(document.querySelector('script[data-evo-free-proof-v400]'))return;
-  const script=document.createElement('script');
-  script.src='./free-proof-antisybil-v400.js?v=20260823-v400-antisybil';
-  script.dataset.evoFreeProofV400='1';
-  script.onload=()=>{try{if(typeof account!=='undefined'&&/^0x[0-9a-fA-F]{40}$/.test(String(account||'')))window.evoRefreshEntitlement?.(String(account).toLowerCase())}catch{}};
-  document.body.appendChild(script);
+  if(!document.querySelector('script[data-evo-free-proof-v400]')){
+    const script=document.createElement('script');
+    script.src='./free-proof-antisybil-v400.js?v=20260823-v400-antisybil';
+    script.dataset.evoFreeProofV400='1';
+    script.onload=()=>{try{if(typeof account!=='undefined'&&/^0x[0-9a-fA-F]{40}$/.test(String(account||'')))window.evoRefreshEntitlement?.(String(account).toLowerCase())}catch{}};
+    document.body.appendChild(script);
+  }
+
+  if(!document.querySelector('link[data-evo-seal-review-v400]')){
+    const style=document.createElement('link');
+    style.rel='stylesheet';
+    style.href='./seal-review-v400.css?v=20260823-v400-review';
+    style.dataset.evoSealReviewV400='1';
+    document.head.appendChild(style);
+  }
+  if(!document.querySelector('script[data-evo-seal-review-v400]')){
+    const review=document.createElement('script');
+    review.src='./seal-review-v400.js?v=20260823-v400-review';
+    review.dataset.evoSealReviewV400='1';
+    document.body.appendChild(review);
+  }
 },{once:true});
