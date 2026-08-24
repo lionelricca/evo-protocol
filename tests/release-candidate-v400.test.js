@@ -25,9 +25,13 @@ const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
 const dppRegistry=read('docs/DPP_REGISTRY_INTEGRATION_V420.md');
 
 assert(readme.startsWith('# EVO Protocol'),'umbrella brand must be EVO Protocol');
-assert(readme.includes('Current stage: V4.2.1 Development Line'),'README must expose the current V4.2.1 development stage');
+assert(readme.includes('Current stage: V4.5 Software Authority Line'),'README must expose the current V4.5 software-authority stage');
 assert(readme.includes('V4.0 RC1 was promoted to `main`'),'README must preserve the promoted V4 baseline');
 assert(readme.includes('V4.2 added EU DPP Registry integration readiness'),'README must preserve the current DPP line');
+assert(readme.includes('V4.3 added a fail-closed server adapter'),'README must preserve the V4.3 DPP adapter line');
+assert(readme.includes('V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification'),'README must preserve the V4.4 NFC crypto line');
+assert(readme.includes('V4.5 completed the software NFC authority'),'README must preserve the V4.5 NFC replay-authority line');
+assert(!readme.includes('Current stage: V4.2.1 Development Line'),'stale V4.2.1 current-stage label must stay removed');
 assert(!readme.includes('Current stage: V1.5'),'stale V1.5 stage must stay removed');
 assert(!readme.includes('Creating trust may consume EVO'),'current commercial trust model must not depend on token consumption');
 assert(readme.includes('There is **no active US$39/month company subscription'),'inactive company-plan reference must be explicitly corrected');
@@ -37,7 +41,8 @@ assert(/B2B|industrial/i.test(readme),'commercial focus must retain industrial/B
 assert(/technical and quality documentation|document provenance|technical-document/i.test(readme),'commercial wedge must remain document provenance');
 assert(/one benefit per eligible user/i.test(readme),'Free Proof policy must remain user-eligibility based');
 assert(readme.includes('docs/DPP_REGISTRY_INTEGRATION_V420.md'),'README must expose the DPP Registry readiness track');
-assert(readme.includes('docs/NFC_PILOT_V421.md'),'README must expose the NFC laboratory track');
+assert(readme.includes('docs/NFC_PILOT_V421.md'),'README must expose the NFC physical-pilot track');
+assert(readme.includes('CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT'),'README must preserve the pre-physical-pilot NFC claim boundary');
 
 assert(index.includes('<title>EVO Protocol · Verificación documental y pasaportes digitales</title>'),'browser title must use EVO Protocol');
 assert(index.includes('ORIGIN · PROOF · PASSPORT · VERIFY'),'hero must lead with Origin');
@@ -121,4 +126,4 @@ for(const file of scanRoots.flatMap(walk)){
   for(const pattern of forbidden)assert(!pattern.test(text),`unsupported historical identity/domain found in ${path.relative(root,file)}`);
 }
 
-console.log('EVO V4.2.1 product-truth + DPP + NFC boundary checks passed');
+console.log('EVO V4.5 product-truth + DPP + NFC boundary checks passed');

@@ -10,20 +10,32 @@ const read = file => fs.readFileSync(path.join(ROOT, file), 'utf8');
 const pkg = JSON.parse(read('package.json'));
 assert.equal(pkg.private, true, 'release package metadata must stay private/non-publishable');
 assert.match(pkg.version, /^4\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, 'release metadata must stay on the EVO V4 version line');
+assert.equal(pkg.version, '4.5.0', 'release metadata must identify the promoted V4.5 software-authority line');
 assert.match(String(pkg.engines && pkg.engines.node || ''), />=20/, 'Node development baseline must stay explicit');
 assert.equal(read('VERSION').trim(), pkg.version, 'VERSION and package.json must remain aligned');
+assert.match(pkg.scripts['test:nfc'], /nfc-proof-v421\.test\.mjs/, 'NFC test command must preserve the public-proof contract regression');
+assert.match(pkg.scripts['test:nfc'], /nfc-crypto-v440\.test\.mjs/, 'NFC test command must execute the NXP crypto vectors');
+assert.match(pkg.scripts['test:nfc'], /nfc-verifier-v440\.test\.js/, 'NFC test command must execute verifier/claim-boundary checks');
+assert.match(pkg.scripts['test:nfc:authority'], /nfc-replay-authority-v450\.sql/, 'NFC DB authority command must expose the V4.5 replay regression');
 
 const readme = read('README.md');
-assert.match(readme, /Current stage:\s*V4\.2\.1 Development Line/, 'README must expose the current V4.2.1 development stage');
+assert.match(readme, /Current stage:\s*V4\.5 Software Authority Line/, 'README must expose the current V4.5 software-authority stage');
 assert.match(readme, /V4\.0 RC1 was promoted to `main`/, 'README must preserve the V4 promotion history');
 assert.match(readme, /V4\.2 added EU DPP Registry integration readiness/, 'README must preserve the promoted V4.2 DPP line');
+assert.match(readme, /V4\.3 added a fail-closed server adapter/, 'README must expose the promoted V4.3 DPP adapter line');
+assert.match(readme, /V4\.4 implemented NTAG 424 DNA SDM\/SUN cryptographic verification/, 'README must expose the promoted V4.4 NFC crypto line');
+assert.match(readme, /V4\.5 completed the software NFC authority/, 'README must expose the promoted V4.5 replay-authority line');
+assert.doesNotMatch(readme, /Current stage:\s*V4\.2\.1 Development Line/, 'README must not regress to the obsolete V4.2.1 current-stage label');
 assert.doesNotMatch(readme, /Current stage:\s*V1\.5 Commercial Pilot/i, 'README must not regress to the obsolete V1.5 status');
 assert.match(readme, /PROJECT_TRUTH_V400\.md/, 'README must point to the V4 product-truth source');
 assert.match(readme, /RELEASE_CHECKLIST_V400\.md/, 'README must preserve the V4 promotion checklist reference');
 assert.match(readme, /one benefit per eligible user/i, 'README must preserve the server-side Free Proof policy');
 assert.doesNotMatch(readme, /Free Proof:\*\* one demonstration Proof per wallet/i, 'README must not restore one-free-proof-per-wallet marketing');
 assert.match(readme, /DPP_REGISTRY_INTEGRATION_V420\.md/, 'README must expose the current EU DPP Registry readiness track');
-assert.match(readme, /NFC_PILOT_V421\.md/, 'README must expose the current NFC laboratory track');
+assert.match(readme, /NFC_PILOT_V421\.md/, 'README must preserve the physical NFC pilot boundary');
+assert.match(readme, /CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT/, 'README must preserve the pre-physical-pilot claim boundary');
+assert.match(readme, /nfc-replay-authority-v450\.sql/, 'README must expose the V4.5 replay-authority regression evidence');
+assert.match(readme, /physicalAuthenticity=false/, 'README must preserve the physical-authenticity claim boundary');
 
 const launcher = read('index.html');
 const launcherJs = read('root-launch.js');
@@ -41,8 +53,8 @@ assert.match(development, /EVO_ALLOW_LOCAL_ORIGINS=true/, 'local CORS developmen
 assert.match(development, /No habilitar esa opción en producción/, 'local-origin switch must be prohibited in production guidance');
 assert.match(development, /no reescribir una migración ya aplicada en producción/i, 'applied production migrations must remain immutable');
 assert.match(development, /1 Free Proof por usuario elegible/, 'development guide must preserve the anti-abuse product rule');
-assert.match(development, /npm run test:nfc/, 'development guide must expose the NFC laboratory regression command');
-assert.match(development, /docs\/NFC_PILOT_V421\.md/, 'development guide must reference the current NFC laboratory pilot boundary');
+assert.match(development, /npm run test:nfc/, 'development guide must expose the NFC regression command');
+assert.match(development, /docs\/NFC_PILOT_V421\.md/, 'development guide must reference the NFC physical-pilot boundary');
 assert.match(development, /docs\/DPP_REGISTRY_INTEGRATION_V420\.md/, 'development guide must preserve the DPP Registry integration track');
 
 const readiness = read('docs/RELEASE_READINESS_V400.md');
@@ -67,16 +79,21 @@ assert.match(releaseBundle, /zip_sha256=/, 'release manifest must record the fin
 assert.match(releaseBundle, /branches:\s*\n\s*- main/, 'release bundle must also run after promotion to main');
 assert.doesNotMatch(releaseBundle, /EVO_Protocol_V4_RC1\.zip/, 'release bundle must not hard-code the retired RC1 artifact name');
 
-const nfc=read('standards/evo-nfc-proof-v421.mjs');
-const nfcSchema=read('schemas/evo-nfc-proof-v1.schema.json');
+const nfc = read('standards/evo-nfc-proof-v421.mjs');
+const nfcSchema = read('schemas/evo-nfc-proof-v1.schema.json');
 assert.match(nfc, /SERVER_SIDE_NTAG424/, 'NFC public proof must require a server-side verifier decision');
 assert.match(nfc, /physicalAuthenticity:false/, 'NFC public proof must not claim physical authenticity');
 assert.match(nfcSchema, /"physicalAuthenticity": \{ "const": false \}/, 'NFC schema must encode the physical-authenticity boundary');
 assert.doesNotMatch(nfc, /aesKey\s*:/i, 'public NFC proof contract must not expose AES key fields');
+
+const nfcAuthorityWorkflow = read('.github/workflows/evo-nfc-authority-checks.yml');
+assert.match(nfcAuthorityWorkflow, /postgres:17/, 'NFC authority workflow must execute against an isolated PostgreSQL service');
+assert.match(nfcAuthorityWorkflow, /nfc-replay-authority-v450\.sql/, 'NFC authority workflow must run the V4.5 atomic replay regression');
+assert.match(nfcAuthorityWorkflow, /persist-credentials: false/, 'NFC authority workflow checkout must not persist GitHub credentials');
 
 const gitignore = read('.gitignore');
 assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
 assert.match(gitignore, /^\.env\.\*$/m, 'environment variants must remain ignored');
 assert.match(gitignore, /^!\.env\.example$/m, 'safe env template must remain allowlisted');
 
-console.log('EVO V4.2.1 release-readiness checks passed');
+console.log('EVO V4.5 release-readiness checks passed');

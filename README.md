@@ -4,9 +4,9 @@
 
 EVO Protocol is the umbrella trust layer. It lets an issuer register cryptographic evidence, preserve signed history and publish a free verification surface without uploading the original document by default.
 
-## Current stage: V4.2.1 Development Line
+## Current stage: V4.5 Software Authority Line
 
-V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 then consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.2.1 adds the laboratory NFC public-proof contract without introducing production NFC keys or authority.
+V4.0 RC1 was promoted to `main` on 2026-08-24 after the focused security/release gates passed and the Service Proof + Reality Continuity production authority closeout was completed. V4.1 consolidated the Origin-first customer surface and release integration. V4.2 added EU DPP Registry integration readiness. V4.3 added a fail-closed server adapter for the EU DPP Registry without inventing an unavailable Battery registration contract. V4.4 implemented NTAG 424 DNA SDM/SUN cryptographic verification against reviewed NXP vectors. V4.5 completed the software NFC authority with protected tag/UID/Seal binding and an atomic monotonic replay counter. The final physical-grade claim remains gated by a real tag pilot.
 
 The product family is:
 
@@ -14,8 +14,8 @@ The product family is:
 - **EVO Passport** — identity, ownership and lifecycle history for assets.
 - **EVO Service Proof** — owner-declared and provider-countersigned technical service evidence.
 - **EVO Issuer Trust** — wallet, domain and organization evidence kept as distinct trust levels.
-- **EVO DPP** — standards/regulatory integration layer, including EU DPP Registry readiness.
-- **EVO Secure NFC** — cryptographic physical-binding layer under laboratory development for high-value products; not required for normal Origin verification.
+- **EVO DPP** — standards/regulatory integration layer, including EU DPP Registry readiness and a fail-closed server adapter.
+- **EVO Secure NFC** — NTAG 424 DNA cryptographic verification and atomic replay authority for high-value products; the physical pilot remains mandatory before the strongest physical-evidence claim.
 - **EVO Guardian / Reality Continuity** — explainable anomaly and continuity analysis; public telemetry never elevates authoritative trust.
 
 ## Commercial focus
@@ -120,7 +120,7 @@ The current checkout model is non-custodial from the wallet-connection perspecti
 
 The historical EVO token experiment is **not required** for current EVO Protocol purchases and is not part of the current commercial trust architecture.
 
-## Security baseline carried into V4.2.1
+## Security baseline carried into V4.5
 
 The promoted V4 baseline includes defense-in-depth controls such as:
 
@@ -139,13 +139,19 @@ The promoted V4 baseline includes defense-in-depth controls such as:
 - exact-origin CORS policy for the highest-impact browser endpoints;
 - bounded request bodies / abuse controls;
 - PostgreSQL atomicity/concurrency tests;
-- immutable GitHub Action pins and fail-closed SQL execution in CI.
+- immutable GitHub Action pins and fail-closed SQL execution in CI;
+- NTAG 424 DNA SDM/SUN verification against reviewed NXP vectors;
+- server-only NFC keys for the pilot path;
+- protected tag/UID/Seal enrollment and atomic monotonic counter acceptance;
+- explicit replay, revoked-tag and pre-physical-pilot rejection paths.
 
 These controls support the description **security-hardened / defense in depth**. They do not justify claims such as “unhackable”, “100% secure” or “certified secure”.
 
 ## EU DPP Registry readiness
 
-V4.2 carries the integration-readiness architecture for the EU Digital Product Passport Registry. This is a controlled integration track, not a claim that EVO is an EU-certified DPP provider or that a customer dataset is automatically compliant.
+V4.2 introduced the integration-readiness architecture for the EU Digital Product Passport Registry and V4.3 added a server-only, fail-closed adapter with bounded batch preparation and deterministic fingerprints for future idempotency/audit evidence.
+
+The adapter deliberately does not fabricate a successful Battery Registry submission while the official Battery semantic catalogue/contract required for that registration path remains unavailable or incomplete. EVO therefore does not claim to be an EU-certified DPP provider or to make a customer dataset automatically compliant.
 
 See:
 
@@ -156,15 +162,31 @@ See:
 
 NFC is an optional premium physical-evidence layer, not a dependency of EVO Origin or the regulatory DPP carrier itself.
 
-V4.2.1 introduces a fail-closed public evidence contract for a future server-side NTAG 424 verification path. The public object can expose `NFC_CRYPTO_VERIFIED` only after a trusted server decision confirms cryptographic validity, tag-to-Seal binding, freshness/counter policy and absence of replay.
+V4.5 implements the software trust chain for the reviewed NTAG 424 DNA SDM/SUN path:
 
-Even a valid cryptographic tag proof keeps:
+1. server-side AES/CMAC verification;
+2. decrypted UID matching the enrolled tag;
+3. tag ID + UID + EVO Seal binding;
+4. ACTIVE tag state;
+5. strictly increasing 24-bit read counter accepted atomically;
+6. replay/revocation rejection;
+7. a per-tag `physicalPilotApproved` gate before the strongest NFC claim can be emitted.
+
+A cryptographically correct read that passes replay authority but has not completed its real physical pilot must remain in the bounded state:
+
+```text
+CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT
+```
+
+and must not be promoted to `NFC_CRYPTO_VERIFIED`.
+
+The public NFC proof contract also keeps:
 
 ```text
 physicalAuthenticity=false
 ```
 
-until independent issuer/product policy and operational evidence justify a stronger statement.
+because cryptographic tag evidence alone does not prove the factual authenticity of the product to which the tag was attached.
 
 See:
 
@@ -172,6 +194,10 @@ See:
 - `docs/NFC_PILOT_V421.md`
 - `standards/evo-nfc-proof-v421.mjs`
 - `schemas/evo-nfc-proof-v1.schema.json`
+- `supabase/functions/evo-nfc-verifier/index.ts`
+- `tests/nfc-crypto-v440.test.mjs`
+- `tests/nfc-verifier-v440.test.js`
+- `tests/nfc-replay-authority-v450.sql`
 
 ## Standards and certification direction
 
@@ -199,20 +225,20 @@ See `docs/VC_INTEROPERABILITY_V400.md` and `docs/GO_TO_MARKET_CERTIFICATION.md`.
 - `docs/DOCUMENT_PROVENANCE_V321.md` — EVO Origin product and evidence model.
 - `docs/PROJECT_TRUTH_V400.md` — authoritative V4 claims boundary.
 - `docs/DPP_REGISTRY_INTEGRATION_V420.md` — EU DPP Registry integration readiness.
-- `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture.
-- `docs/NFC_PILOT_V421.md` — NFC laboratory gate.
+- `docs/NFC_ARCHITECTURE.md` — secure physical binding architecture and V4.5 software authority boundary.
+- `docs/NFC_PILOT_V421.md` — NFC laboratory/physical pilot gate.
 - `docs/PRODUCTION_CLOSEOUT_20260824.md` — production authority closeout evidence.
 - `docs/RELEASE_CHECKLIST_V400.md` — historical V4 promotion checklist and remaining high-assurance gates.
 - `docs/SECURITY.md` — security rules.
 - `security/THREAT_MODEL.md` — threat model.
 - `supabase/` — database migrations and Edge Functions.
-- `tests/` — security, provenance, navigation and database regression tests.
+- `tests/` — security, provenance, navigation, NFC and database regression tests.
 
 ## Development and release status
 
 `main` is the promoted code baseline. New work must be developed on branches and must not silently mutate production data, production keys or historical records.
 
-V4.2.1 remains a development/laboratory line until its own CI is green and its NFC hardware gate is completed. High-assurance claims additionally require controls such as protected `main`, production response headers, real browser/E2E smoke evidence and independent penetration/security review.
+V4.5 closes the current repository-side NFC software authority line. The remaining gates are external or operational rather than missing cryptographic code: a real NTAG 424 DNA physical pilot before physical-grade claims, completion of the official EU Battery Registry semantic/authentication path when the Commission makes it available, repository protection for `main`, final clean-browser/paid-checkout evidence, and independent security/organizational assurance before enterprise high-assurance or certification claims.
 
 ## Product rule
 
