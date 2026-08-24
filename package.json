@@ -1,8 +1,8 @@
 {
   "name": "evo-protocol",
-  "version": "4.5.0",
+  "version": "4.6.0",
   "private": true,
-  "description": "EVO Protocol V4.5: Origin-first trust, EU DPP Registry fail-closed integration, NTAG 424 DNA cryptographic verification and atomic NFC replay authority.",
+  "description": "EVO Protocol V4.6: Origin-first trust, EU DPP Registry fail-closed integration, NTAG 424 DNA cryptographic verification, atomic replay authority and encrypted TagTamper status verification.",
   "engines": {
     "node": ">=20"
   },
