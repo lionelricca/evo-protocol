@@ -38,7 +38,7 @@ for (let i = 1; i <= 24; i++) {
 assert.match(riskTreatment, /EVO Management/);
 assert.match(riskTreatment, /PENDING FORMAL ASSESSMENT/);
 assert.match(riskTreatment, /No risk in this V0\.1 plan is marked accepted/i);
-assert.match(riskTreatment, /protect GitHub `main`/i);
+assert.match(riskTreatment, /enable GitHub `main` branch\/ruleset protection/i);
 assert.match(riskTreatment, /genuine physical NFC pilot/i);
 assert.match(riskTreatment, /database\/source restore exercise/i);
 assert.match(riskTreatment, /independent penetration\/security assessment/i);
