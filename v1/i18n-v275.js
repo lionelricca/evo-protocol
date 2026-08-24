@@ -62,13 +62,48 @@
     'VERIFICADA':'VERIFIED',
     'Verificar este Passport':'Verify this Passport',
     'Consulta pública · sin wallet':'Public lookup · no wallet',
-    'Volver a Mi EVO':'Back to My EVO'
+    'Volver a Mi EVO':'Back to My EVO',
+
+    'EVO Protocol · Verificación documental y pasaportes digitales':'EVO Protocol · Document verification and digital passports',
+    'Verificá documentos. Conservá evidencia.':'Verify documents. Preserve evidence.',
+    'EVO Origin comprueba si el archivo que recibiste coincide exactamente con una versión registrada, muestra quién lo declaró y conserva su procedencia. EVO Passport extiende la misma capa de confianza a activos, propiedad e historial técnico.':'EVO Origin checks whether the file you received exactly matches a registered version, shows who declared it, and preserves its provenance. EVO Passport extends the same trust layer to assets, ownership, and technical history.',
+    'Verificar archivo':'Verify file',
+    'Ver planes':'View plans',
+    'Coincidencia exacta':'Exact file match',
+    'Autoridad separada':'Separate authority',
+    'Historial firmado':'Signed history',
+    'Creá tu primer EVO Proof gratis. Para los siguientes, elegí un plan y pagá con una criptomoneda compatible disponible en tu wallet.':'Create your first EVO Proof free. For additional Proofs, choose a plan and pay with a compatible cryptocurrency available in your wallet.',
+    'US$4,90 por Proof.':'US$4.90 per Proof.',
+    'Huella exacta del archivo':'Exact file fingerprint',
+    'Autoridad explícita':'Explicit authority',
+    'Crear un registro EVO':'Create an EVO record',
+    'Elegí documento para crear un EVO Origin Proof o registrá otro tipo de activo como EVO Passport. Los archivos permanecen en tu dispositivo: EVO conserva únicamente su huella digital SHA-256.':'Choose document to create an EVO Origin Proof, or register another asset type as an EVO Passport. Files stay on your device: EVO stores only their SHA-256 fingerprint.',
+    'Crear registro verificable':'Create verifiable record',
+    'Conectá tu wallet para crear un registro EVO.':'Connect your wallet to create an EVO record.',
+    'cada registro recibe su propio EVO Seal ID.':'each record receives its own EVO Seal ID.',
+    'abre la ficha pública.':'opens the public record.',
+    'conserva eventos y cambios permitidos.':'preserves allowed events and changes.',
+    'cualquier persona puede verificar un registro EVO gratuitamente.':'anyone can verify an EVO record free of charge.',
+    'Verificar un registro EVO':'Verify an EVO record',
+    'La consulta pública es gratuita. Ingresá un EVO Seal ID o escaneá el QR. Si es un documento, también podés seleccionar el archivo recibido: su SHA-256 se calcula localmente y EVO distingue coincidencia exacta, otra versión conocida o archivo diferente.':'Public verification is free. Enter an EVO Seal ID or scan the QR. For a document, you can also select the received file: its SHA-256 is calculated locally and EVO distinguishes an exact match, another known version, or a different file.',
+    'Producto independiente creado por Lionel Ricca':'Independent product created by Lionel Ricca'
   };
   try{
     if(typeof EVO_ES_EN!=='undefined'&&typeof EVO_EN_ES!=='undefined'){
       Object.entries(additions).forEach(([es,en])=>{EVO_ES_EN[es]=en;EVO_EN_ES[en]=es;});
     }
   }catch{}
+
+  const applyHead=lang=>{
+    const description=document.querySelector('meta[name="description"]');
+    if(lang==='en'){
+      document.title='EVO Protocol · Document verification and digital passports';
+      if(description)description.content='EVO Origin verifies files with SHA-256, shows who registered them, and preserves provenance and history. EVO Passport extends the same trust layer to assets and services.';
+    }else{
+      document.title='EVO Protocol · Verificación documental y pasaportes digitales';
+      if(description)description.content='EVO Origin verifica archivos por SHA-256, muestra quién los registró y conserva su procedencia e historial. EVO Passport extiende la misma capa de confianza a activos y servicios.';
+    }
+  };
 
   const ensureMyEvoReturn=()=>{
     if(document.querySelector('script[data-evo-myevo-return-v276]'))return;
@@ -80,6 +115,28 @@
   };
   ensureMyEvoReturn();
 
+  const ensureOriginDocumentModules=()=>{
+    const styles=[
+      ['./document-proof-v30.css?v=20260823-v400-origin','evoDocumentProofV400Style'],
+      ['./document-lifecycle-v30.css?v=20260823-v400-origin','evoDocumentLifecycleV400Style'],
+      ['./document-management-v30.css?v=20260823-v400-origin','evoDocumentManagementV400Style']
+    ];
+    for(const [href,key] of styles){
+      if(document.querySelector(`link[data-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}]`))continue;
+      const link=document.createElement('link');link.rel='stylesheet';link.href=href;link.dataset[key]='true';document.head.appendChild(link);
+    }
+    const scripts=[
+      ['./document-proof-v30.js?v=20260823-v400-origin','evoDocumentProofV400'],
+      ['./document-lifecycle-v30.js?v=20260823-v400-origin','evoDocumentLifecycleV400'],
+      ['./document-management-v30.js?v=20260823-v400-origin','evoDocumentManagementV400']
+    ];
+    for(const [src,key] of scripts){
+      if(document.querySelector(`script[data-${key.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}]`))continue;
+      const script=document.createElement('script');script.src=src;script.async=false;script.dataset[key]='true';document.head.appendChild(script);
+    }
+  };
+  ensureOriginDocumentModules();
+
   const selector=document.getElementById('languageSelect');
   if(!selector)return;
 
@@ -87,6 +144,7 @@
   const saved=localStorage.getItem('evo-language');
   const active=requested==='en'||requested==='es'?requested:(saved==='en'||saved==='es'?saved:(document.documentElement.lang==='en'?'en':'es'));
   if(typeof window.evoSetLanguage==='function')window.evoSetLanguage(active,false);
+  applyHead(active);
   selector.value=active;
 
   selector.addEventListener('change',event=>{
@@ -94,9 +152,10 @@
     const lang=event.target.value==='en'?'en':'es';
     localStorage.setItem('evo-language',lang);
     if(typeof window.evoSetLanguage==='function')window.evoSetLanguage(lang,false);
+    applyHead(lang);
     const url=new URL(location.href);
     url.searchParams.set('lang',lang);
-    url.searchParams.set('v','20260821-v276');
+    url.searchParams.set('v','20260823-v400');
     setTimeout(()=>location.assign(url.toString()),40);
   },true);
 })();

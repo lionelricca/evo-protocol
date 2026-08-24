@@ -1,0 +1,170 @@
+name: EVO Security Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  security-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: evo_security_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d evo_security_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: evo_security_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 resolved 2026-08-21
+        with:
+          node-version: '24'
+      - name: Syntax check Browser Shield
+        run: node --check v1/security-bootstrap-v331.js
+      - name: Syntax check Guardian modules
+        run: |
+          node --check v1/guardian.js
+          node --check v1/guardian-v04.js
+      - name: Syntax check checkout
+        run: node --check v1/checkout.js
+      - name: Syntax check shared CORS helper
+        run: node --check supabase/functions/_shared/evo-cors.ts
+      - name: Syntax check Issuer and wallet connector
+        run: |
+          node --check v1/issuer.js
+          node --check v1/wallet-autoconnect.js
+      - name: Syntax check Origin browser modules
+        run: |
+          node --check v1/document-proof-v30.js
+          node --check v1/origin-verifier-v322.js
+          node --check v1/origin-authority-v323.js
+      - name: Syntax check Reality Continuity
+        run: node --check supabase/functions/evo-reality-continuity/index.ts
+      - name: Syntax check Passport owner event
+        run: node --check supabase/functions/register-evo-passport-event/index.ts
+      - name: Syntax check Passport transfer
+        run: node --check supabase/functions/evo-passport-transfer/index.ts
+      - name: Syntax check Service Proof
+        run: node --check supabase/functions/evo-service-proof/index.ts
+      - name: Syntax check Battery Passport
+        run: node --check supabase/functions/evo-battery-passport/index.ts
+      - name: Syntax check Document Lifecycle
+        run: node --check supabase/functions/evo-document-lifecycle/index.ts
+      - name: Run V4.0 release-candidate truth checks
+        run: node tests/release-candidate-v400.test.js
+      - name: Run V4.0 Origin provenance checks
+        run: node tests/document-provenance-v321.test.mjs
+      - name: Run V4.0 Origin exact-file verifier checks
+        run: node tests/origin-verifier-v322.test.js
+      - name: Run V4.0 Origin issuer-authority checks
+        run: node tests/origin-authority-v323.test.js
+      - name: Run V4.0 VC Data Model export checks
+        run: node tests/vc-dm-export-v400.test.mjs
+      - name: Run V4.0 Service Proof authority checks
+        run: node tests/service-proof-authority-v400.test.js
+      - name: Run V4.0 Reality Continuity authority checks
+        run: node tests/reality-authority-v400.test.js
+      - name: Run V4.0 expanded CORS rollout checks
+        run: node tests/cors-rollout-v400.test.js
+      - name: Run V3.3.2 security regression checks
+        run: node tests/security-hardening-v330.test.js
+      - name: Run V3.3.7 browser style CSP checks
+        run: node tests/browser-shield-v333.test.js
+      - name: Run V3.3.5 local QR supply-chain checks
+        run: node tests/qrcode-vendor-v335.test.js
+      - name: Run V3.3.6 root entrypoint checks
+        run: node tests/root-entry-v336.test.js
+      - name: Run V3.3.4 checkout hardening checks
+        run: node tests/checkout-hardening-v334.test.js
+      - name: Run V3.3.17 checkout privacy checks
+        run: node tests/checkout-privacy-v3317.test.js
+      - name: Run V3.3.18 origin and CORS checks
+        run: node tests/origin-cors-shield-v3318.test.js
+      - name: Run V3.3.8 domain verification hardening checks
+        run: node tests/domain-hardening-v338.test.js
+      - name: Run V3.3.9 wallet and issuer hardening checks
+        run: node tests/identity-hardening-v339.test.js
+      - name: Run V3.3.10 organization submission hardening checks
+        run: node tests/organization-hardening-v3310.test.js
+      - name: Run V3.3.11 Reality Continuity hardening checks
+        run: node tests/reality-continuity-hardening-v3311.test.js
+      - name: Run V3.3.14 Battery Passport hardening checks
+        run: node tests/battery-hardening-v3314.test.js
+      - name: Run V3.3.15 Document Lifecycle hardening checks
+        run: node tests/document-lifecycle-hardening-v3315.test.js
+      - name: Run V3.3.16 production migration-history checks
+        run: node tests/migration-history-v3316.test.js
+      - name: Guard atomic registration structure
+        run: node tests/atomic-seal-v332.static.test.js
+      - name: Prepare isolated PostgreSQL fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/atomic-seal-fixture-v332.sql
+      - name: Apply production-aligned atomic registration migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105136_atomic_seal_registration_credit_v332.sql
+      - name: Apply production-aligned active asset identity guard
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105154_active_asset_serial_guard_v332.sql
+      - name: Apply production-aligned checkout verification limits
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105213_checkout_verification_rate_limit_v334.sql
+      - name: Apply production-aligned checkout explicit-deny policies
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822105251_checkout_verification_explicit_deny_policies_v334.sql
+      - name: Test atomic registration invariants
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/atomic-seal-registration-v332.sql
+      - name: Test duplicate asset identity rollback
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/active-asset-serial-guard-v332.sql
+      - name: Test concurrent wallet entitlement decisions
+        run: bash tests/sql/atomic-seal-concurrency-v332.sh
+      - name: Test checkout verification rate limits
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/checkout-rate-limit-v334.sql
+      - name: Prepare Asset Authority fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/asset-authority-fixture-v3312.sql
+      - name: Apply production-aligned Asset Authority Lock migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822112538_asset_authority_lock_v3312.sql
+      - name: Test Asset Authority ownership transition
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/asset-authority-v3312.sql
+      - name: Apply production-aligned Transfer State Machine migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113209_transfer_state_machine_v3313.sql
+      - name: Test Transfer State Machine
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/transfer-state-machine-v3313.sql
+      - name: Apply Service Proof base schema
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821204500_add_service_proofs.sql
+          psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260821223000_service_provider_distinct_wallet.sql
+      - name: Apply V4.0 Service Proof Authority migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260823180000_service_proof_authority_v400.sql
+      - name: Test V4.0 Service Proof Authority
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/service-proof-authority-v400.sql
+      - name: Prepare Battery atomic fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-fixture-v3314.sql
+      - name: Apply production-aligned Battery atomic migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260822113955_battery_atomic_registration_v3314.sql
+      - name: Test Battery atomic registration
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/battery-atomic-v3314.sql
+      - name: Prepare Reality Continuity authority fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/reality-authority-fixture-v400.sql
+      - name: Apply V4.0 Reality Continuity Authority migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20260823181500_reality_continuity_authority_v400.sql
+      - name: Test V4.0 Reality Continuity Authority
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/sql/reality-authority-v400.sql
+      - name: Security gate scope
+        run: echo "V4.0 product truth, EVO Origin exact-file provenance and issuer authority, honest W3C VC 2.0 export boundary, trust authority, local QR supply-chain integrity, root-entry CSP, browser-module syntax, checkout cost controls and exact-balance privacy, expanded exact-origin CORS on guarded browser paths, domain verification abuse bounds, proof-gated wallet persistence, organization pending uniqueness, per-Seal Asset Authority serialization, atomic transfer state machine, atomic Service Proof ownership/countersign authority, atomic Reality Continuity checkpoint authority, atomic Battery Passport, atomic Document Lifecycle authority, production migration-history alignment, XSS escaping, secrets, dependency pinning, Edge bounds, PostgreSQL atomicity, retry idempotency, duplicate-identity rollback and ownership-transition safety"

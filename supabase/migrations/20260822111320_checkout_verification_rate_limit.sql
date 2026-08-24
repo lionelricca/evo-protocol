@@ -1,0 +1,5 @@
+-- Production migration-history alignment marker.
+-- Supabase production recorded a second operational application of the checkout
+-- verification-rate migration under version 20260822111320. The canonical schema
+-- change is already represented by 20260822105213_checkout_verification_rate_limit_v334.sql.
+-- No additional schema delta is required on fresh environments.

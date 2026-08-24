@@ -26,8 +26,8 @@ test('Transfer Inbox backend verifies wallet, origin and short expiry',()=>{
   assert.match(code,/\.eq\(\"to_wallet\",wallet\)\.eq\(\"status\",\"PENDING\"\)/);
 });
 
-test('V2.6 loader pins inbox assets',()=>{
+test('V2.6.1 loader pins compact inbox assets',()=>{
   const code=loader();
-  assert.match(code,/transfer-inbox\.css\?v=20260821-v26-inbox/);
-  assert.match(code,/transfer-inbox\.js\?v=20260821-v26-inbox/);
+  assert.match(code,/transfer-inbox\.css\?v=20260821-v261-compact/);
+  assert.match(code,/transfer-inbox\.js\?v=20260821-v261-compact/);
 });

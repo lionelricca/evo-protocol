@@ -112,7 +112,7 @@
       const style=document.createElement('link');style.rel='stylesheet';style.href='./dashboard-v253.css?v=20260821-v253-premium';style.dataset.evoDashboardV253Style='true';document.head.appendChild(style);
     }
     if(!document.querySelector('script[data-evo-dashboard]')){
-      const script=document.createElement('script');script.src='./dashboard.js?v=20260821-v252-library';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
+      const script=document.createElement('script');script.src='./dashboard.js?v=20260823-v400-wallet-switch';script.async=true;script.dataset.evoDashboard='true';document.head.appendChild(script);
     }
     if(!document.querySelector('script[data-evo-dashboard-v253]')){
       const enhance=document.createElement('script');enhance.src='./dashboard-v253.js?v=20260821-v27-actions-loader';enhance.async=true;enhance.dataset.evoDashboardV253='true';document.head.appendChild(enhance);

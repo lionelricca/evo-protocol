@@ -9,6 +9,12 @@
 .meterTrack{height:8px;background:rgba(255,255,255,.055);border-radius:999px;overflow:hidden}
 .meterTrack i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--gold),var(--bad));border-radius:inherit;box-shadow:0 0 18px currentColor}
 .meterTrack.confidence i{background:linear-gradient(90deg,var(--violet),var(--cyan))}
+.guardianProgress{display:block;width:100%;height:8px;border:0;border-radius:999px;overflow:hidden;appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.055)}
+.guardianProgress::-webkit-progress-bar{background:rgba(255,255,255,.055);border-radius:999px}
+.guardianProgress.riskProgress::-webkit-progress-value{background:linear-gradient(90deg,var(--ok),var(--gold),var(--bad));border-radius:999px}
+.guardianProgress.confidenceProgress::-webkit-progress-value{background:linear-gradient(90deg,var(--violet),var(--cyan));border-radius:999px}
+.guardianProgress.riskProgress::-moz-progress-bar{background:linear-gradient(90deg,var(--ok),var(--gold),var(--bad));border-radius:999px}
+.guardianProgress.confidenceProgress::-moz-progress-bar{background:linear-gradient(90deg,var(--violet),var(--cyan));border-radius:999px}
 .guardianStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
 .guardianStats>div{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(3,7,15,.46)}
 .guardianStats span{display:block;color:#8290a4;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.09em}
@@ -45,5 +51,16 @@
 .guardianBrain strong{font-size:31px;letter-spacing:.11em;z-index:2;text-shadow:0 0 24px rgba(102,227,255,.28)}
 .guardianBrain small{position:absolute;bottom:39px;color:#9cecff;z-index:2;letter-spacing:.08em}
 .status.warn{color:#ffe8b9}
+
+/* EVO Challenge styles are trusted local CSS; Guardian no longer creates runtime <style> elements. */
+.challengeClockBox{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 18px;border:1px solid #9959ff55;border-radius:16px;background:linear-gradient(135deg,#9959ff12,#24c5ff0d);position:sticky;top:86px;z-index:4}
+.challengeClockBox span{display:block;color:#aaa4bd;font-size:11px;letter-spacing:.09em;text-transform:uppercase}
+.challengeClockBox strong{font-size:30px;line-height:1;font-variant-numeric:tabular-nums;min-width:86px;text-align:center}
+.challengeClockBox small{color:#f4ca75;text-align:right}
+.challengeClockBox.live strong{color:#f4ca75}
+.challengeClockBox.done strong{color:#69efba}
+.challengeClockBox.expired strong{color:#ff7696}
+
 @media(max-width:900px){.guardianMeters,.guardianIntro{grid-template-columns:1fr}.guardianStats{grid-template-columns:repeat(2,minmax(0,1fr))}.guardianTop{flex-direction:column}}
+@media(max-width:850px){.challengeClockBox{position:static;flex-wrap:wrap}.challengeClockBox strong{order:3;width:100%;text-align:left}}
 @media(prefers-reduced-motion:reduce){.guardianBrain:before,.guardianBrain:after{animation:none}}
