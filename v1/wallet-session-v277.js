@@ -78,4 +78,11 @@ window.addEventListener('load',()=>{
     polish.dataset.evoUiPolishV400='1';
     document.head.appendChild(polish);
   }
+
+  if(!document.querySelector('script[data-evo-i18n-critical-v400]')){
+    const languageAudit=document.createElement('script');
+    languageAudit.src='./i18n-critical-v400.js?v=20260823-v400-critical-copy';
+    languageAudit.dataset.evoI18nCriticalV400='1';
+    document.body.appendChild(languageAudit);
+  }
 },{once:true});
