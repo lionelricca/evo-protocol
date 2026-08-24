@@ -1,101 +1,71 @@
-# EVO ISMS Scope — Draft V0.1
+# EVO ISMS Scope — Controlled Readiness Baseline V1.0
 
-Target standard: ISO/IEC 27001:2022
+Target baseline: **ISO/IEC 27001:2022 + Amendment 1:2024**.  
+Status: defined for readiness; formal management-review approval remains required before certification.
 
 ## Scope statement
 
-The EVO Information Security Management System (ISMS) covers the design, development, deployment, operation and support of the EVO Protocol cloud software used to create, store, process, verify and maintain Digital Product Passport records, product identity evidence, lifecycle events, continuity proofs and related trust services.
+The EVO ISMS covers the design, development, deployment, operation and support of EVO Protocol cloud/web services used to create, store, process, update, verify and export Digital Product Passport records, product identity evidence, lifecycle records, document provenance, continuity proofs, issuer/organization evidence and secure NFC verification evidence.
 
 ## In-scope services
 
-- EVO Seal
-- EVO Battery Passport / DPP services
-- Issuer Trust
-- EVO Passport lifecycle records
-- ownership transfer workflow
-- EVO Pulse
-- EVO Challenge
-- Reality Evidence Root
-- Proof of Continuity
-- EVO AI Guardian
-- future secure NFC verification and provisioning services
-- public verification APIs and web interfaces
+- EVO Seal, Origin, Passport and Service Proof;
+- EVO Pulse/Challenge and Reality Continuity;
+- EVO Guardian within its non-authoritative boundary;
+- Battery Passport / DPP readiness services;
+- EU DPP Registry integration metadata/adapter controlled by EVO;
+- secure NFC server verification, binding/counter registry and EVO provisioning process;
+- public verification interfaces;
+- checkout/credit entitlement logic.
 
 ## In-scope information
 
-- product and battery passport data
-- issuer/account identifiers
-- cryptographic signatures and public wallet addresses
-- hashes and evidence roots
-- lifecycle and ownership records
-- service configuration
-- operational logs
-- security logs
-- customer configuration and integration metadata
-- future secure NFC provisioning metadata
+Product/document/battery data; issuer/account/organization identifiers; public wallet addresses/signatures; hashes/evidence roots; lifecycle/ownership/service records; restricted DPP information where enabled; security/operational logs; customer configuration/integration metadata; NFC public tag/UID/Seal/counter metadata; Registry evidence metadata; ISMS risk/audit/incident records.
 
-Cryptographic secret keys for secure physical tags, if introduced, require a stricter dedicated key-management boundary and must never be stored in public repositories or browser clients.
+Cryptographic NFC secret keys and privileged service credentials are in scope as `SECRET` assets even though they must never be stored in the public repository/browser/public database.
 
 ## In-scope technology
 
-- source-code repositories
-- cloud database and serverless functions
-- deployment environments
-- DNS/domains used by EVO
-- CI/CD systems
-- administrator endpoints and credentials
-- third-party infrastructure required to deliver EVO services
+- `lionelricca/evo-protocol` and GitHub Actions;
+- Supabase production PostgreSQL/migrations/RLS/RPCs/Edge Functions;
+- GitHub Pages / EVO-controlled public delivery;
+- EVO-controlled DNS/domains;
+- administrator endpoints/accounts;
+- backup/export locations when introduced;
+- approved NFC provisioning tooling.
 
-## In-scope people and roles
+## People and physical/remote boundary
 
-- EVO owners/management
-- software developers
-- system administrators
-- security administrators
-- support personnel with access to customer or operational data
-- approved contractors with in-scope access
+Management, developers/security administrators, support and approved contractors with in-scope access are covered. EVO is primarily cloud-operated; the boundary also includes administrator workstations and any location/device used to hold or provision NFC trust material.
 
-## Initial physical boundary
+## Critical dependencies
 
-EVO is operated primarily as a cloud-based service. The ISMS therefore treats cloud infrastructure, administrator workstations and approved remote-access processes as security boundaries rather than relying on a single physical office perimeter.
+GitHub, Supabase, DNS/domain providers, wallet/blockchain signature ecosystems, European Commission DPP Registry/onboarding systems, NXP secure NFC/provisioning tooling, future KMS/HSM and external auditors/certification bodies.
 
-## Interfaces and dependencies
+Third-party systems remain outside direct EVO administrative control but are subject to supplier/dependency risk management.
 
-Key dependencies may include:
+## Customer/external responsibility boundaries
 
-- GitHub
-- Supabase
-- domain/DNS providers
-- wallet providers used for customer-side signatures
-- future GS1/DPP registry integrations
-- future NFC hardware and key-management providers
-- external certification/audit providers
+EVO does not directly control customer ERP/internal systems, customer wallet private keys, factual truth of customer data, third-party platform security beyond the integration boundary, physical authenticity without approved physical binding, or authority/certification-body infrastructure.
 
-Each material supplier must be assessed through the supplier-risk process.
+Exclusions cannot be used to avoid risks EVO owns at its service/integration boundary.
 
-## Exclusions
+## Organizational context
 
-The following are not claimed as controlled by EVO unless explicitly contracted and documented:
+Internal issues include rapid release cadence, security-sensitive cryptographic/lifecycle claims, a small-team concentration risk, a public source repository and the need to separate technical evidence from legal/regulatory/AI claims.
 
-- security of a customer's own ERP or internal systems
-- truthfulness of data supplied by customers
-- customer wallet private-key custody
-- physical authenticity of products without an approved secure physical binding mechanism
-- third-party systems beyond EVO's contractual/control boundary
+External issues include EU Battery/DPP regulation, evolving Registry interfaces, cybersecurity threats, supplier concentration, NFC hardware trust and enterprise privacy/security expectations.
 
-Exclusions must never be used to avoid controls for risks EVO actually owns.
+## Climate-change consideration — Amendment 1:2024
+
+Climate change is currently considered relevant mainly to **availability, supplier resilience and business continuity**, including regional cloud/network/power disruption, extreme weather, geographic concentration and customer continuity expectations.
+
+This conclusion and interested-party climate requirements are reviewed at least annually and whenever hosting, supplier concentration or physical provisioning materially changes.
 
 ## Security objectives
 
-The ISMS shall protect:
-
-- confidentiality of restricted customer and operational information;
-- integrity of DPP, lifecycle and continuity records;
-- availability of public verification and customer services;
-- authenticity of security-sensitive administrative actions;
-- traceability of changes to critical systems;
-- resilience against unauthorized modification, replay, credential theft and supply-chain compromise.
+Protect confidentiality of restricted/secret information; integrity of product/lifecycle evidence; availability/recoverability of verification services; authenticity of administrative actions; traceability of critical changes; resistance to unauthorized modification/replay/credential compromise; and accuracy of public assurance claims.
 
 ## Review
 
-This scope must be reviewed at least annually and whenever EVO materially changes its product architecture, legal entity, hosting model, physical-proof infrastructure or regulated-market responsibilities.
+Review at least annually and after material product architecture, legal entity, hosting, physical-proof, supplier or regulated-market change. Formal scope approval is recorded through management review before certification audit.
