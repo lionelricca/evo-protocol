@@ -79,18 +79,24 @@ assert.match(
   'public disclosure policy must preserve the explicit unsupported-claim disclaimer',
 );
 
-const affirmativeAbsoluteSecurityClaims = [
-  /\bEVO (?:is|remains|provides) (?:fully |completely )?(?:unhackable|hacker-proof|100% secure)\b/i,
-  /\bEVO guarantees (?:absolute|100%) security\b/i,
-  /\bguaranteed (?:unhackable|hacker-proof|100% secure)\b/i,
-];
+function assertNoAffirmativeAbsoluteSecurityClaim(relative, content) {
+  const forbiddenTerms = /\bunhackable\b|\bhacker-proof\b|\b100% secure\b/i;
+  const disclaimerContext = /does not claim|do not claim|must not claim|must not describe|not allowed|prohibit|unsupported claim|claims prohibited|cannot claim/i;
+
+  for (const line of content.split(/\r?\n/)) {
+    if (!forbiddenTerms.test(line)) continue;
+    assert.match(
+      line,
+      disclaimerContext,
+      `${relative} may mention absolute-security wording only inside an explicit prohibition/disclaimer`,
+    );
+  }
+}
 
 for (const relative of required) {
   const content = read(relative);
   assert.doesNotMatch(content, /EVO is ISO[-/ ]?IEC 27001 certified/i, `${relative} must not claim ISO certification`);
-  for (const pattern of affirmativeAbsoluteSecurityClaims) {
-    assert.doesNotMatch(content, pattern, `${relative} must not make affirmative absolute security claims`);
-  }
+  assertNoAffirmativeAbsoluteSecurityClaim(relative, content);
 }
 
 console.log('EVO V4.6 ISMS operational-control checks passed');
