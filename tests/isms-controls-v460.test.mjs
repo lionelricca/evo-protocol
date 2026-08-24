@@ -9,6 +9,7 @@ const required = [
   'docs/isms/ISMS_SCOPE.md',
   'docs/isms/INFORMATION_SECURITY_POLICY.md',
   'docs/isms/RISK_REGISTER.md',
+  'docs/isms/RISK_TREATMENT_PLAN.md',
   'docs/isms/ASSET_AND_INFORMATION_INVENTORY.md',
   'docs/isms/INFORMATION_CLASSIFICATION_AND_HANDLING.md',
   'docs/isms/SOA_PREPARATION.md',
@@ -19,6 +20,7 @@ const required = [
   'docs/isms/VULNERABILITY_MANAGEMENT.md',
   'docs/isms/SUPPLIER_SECURITY.md',
   'docs/isms/MATERIAL_SUPPLIER_REGISTER.md',
+  'docs/isms/PRODUCTION_SECURITY_REVIEW_20260824_V460.md',
   'docs/isms/CONTROL_EVIDENCE_INDEX.md',
   '.github/SECURITY.md',
 ];
@@ -27,6 +29,35 @@ for (const relative of required) {
   assert.ok(fs.existsSync(path.join(root, relative)), `${relative} must exist`);
   assert.ok(read(relative).trim().length > 300, `${relative} must contain substantive control content`);
 }
+
+const riskTreatment = read('docs/isms/RISK_TREATMENT_PLAN.md');
+for (let i = 1; i <= 24; i++) {
+  const id = `R-${String(i).padStart(3, '0')}`;
+  assert.ok(riskTreatment.includes(id), `risk treatment plan must include ${id}`);
+}
+assert.match(riskTreatment, /EVO Management/);
+assert.match(riskTreatment, /PENDING FORMAL ASSESSMENT/);
+assert.match(riskTreatment, /No risk in this V0\.1 plan is marked accepted/i);
+assert.match(riskTreatment, /enable GitHub `main` branch\/ruleset protection/i);
+assert.match(riskTreatment, /genuine physical NFC pilot/i);
+assert.match(riskTreatment, /database\/source restore exercise/i);
+assert.match(riskTreatment, /independent penetration\/security assessment/i);
+
+const productionReview = read('docs/isms/PRODUCTION_SECURITY_REVIEW_20260824_V460.md');
+assert.match(productionReview, /read-only operating evidence/i);
+assert.match(productionReview, /lints=\[\]/);
+assert.match(productionReview, /nfc_tags=0/);
+assert.match(productionReview, /nfc_rls_enabled=true/);
+assert.match(productionReview, /security_definer=true/);
+assert.match(productionReview, /anon_execute=false/);
+assert.match(productionReview, /authenticated_execute=false/);
+assert.match(productionReview, /service_role_execute=true/);
+assert.match(productionReview, /Production Edge Functions\s*\|\s*18 observed as `ACTIVE`/i);
+assert.match(productionReview, /evo-nfc-verifier.*version 6/is);
+assert.match(productionReview, /a278ed45596c3287bb1ee902fdd9af9debba5829583ac8267224954ab1dd4eb2/);
+assert.match(productionReview, /same calendar day/i);
+assert.match(productionReview, /does \*\*not\*\* prove.*MFA/is);
+assert.match(productionReview, /does \*\*not\*\* prove.*ISO\/IEC 27001 certification/is);
 
 const inventory = read('docs/isms/ASSET_AND_INFORMATION_INVENTORY.md');
 assert.match(inventory, /A-001/);
@@ -116,6 +147,10 @@ assert.match(supplierRegister, /QTSP status\/scope independently verified/i);
 
 const index = read('docs/isms/CONTROL_EVIDENCE_INDEX.md');
 assert.match(index, /not.*Statement of Applicability/i);
+assert.match(index, /RISK_TREATMENT_PLAN\.md/);
+assert.match(index, /Operating-evidence sample/);
+assert.match(index, /18 production Edge Functions observed ACTIVE/i);
+assert.match(index, /same calendar day/i);
 assert.match(index, /Asset ownership\/inventory/);
 assert.match(index, /Information classification\/handling/);
 assert.match(index, /SoA preparation/);
@@ -158,4 +193,4 @@ for (const relative of required) {
   assertNoAffirmativeAbsoluteSecurityClaim(relative, content);
 }
 
-console.log('EVO V4.6 ISMS registers + inventory/classification/SoA + operational-control checks passed');
+console.log('EVO V4.6 ISMS production evidence + risk treatment + registers + controls passed');
