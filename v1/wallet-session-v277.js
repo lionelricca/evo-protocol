@@ -49,6 +49,8 @@
 })();
 
 window.addEventListener('load',()=>{
+  // Fallback only: V4.1 loads this guard directly after checkout.js so it can
+  // wrap entitlement and registration functions before user interaction.
   if(!document.querySelector('script[data-evo-free-proof-v400]')){
     const script=document.createElement('script');
     script.src='./free-proof-antisybil-v400.js?v=20260823-v400-antisybil';
@@ -79,10 +81,11 @@ window.addEventListener('load',()=>{
     document.head.appendChild(polish);
   }
 
-  if(!document.querySelector('script[data-evo-i18n-critical-v400]')){
+  // Fallback only: the V4.1 entrypoint loads this directly after i18n-v275.js.
+  if(!document.querySelector('script[data-evo-i18n-critical-v410]')){
     const languageAudit=document.createElement('script');
-    languageAudit.src='./i18n-critical-v400.js?v=20260823-v400-critical-copy';
-    languageAudit.dataset.evoI18nCriticalV400='1';
+    languageAudit.src='./i18n-critical-v410.js?v=20260824-v410-critical-copy';
+    languageAudit.dataset.evoI18nCriticalV410='1';
     document.body.appendChild(languageAudit);
   }
 },{once:true});
