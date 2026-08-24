@@ -1,0 +1,30 @@
+name: EVO DPP Registry checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  dpp-registry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4 resolved 2026-08-21
+        with:
+          node-version: '24'
+      - name: Syntax check DPP Registry adapter
+        run: node --check supabase/functions/evo-dpp-registry/index.ts
+      - name: Run DPP Registry fail-closed checks
+        run: node tests/dpp-registry-v430.test.js
+      - name: Gate scope
+        run: echo "Server-only DPP Registry preparation, current Commission Battery constraints, HTTPS/private-target UPI validation, 100-record batch bound, deterministic fingerprints, no wildcard browser CORS, explicit semantic-catalogue blocker and fail-closed live submission."
