@@ -40,6 +40,12 @@ assert.match(readiness, /independent penetration\/security review/i, 'release au
 assert.match(readiness, /unhackable/, 'release audit must preserve prohibited-claims guidance');
 assert.match(readiness, /explicit owner authorization/i, 'release audit must require explicit authorization before promotion');
 
+const releaseBundle = read('.github/workflows/evo-release-bundle.yml');
+assert.match(releaseBundle, /EVO_SOURCE_COMMIT\.txt/, 'release bundle must record the exact source commit');
+assert.match(releaseBundle, /source_commit=\$GITHUB_SHA/, 'release manifest must bind evidence to the workflow commit');
+assert.match(releaseBundle, /EVO_Release_Manifest\.txt/, 'release bundle must upload an auditable manifest');
+assert.match(releaseBundle, /zip_sha256=/, 'release manifest must record the final source ZIP SHA-256');
+
 const gitignore = read('.gitignore');
 assert.match(gitignore, /^\.env$/m, '.env must remain ignored');
 assert.match(gitignore, /^\.env\.\*$/m, 'environment variants must remain ignored');
