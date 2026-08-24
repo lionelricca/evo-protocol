@@ -1,4 +1,4 @@
-# EVO ISMS Control Evidence Index — V0.2
+# EVO ISMS Control Evidence Index — V0.3
 
 Target standard: ISO/IEC 27001:2022 readiness.
 
@@ -23,9 +23,9 @@ Connect EVO security/ISMS requirements to actual repository, CI and production e
 | Vulnerability disclosure | `.github/SECURITY.md` | Documented | GitHub private vulnerability reporting setting not verified/enabled from current integration |
 | Vulnerability management | `docs/isms/VULNERABILITY_MANAGEMENT.md` | Procedure documented | Need operating history and independent pentest findings |
 | Incident response | `docs/isms/INCIDENT_RESPONSE.md` | Procedure documented | Tabletop exercise and incident records not yet demonstrated |
-| Access and secret management | `docs/isms/ACCESS_AND_SECRET_MANAGEMENT.md` | Procedure documented | Privileged account inventory/MFA/access-review evidence must be collected |
+| Access and secret management | `ACCESS_AND_SECRET_MANAGEMENT.md` + `PRIVILEGED_ACCESS_REGISTER.md` | Procedure + initial factual register | GitHub/Supabase/DNS/payment MFA/admin review and quarterly review evidence still pending |
 | Backup / restore / continuity | `docs/isms/BACKUP_AND_CONTINUITY.md` | Procedure + internal targets documented | Actual restore exercise and measured RPO/RTO pending |
-| Supplier security | `docs/isms/SUPPLIER_SECURITY.md` | Procedure documented | Material supplier register/reviews pending |
+| Supplier security | `SUPPLIER_SECURITY.md` + `MATERIAL_SUPPLIER_REGISTER.md` | Procedure + initial factual register | Formal due-diligence evidence, account/MFA/contract/exit reviews and residual-risk approvals pending |
 | Production inventory | `docs/PRODUCTION_INVENTORY_V400.md`, V4.6 closeout evidence | Documented technical inventory | Keep aligned after provider/config changes |
 | Production database security | RLS/ACL tests, Security Gate, Supabase Security Advisor evidence | Automated + production evidence | Repeat after DDL/config changes |
 | NFC cryptography | NXP vectors, NFC Crypto gate | Implemented software evidence | Genuine physical TagTamper pilot pending |
@@ -34,7 +34,7 @@ Connect EVO security/ISMS requirements to actual repository, CI and production e
 | Release evidence | Release Bundle, exact commit SHA, SHA-256 manifest | Implemented | Git tag/release immutability process still not configured through available integration |
 | Default branch integrity | CI gates exist | **Gap** | GitHub `main` branch/ruleset protection remains disabled |
 | Public clean-browser evidence | Navigation/contract tests exist | **Gap** | Live clean-browser E2E still required |
-| Paid checkout E2E | Checkout security/idempotency tests exist | **Gap** | Controlled real paid purchase → credit → consumption verification pending |
+| Paid checkout E2E | Checkout security/idempotency tests exist; DePay v13.0.45 dependency registered | **Gap** | Controlled real paid purchase → credit → consumption verification pending |
 | DPP Registry integration | fail-closed adapter + DPP gate + current Commission state documentation | Readiness implemented | Registry/TEST are operational and organisation onboarding is actionable, but successful Battery registration still awaits Commission Battery semantic enablement and a pinned usable API/schema contract |
 | Independent assurance | Internal CI/security controls | **Gap** | Independent pentest/security review pending |
 | ISO/IEC 27001 certification | ISMS readiness documents + SoA preparation method | **Gap** | Formal approved SoA, internal audit, management review, Stage 1/Stage 2 certification pending |
@@ -53,23 +53,18 @@ Do not mark a control complete merely because a policy file exists.
 ## Evidence quality levels
 
 ### E0 — Planned
-
 Requirement identified, no implementation evidence.
 
 ### E1 — Documented
-
 Policy/procedure exists.
 
 ### E2 — Implemented
-
 Technical/process implementation exists and is testable.
 
 ### E3 — Operating evidence
-
 Repeated real execution evidence exists (logs, reviews, exercises, production verification).
 
 ### E4 — Independently assured
-
 Independent audit/test/certification evidence exists within its stated scope.
 
 EVO should not use E4 language for E1–E3 evidence.
@@ -78,22 +73,23 @@ EVO should not use E4 language for E1–E3 evidence.
 
 The repository now contains an initial documented baseline for:
 
-- scope;
-- policy;
+- scope and policy;
 - risk register;
 - asset/information inventory;
 - classification/handling;
 - access and secret management;
+- initial privileged-access register;
 - incident response;
 - backup/continuity;
 - vulnerability management;
 - supplier security;
+- initial material-supplier register;
 - control-evidence tracking;
 - SoA preparation method;
 - vulnerability disclosure;
 - secure-development/release/SBOM automation.
 
-This materially improves audit readiness, but documentation is **not** a substitute for E3 operating evidence or E4 independent assurance.
+The supplier/access registers are stronger than blank templates because they record current facts such as the observed GitHub admin permission and pinned DePay version. They still remain E1/E2 until actual recurring reviews/MFA verification create E3 operating evidence.
 
 ## Immediate next evidence priorities
 
@@ -102,12 +98,13 @@ This materially improves audit readiness, but documentation is **not** a substit
 3. execute controlled paid checkout E2E;
 4. run physical NTAG 424 DNA TagTamper pilot;
 5. perform database restore and incident tabletop exercises;
-6. build privileged-account/MFA review records and material-supplier review records;
-7. complete risk ownership/residual-risk/treatment tracking;
-8. build the formal SoA from an authorised current standard copy and management approval;
-9. perform internal audit and management review;
-10. commission independent pentest;
-11. proceed to accredited certification audit only after the operating evidence is mature.
+6. verify MFA/admin scope for material privileged accounts and record the first quarterly access review;
+7. perform formal due diligence on active CRITICAL/HIGH suppliers and approve residual supplier risk;
+8. complete risk ownership/residual-risk/treatment tracking;
+9. build the formal SoA from an authorised current standard copy and management approval;
+10. perform internal audit and management review;
+11. commission independent pentest;
+12. proceed to accredited certification audit only after the operating evidence is mature.
 
 ## Review
 
