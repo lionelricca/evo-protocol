@@ -12,7 +12,7 @@ Esta guía describe cómo trabajar sobre EVO Protocol sin depender de una instal
 - `schemas/`: contratos JSON públicos.
 - `tests/`: regresiones JavaScript y pruebas SQL/concurrencia.
 - `security/`: threat model, auditoría y estado de migraciones.
-- `docs/`: arquitectura, seguridad, estándares, NFC y verticales.
+- `docs/`: arquitectura, seguridad, estándares, DPP, NFC y verticales.
 
 El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni secretos de firma. La clave pública/anon de Supabase puede estar en código cliente cuando RLS y grants estén correctamente limitados; cualquier credencial privilegiada debe permanecer en servidor/Edge Function.
 
@@ -22,11 +22,11 @@ El frontend nunca debe contener `service_role`, claves privadas, seed phrases ni
 
 Toda funcionalidad nueva debe nacer desde `main` actualizado en una rama independiente. No hardcodear una rama de desarrollo específica en esta guía porque queda obsoleta después de cada merge.
 
-V4.1 prioriza:
+La línea V4.2 combina:
 
 - EVO Origin como entrada comercial por defecto;
-- coherencia de producto entre frontend y autoridad server-side;
-- carga determinística de módulos críticos;
+- readiness de integración con el EU DPP Registry;
+- coherencia entre frontend y autoridad server-side;
 - pruebas de integración sobre la cadena real del navegador;
 - piloto NFC sin claves productivas.
 
@@ -193,11 +193,20 @@ Reglas:
 Arquitectura y piloto:
 
 - `docs/NFC_ARCHITECTURE.md`
-- `docs/NFC_PILOT_V411.md`
-- `standards/evo-nfc-proof-v411.mjs`
+- `docs/NFC_PILOT_V421.md`
+- `standards/evo-nfc-proof-v421.mjs`
 - `schemas/evo-nfc-proof-v1.schema.json`
 
-## 12. Flujo Git recomendado
+## 12. DPP Registry
+
+La readiness del Registro DPP se documenta en:
+
+- `docs/DPP_COMPLIANCE_MATRIX.md`
+- `docs/DPP_REGISTRY_INTEGRATION_V420.md`
+
+No mezclar credenciales de test y producción ni convertir readiness/integración en una afirmación de certificación regulatoria.
+
+## 13. Flujo Git recomendado
 
 ```bash
 git checkout main
@@ -215,7 +224,7 @@ Antes de fusionar una entrega:
 - ninguna credencial nueva en el repositorio;
 - estado de producción claramente separado del estado del código.
 
-## 13. Publicación
+## 14. Publicación
 
 El estado de un branch o PR **no implica** que sus Edge Functions o migraciones estén desplegadas. Registrar por separado:
 
@@ -227,6 +236,6 @@ El estado de un branch o PR **no implica** que sus Edge Functions o migraciones 
 
 Para un release de alta confianza siguen siendo gates relevantes los detallados en `docs/SECURITY.md`, incluyendo protección de `main`, headers de seguridad servidos por infraestructura, revisión del CSP, pruebas E2E reales y revisión independiente.
 
-## 14. Regla de producto
+## 15. Regla de producto
 
 EVO puede afirmar registro, integridad criptográfica, firma, procedencia declarada y continuidad de evidencia según el nivel demostrado. No debe afirmar que un archivo, producto u objeto físico es auténtico o legalmente original sólo porque exista un registro EVO.
