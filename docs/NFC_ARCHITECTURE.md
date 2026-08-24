@@ -1,246 +1,183 @@
 # EVO NFC — Physical Proof Architecture
 
-Status: **V4.4 cryptographic engine implemented / NXP vectors validated / physical pilot and atomic replay authority still pending**
+Status: **V4.5 software authority complete / NXP vectors validated / production replay registry deployed / physical tag pilot pending**
 
 ## Goal
 
-EVO NFC extends EVO Seal so a copied QR or copied public URL is not enough to reproduce a valid physical proof.
+EVO NFC binds an EVO Seal to a secure physical NFC tag so copying a QR or public URL is insufficient to reproduce the strongest physical-grade proof.
 
-The reference implementation targets genuine **NXP NTAG 424 DNA**. Where package-opening evidence matters, NTAG 424 DNA TagTamper is the preferred variant. NXP currently lists NTAG 424 DNA as active and documents AES-128, Secure Unique NFC (SUN) / Secure Dynamic Messaging (SDM), NFC Forum Type 4 operation and the TagTamper loop.
+Reference hardware: **NXP NTAG 424 DNA**; use NTAG 424 DNA TagTamper where package-opening evidence is required. NXP documents AES-128, SUN/SDM, NFC Forum Type 4 and the TagTamper loop.
 
-## V4.4 software state
+## Implemented software stack
 
-EVO now contains a real SDM cryptographic engine rather than only an architecture proposal:
+- `supabase/functions/_shared/evo-aes-cmac.mjs` — AES-128 block operations, NIST SP 800-38B CMAC, NXP MACt, SDM session-key derivation, encrypted PICCData parsing and SUN verification.
+- `supabase/functions/evo-nfc-verifier/index.ts` — server-side verification and controlled binding enrollment.
+- `public.evo_nfc_tags` — protected tag/UID/Seal/replay registry; **contains no AES keys**.
+- `public.evo_accept_nfc_counter(...)` — `SECURITY DEFINER`, empty `search_path`, service-role-only atomic authority.
+- `tests/nfc-crypto-v440.test.mjs` — NXP AN12196 Rev. 2.0 runtime vectors and tampered-MAC rejection.
+- `tests/nfc-replay-authority-v450.sql` — RLS/ACL, tag+UID+Seal binding, monotonic counter, replay and revoked-tag regression.
+- dedicated NFC crypto and authority GitHub Actions gates.
 
-- shared runtime: `supabase/functions/_shared/evo-aes-cmac.mjs`;
-- server verifier: `supabase/functions/evo-nfc-verifier/index.ts`;
-- runtime vectors: `tests/nfc-crypto-v440.test.mjs`;
-- security/claim regression checks: `tests/nfc-verifier-v440.test.js`.
+Production migrations:
 
-The implementation is pinned conceptually to **NXP AN12196 Rev. 2.0 — 4 March 2025**, specifically the AES-128 SDM/SUN session-key and SDMMAC examples.
+- `20260824154458_nfc_replay_authority_v450.sql`
+- `20260824154519_nfc_explicit_deny_v450.sql`
+- `20260824154708_nfc_seal_binding_authority_v450.sql`
 
-The CI vectors verify:
+Post-migration Supabase Security Advisor: **0 security lints**.
+
+## Cryptographic basis
+
+The implementation is checked against **NXP AN12196 Rev. 2.0 — 4 March 2025**.
+
+CI validates the NXP reference results for:
 
 1. encrypted PICCData decryption;
-2. UID + SDM read-counter extraction;
+2. 7-byte UID and SDM read-counter extraction;
 3. `SV2 = 3CC3 0001 0080 || UID || SDMReadCtr` session-key derivation;
-4. AES-CMAC according to NIST SP 800-38B;
-5. NXP `MACt` truncation;
-6. the zero-length SDMMAC example;
-7. the non-empty dynamic-input SDMMAC example;
-8. rejection of a modified MAC.
+4. AES-CMAC under NIST SP 800-38B;
+5. NXP MACt truncation;
+6. zero-length SDMMAC input;
+7. non-empty dynamic SDMMAC input;
+8. modified-MAC rejection.
 
-Passing those vectors proves the software calculation matches the reviewed NXP examples. It **does not** by itself prove a physical tag, key-provisioning procedure, replay policy or tamper loop has been validated in the field.
+Passing software vectors does not itself prove a physical tag was provisioned correctly.
 
-## Trust statement
+## Trust decision
 
-EVO must never claim that a QR alone proves a physical product is authentic.
-
-A physical trust result is built from multiple independent layers:
-
-1. EVO Seal — signed digital identity.
-2. EVO Passport — signed lifecycle history.
-3. EVO Pulse — chained observation history.
-4. EVO Challenge — freshness / anti-replay control.
-5. EVO NFC — cryptographic tag proof.
-6. EVO Guardian — explainable risk analysis over all available evidence.
-
-## Consumer flow
+A successful public NFC result is deliberately conjunctive:
 
 ```text
-Tap physical product
+NXP SDM/SUN MAC valid
+        AND
+Decrypted UID = enrolled UID
+        AND
+Public tag_id = enrolled tag binding
+        AND
+Expected EVO Seal = registry Seal
+        AND
+Tag status = ACTIVE
+        AND
+Read counter > last accepted counter atomically
+        AND
+Physical pilot approved for that specific tag
         ↓
-Secure NFC tag opens EVO verification URL
-        ↓
-Tag supplies encrypted PICCData + dynamic MAC
-        ↓
-EVO NFC verifier checks SDM/SUN proof server-side
-        ↓
-Atomic counter/replay authority accepts or rejects the fresh read
-        ↓
-Verified physical tap becomes an NFC-backed EVO Pulse
-        ↓
-EVO Guardian recalculates risk and evidence confidence
-        ↓
-Public verification page shows the evidence level
+NFC_CRYPTO_VERIFIED
 ```
 
-## Why the NFC proof is different from QR
+If crypto is valid but the counter is stale/repeated, EVO returns `REPLAY_REJECTED`.
 
-A QR is public data and can be photographed and reproduced.
+If crypto + replay authority pass but the physical pilot is not yet approved, EVO returns:
 
-The NFC layer depends on a secret that is not present in the public web page. The browser must never contain an AES key.
+`CRYPTO_AND_REPLAY_VALIDATED_PENDING_PHYSICAL_PILOT`
 
-For NTAG 424 DNA, the web-friendly path is SDM/SUN: the tag places authenticated dynamic values into an NDEF URL during a tap and EVO verifies them server-side.
+and keeps `nfcCryptoVerified=false`.
 
-## V4.4 verification boundary
+This prevents CI/test vectors from being misrepresented as physical evidence.
 
-The current server verifier intentionally returns only:
+## Atomic replay authority
 
-`CRYPTO_MATCH_PENDING_REPLAY_AUTHORITY`
+`evo_accept_nfc_counter` updates a tag only when all of these match inside one database decision:
 
-when the NXP cryptographic proof and enrolled UID match.
+- `tag_id`;
+- expected 7-byte UID;
+- expected `seal_id`;
+- `status='ACTIVE'`;
+- new 24-bit counter is strictly greater than `last_counter`.
 
-It still returns:
+The `UPDATE ... WHERE p_counter > last_counter` decision makes repeated or lower counters fail after the first accepted write, including competing attempts against the same stored counter state.
 
-`nfcCryptoVerified: false`
+Browser roles have no direct table access and no EXECUTE authority on the RPC. The Edge verifier calls it through server authority only.
 
-because a physical-grade `NFC CRYPTO VERIFIED` claim requires all of the following:
+## Enrollment
 
-- cryptographic SDM/SUN proof valid;
-- decrypted UID matches the enrolled physical tag;
-- read counter accepted atomically and not replayed;
-- tag is ACTIVE and bound to exactly one expected EVO Seal;
-- the physical provisioning/pilot evidence exists.
+A tag is not trusted just because its URL names an EVO Seal.
 
-This prevents a crypto-only result from being promoted into a stronger physical claim.
+Controlled pilot enrollment requires:
 
-## Proposed URL shape
+1. active EVO Seal;
+2. genuine tag read during provisioning;
+3. random public `NFC-...` alias;
+4. expected UID;
+5. unique pilot AES keys;
+6. reviewed SDM/NDEF configuration;
+7. keys stored only in server secret/environment storage;
+8. server `enroll_binding` action to bind tag + UID + Seal in `evo_nfc_tags`;
+9. real known-good tap;
+10. only after physical testing, mark `physicalPilotApproved=true` for that specific secret-side tag profile.
 
-Pilot target:
+Production provisioning must never expose an AES key in browser JavaScript, QR/NDEF public data, GitHub, logs or the public database.
+
+## Pilot key policy
+
+For a very small laboratory pilot, `EVO_NFC_PILOT_KEYS` may contain unique per-tag key profiles as a Supabase server secret. It is not a production-scale key-management design.
+
+Enterprise target:
+
+- diversified per-tag keys;
+- KMS/HSM-backed storage/operations;
+- separation of provisioning and verification authority;
+- rotation and revocation procedures;
+- auditable key lifecycle;
+- no flat secret map at scale.
+
+## Public URL
+
+Reviewed first-pilot shape:
 
 ```text
 https://<EVO-domain>/nfc/<public-tag-id>?picc_data=<encrypted-picc-data>&cmac=<dynamic-mac>
 ```
 
-The public tag ID is only an alias. The URL MUST NOT contain the AES key.
+The public alias is not a secret. The AES key must never be present in the URL.
 
-For the first reviewed configuration EVO uses the AN12196-compatible `SDMMACInputOffset == SDMMACOffset` / zero-length MAC-input path. Other SDM layouts must be separately configured and vector-tested before use.
+The first configuration remains pinned to the reviewed AN12196-compatible `SDMMACInputOffset == SDMMACOffset` / zero-length MAC-input path. Additional layouts require their own vectors and configuration review.
 
-## Enrollment
+## Evidence language
 
-A tag is not trusted merely because it says it belongs to an EVO Seal.
+Allowed technical levels:
 
-Enrollment is a controlled issuer action:
+- `DIGITAL REGISTERED`
+- `DIGITAL SIGNATURE VERIFIED`
+- `HASH VERIFIED`
+- `LIVE SOFTWARE PROOF`
+- `NFC CRYPTO VERIFIED` — only after the complete conjunctive gate above
+- `TAMPER STATUS VERIFIED` — only after TagTamper parsing/provisioning has separately passed a physical test
 
-1. Create / select an active EVO Seal.
-2. Read the genuine NFC tag during provisioning.
-3. Assign a random EVO `tag_id` unrelated to the secret key.
-4. Record the expected 7-byte UID internally.
-5. Provision unique per-tag AES keys.
-6. Configure the reviewed dynamic NDEF / SDM parameters.
-7. Store secret key material server-side only.
-8. Bind `tag_id ↔ UID ↔ seal_id` in the protected EVO registry.
-9. Perform a known-good test tap.
-10. Mark the tag `ACTIVE` only after cryptographic and counter verification succeeds.
+Never infer `AUTHENTIC PRODUCT` solely from these technical states unless the issuer's legal/product policy supports that stronger assertion.
 
-Production provisioning must never expose master or per-tag secrets to browser JavaScript.
+## Remaining physical pilot
 
-## Key hierarchy
+### Software — COMPLETE
 
-Pilot:
+- NXP reference crypto vectors pass.
+- Modified MAC is rejected.
+- Protected tag registry deployed.
+- Browser RLS is explicit deny-all.
+- Atomic tag + UID + Seal + monotonic counter authority deployed.
+- Replay and revoked-tag cases are tested.
+- Final claim remains per-tag physical-pilot gated.
 
-- unique AES key material per physical tag;
-- server-side environment/secret storage only;
-- no keys committed to GitHub;
-- no keys stored in a public database/API;
-- no master key in frontend code;
-- small pilot key map only, with explicit rotation procedure.
+### Hardware — EXTERNAL
 
-Production target:
-
-- key diversification;
-- secret manager / KMS or HSM-backed verification;
-- rotation and revocation procedures;
-- strict provisioning roles;
-- immutable audit log for enrollment and key changes.
-
-A successful pilot does not justify keeping a flat environment JSON key map at enterprise scale.
-
-## NFC-backed Pulse
-
-Current EVO Pulse records public observations and intentionally does not by itself prove physical presence.
-
-After full NFC authority is completed, server-only source classes may include:
-
-- `NFC_VERIFIED`
-- `NFC_TAMPER_OK`
-- `NFC_TAMPER_OPEN`
-
-Only the server may create these physical-grade sources after cryptographic and replay verification. A browser request alone must never label a Pulse as NFC verified.
-
-## Guardian signals
-
-### Positive evidence
-
-- valid NFC cryptographic proof;
-- fresh monotonic SDM counter;
-- recent valid NFC proof;
-- continuous NFC-backed Pulse chain;
-- TagTamper intact, when separately implemented and validated;
-- issuer and owner history consistent.
-
-### Risk evidence
-
-- invalid MAC / cryptographic response;
-- decrypted UID different from enrollment;
-- stale or repeated read counter;
-- impossible counter rollback;
-- tag bound to more than one active Seal;
-- Seal bound to unexpected tag identity;
-- TagTamper reports opened state;
-- excessive failed physical proofs;
-- valid digital Seal but no physical proof where product policy requires one.
-
-No single heuristic should automatically declare a physical product counterfeit. Guardian reports evidence and risk, not unsupported certainty.
-
-## Evidence levels
-
-Suggested public language:
-
-- `DIGITAL REGISTERED` — Seal exists.
-- `DIGITAL SIGNATURE VERIFIED` — issuer/wallet signature is valid.
-- `HASH VERIFIED` — supplied file matches the registered hash.
-- `LIVE SOFTWARE PROOF` — one-time software challenge completed.
-- `NFC CRYPTO VERIFIED` — secure NFC cryptographic proof + replay authority validated.
-- `TAMPER STATUS VERIFIED` — separately supported tamper state validated.
-
-`AUTHENTIC PRODUCT` must not be displayed solely from these technical checks unless the issuer/product policy legally and operationally supports that statement.
-
-## First physical pilot
-
-### Gate 1 — software vectors — COMPLETED V4.4
-
-- NXP AN12196 Rev. 2.0 reference vectors pass in CI;
-- modified MAC is rejected;
-- shared crypto code is the same code imported by the Edge verifier;
-- secrets are not accepted from the public request.
-
-### Gate 2 — hardware — EXTERNAL
-
-- obtain a small number of genuine NTAG 424 DNA tags;
-- optionally obtain TagTamper samples;
-- use an NFC reader/writer and NXP-supported provisioning tooling.
-
-### Gate 3 — lab provisioning — EXTERNAL + EVO
-
-- replace factory/default keys with non-production pilot keys;
-- configure reviewed NDEF/SDM offsets;
-- verify changing authenticated data over repeated taps;
-- compare real tag output with EVO server verification.
-
-### Gate 4 — replay authority — NEXT SOFTWARE GATE
-
-- add protected `evo_nfc_tags` registry without secret keys;
-- store tag/Seal/UID binding and last accepted counter;
-- advance the counter atomically only after crypto success;
-- reject repeated or lower counters under concurrent requests.
-
-### Gate 5 — destructive / clone-resistance test — EXTERNAL
-
-- copy the public URL to another NFC tag and confirm it cannot receive `NFC CRYPTO VERIFIED`;
-- replay an old authenticated URL and confirm rejection;
-- alter one byte of dynamic data and confirm rejection;
-- if using TagTamper, open the seal and confirm the separately implemented state transition.
+1. Obtain genuine NTAG 424 DNA samples; optionally TagTamper.
+2. Provision non-default lab keys with NXP-supported tooling.
+3. Configure the reviewed SDM offsets/NDEF layout.
+4. Add the same unique keys only to Supabase server secrets.
+5. Enrol tag binding through the controlled server action.
+6. Perform repeated real taps and verify changing counters.
+7. Replay an old URL and confirm rejection.
+8. Copy the public URL to another tag and confirm rejection.
+9. Alter MAC/PICCData and confirm rejection.
+10. Only then set `physicalPilotApproved=true` for the tested tag.
+11. For TagTamper, open the seal and validate tamper-state handling separately before enabling `TAMPER STATUS VERIFIED`.
 
 ## Token policy
 
-EVO NFC pilot moves 0 EVO and 0 POL. Verification remains free.
+The NFC pilot moves **0 EVO and 0 POL**. Public verification remains free.
 
 ## References
 
-- NXP NTAG 424 DNA / 424 DNA TagTamper product documentation.
+- NXP NTAG 424 DNA / NTAG 424 DNA TagTamper product documentation.
 - **NXP AN12196 Rev. 2.0 — NTAG 424 DNA and NTAG 424 DNA TagTamper features and hints, 4 March 2025.**
-- NIST SP 800-38B — CMAC mode for authentication.
-
-The implementation must continue to be checked against current official NXP documentation before provisioning real products.
+- NIST SP 800-38B — CMAC.
