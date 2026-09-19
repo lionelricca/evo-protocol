@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EVO Crypto — Official Polygon Token Information</title>
+  <meta name="description" content="Official information page for EVO Crypto on Polygon: verified token contract, migration contract, and Uniswap V3 pool.">
+  <meta name="robots" content="index,follow">
+  <style>
+    :root{--bg:#0a0d12;--panel:#111722;--line:#253043;--text:#edf3fb;--muted:#9fb0c3;--accent:#8b5cf6;--ok:#4ade80}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#090c11,#0e1420);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    main{max-width:980px;margin:auto;padding:48px 22px 80px}.hero{padding:28px 0 18px}
+    .badge{display:inline-block;border:1px solid #3c4860;background:#141b28;border-radius:999px;padding:7px 11px;color:#c8d3e0;font-size:13px}
+    h1{font-size:clamp(44px,8vw,86px);line-height:.95;margin:18px 0 16px;letter-spacing:-.045em}
+    .lead{font-size:19px;color:var(--muted);max-width:760px;line-height:1.6}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:26px}
+    .card{background:rgba(17,23,34,.92);border:1px solid var(--line);border-radius:16px;padding:19px}
+    .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}.v{margin-top:8px;font-size:17px;font-weight:700;word-break:break-all}
+    .good{color:var(--ok)} h2{margin:42px 0 14px;font-size:27px}.row{display:flex;gap:10px;flex-wrap:wrap}
+    a.btn{display:inline-block;text-decoration:none;color:white;border:1px solid #3a4760;background:#171e2b;padding:11px 14px;border-radius:10px;font-weight:700}
+    a.btn.primary{background:var(--accent);border-color:var(--accent)}
+    .note{border-left:3px solid var(--accent);padding:13px 16px;background:#121825;border-radius:8px;color:#cdd8e5;line-height:1.6}
+    footer{margin-top:50px;padding-top:22px;border-top:1px solid var(--line);color:#8191a4;font-size:13px}
+    code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.93em}
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <span class="badge">EVO Crypto · Polygon Mainnet</span>
+    <h1>EVO</h1>
+    <p class="lead">Official technical reference page for the current EVO Crypto token on Polygon. EVO Crypto is a separate project from EVO Protocol.</p>
+    <div class="row">
+      <a class="btn primary" href="https://polygonscan.com/address/0x0F4C77AfC5937491ec0274baeAEB30608daF2192#code" target="_blank" rel="noopener">Verified EVO V2 contract</a>
+      <a class="btn" href="https://polygonscan.com/address/0x697092dB28B69DFd4E7631A72B9B3B507a049BAF#code" target="_blank" rel="noopener">Migration contract</a>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card"><div class="k">Token</div><div class="v">EVO</div></div>
+    <div class="card"><div class="k">Network</div><div class="v">Polygon Mainnet · Chain ID 137</div></div>
+    <div class="card"><div class="k">Decimals</div><div class="v">18</div></div>
+    <div class="card"><div class="k">Fixed total supply</div><div class="v">1,000,000,000 EVO</div></div>
+  </section>
+
+  <h2>Official contracts</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="k">EVO V2 token</div>
+      <div class="v"><code>0x0F4C77AfC5937491ec0274baeAEB30608daF2192</code></div>
+      <p class="good">Source code verified on PolygonScan.</p>
+    </div>
+    <div class="card">
+      <div class="k">Migration contract</div>
+      <div class="v"><code>0x697092dB28B69DFd4E7631A72B9B3B507a049BAF</code></div>
+      <p class="good">Source code verified on PolygonScan.</p>
+    </div>
+    <div class="card">
+      <div class="k">Uniswap V3 pool · WPOL / EVO V2 · 0.3%</div>
+      <div class="v"><code>0x9bFF486cCfC9BE5A021D1E8586D4BCBB3aC47e67</code></div>
+    </div>
+  </div>
+
+  <h2>Token design</h2>
+  <div class="note">
+    EVO V2 is a fixed-supply ERC-20. The deployed token has no post-deployment mint function, no blacklist, no pause mechanism, no transfer tax, and no upgradeable proxy. The migration system exchanges legacy EVO for EVO V2 at 1:1 and retains migrated legacy tokens in the migration contract.
+  </div>
+
+  <h2>Migration</h2>
+  <p class="lead">The current token replaces the previous EVO token on Polygon. Holders should verify contract addresses before interacting. This page does not request seed phrases, private keys, or wallet approvals.</p>
+
+  <footer>
+    EVO Crypto · Polygon Mainnet · Technical reference page<br>
+    Current token: <code>0x0F4C77AfC5937491ec0274baeAEB30608daF2192</code>
+  </footer>
+</main>
+</body>
+</html>
